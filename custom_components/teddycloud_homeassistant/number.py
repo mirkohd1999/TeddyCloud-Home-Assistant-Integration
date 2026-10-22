@@ -1,4 +1,5 @@
 """Adjustable TeddyCloud volume limits (not live playback volume)."""
+from homeassistant.core import callback
 from homeassistant.components import mqtt
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.const import EntityCategory
@@ -44,6 +45,7 @@ class VolumeLimit(NumberEntity):
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
 
+        @callback
         def received(message):
             try:
                 raw = mqtt_text(message.payload)
@@ -90,6 +92,7 @@ class LedBrightness(NumberEntity):
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
 
+        @callback
         def received(message):
             # TeddyCloud: 0 = full brightness, 1 = off, 2 = dimmed.
             values = {"0": 100, "1": 0, "2": 50}

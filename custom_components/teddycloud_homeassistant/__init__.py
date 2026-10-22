@@ -1,4 +1,5 @@
 """Local MQTT listener for TeddyCloud box status."""
+from homeassistant.core import callback
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -20,6 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     box = entry.data[CONF_BOX_ID].strip('/')
     topic = f"{prefix}/box/{box}/+"
 
+    @callback
     def incoming(message):
         field = message.topic.rsplit('/', 1)[-1]
         if field in FIELDS:
