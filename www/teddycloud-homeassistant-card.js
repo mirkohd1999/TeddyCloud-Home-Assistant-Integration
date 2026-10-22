@@ -23,7 +23,14 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     this._timer = setInterval(() => this.render(), 1000);
   }
   disconnectedCallback() { clearInterval(this._timer); }
-  getCardSize() { return 4; }
+  static getStubConfig(hass) {
+    const entity = Object.keys(hass?.states || {}).find(id =>
+      id.startsWith('media_player.') &&
+      hass.states[id].attributes?.friendly_name?.endsWith(' Now Playing')
+    );
+    return {entity: entity || 'media_player.meine_toniebox_now_playing', composition: true};
+  }
+  getCardSize() { return 8; }
   fmt(t) {
     const s = Math.max(0, Math.floor(t || 0));
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2,'0')}`;
@@ -111,4 +118,4 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
 }
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
 window.customCards = window.customCards || [];
-window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant',description:'TeddyCloud-MQTT-Titel, Cover und geschätzter Fortschritt'});
+window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
