@@ -115,3 +115,29 @@ Mit `box_image: 'https://…'` kann eine **eigene zulässig genutzte Produktfoto
 Derzeit findet **keine frei formulierte Internet-Bildersuche** statt: aus Zuverlässigkeits- und Rechte-Gründen verwendet die Integration nur den bekannten Tonies-Metadatenkatalog mit **exaktem Audio-ID-Match**. Für echtes fotorealistisches Box+Figur-Rendering wären separate, lizenzierte und freigestellte Box- und Figurenbilder nötig.
 
 Nach dem Aktualisieren `www/teddycloud-homeassistant-card.js` ersetzen und Browser-Cache hart aktualisieren. Python-Code gegenüber 0.1.4 ist unverändert, aber die Manifest-Version ist erhöht.
+
+
+## Lautstärke aus Home Assistant einstellen
+
+TeddyCloud erlaubt **keine direkte Fernsteuerung** der aktuellen Wiedergabelautstärke (0–16).
+Stattdessen können die **maximalen Lautstärkegrenzen** für Lautsprecher und Kopfhörer
+über MQTT gesetzt werden. Die Box übernimmt die Grenzen erst beim nächsten
+*Freshness Check*. Die physische Lautstärke wird weiterhin über die Ohren eingestellt.
+
+Diese Integration ergänzt pro Box folgende Entitäten:
+
+- `number` **Lautsprecher-Lautstärkelimit**: 25 %, 50 %, 75 % oder 100 %
+- `number` **Kopfhörer-Lautstärkelimit**: 25 %, 50 %, 75 % oder 100 %
+- `sensor` **Aktuelle Lautstärke**: der von der Box gemeldete Rohwert (0–16)
+
+Die `number`-Entitäten senden die Werte 0–3 über
+`{prefix}/box/{box_id}/CmdVolLimitSpk/set` bzw.
+`{prefix}/box/{box_id}/CmdVolLimitHdp/set`.
+Der angezeigte Sollwert wird erst nach der entsprechenden MQTT-Statusmeldung
+übernommen; beim ersten Start kann die Entität deshalb `unbekannt` anzeigen.
+Die bereits vorhandenen TeddyCloud-MQTT-Discovery-Entitäten können dieselben
+Einstellungen ebenfalls bereitstellen, sodass ggf. Duplikate entstehen.
+
+**Voraussetzung:** Eine TeddyCloud-Version mit Unterstützung für
+`CmdVolLimitSpk` und `CmdVolLimitHdp`.
+Siehe [MQTT_CONTROL.md](https://github.com/toniebox-reverse-engineering/teddycloud/blob/master/MQTT_CONTROL.md).
