@@ -106,7 +106,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
     <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
     <div class="foot">Aktuelle Lautstärke: ${safe(attr.volume_level_raw ?? 'unbekannt')} / 16 · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
-    <div class="foot" style="display:none">${attr.volume_level_raw !== undefined && attr.volume_level_raw !== null ? `Lautstärke: ${safe(attr.volume_level_raw)} · `:''}${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation':'Toniebox'}</div></ha-card>`;
+    </ha-card>`;
   }
 }
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
