@@ -1,7 +1,7 @@
 /* TeddyCloud Home Assistant — custom Lovelace card (no build tooling). */
 class TeddyCloudNowPlayingCard extends HTMLElement {
   setConfig(config) {
-    if (!config.entity) throw new Error('entity: media_player.x is required');
+    // Allow editing and saving the card while the Toniebox is offline.
     this.config = config;
     if (!this.shadowRoot) this.attachShadow({mode:'open'});
     this.shadowRoot.addEventListener('change', event => {
@@ -23,7 +23,17 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     this._timer = setInterval(() => this.render(), 1000);
   }
   disconnectedCallback() { clearInterval(this._timer); }
-  getCardSize() { return 4; }
+  static getConfigElement() {
+    return document.createElement('teddycloud-homeassistant-card-editor');
+  }
+  static getStubConfig(hass) {
+    const entity = Object.keys(hass?.states || {}).find(id =>
+      id.startsWith('media_player.') &&
+      hass.states[id].attributes?.friendly_name?.endsWith(' Now Playing')
+    );
+    return {entity: entity || 'media_player.meine_toniebox_now_playing', composition: true};
+  }
+  getCardSize() { return 8; }
   fmt(t) {
     const s = Math.max(0, Math.floor(t || 0));
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2,'0')}`;
@@ -42,7 +52,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     if (!this.shadowRoot || !this.config) return;
     const e = this._hass?.states?.[this.config.entity];
     const attr = e?.attributes || {};
-    const title = attr.media_title || 'Noch keine Titelinformationen';
+    const title = attr.media_title || (!e ? 'Toniebox auswählen' : 'Noch keine Titelinformationen');
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
     const url = this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || '';
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
@@ -109,6 +119,77 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     </ha-card>`;
   }
 }
+
+/* Visual editor: includes unavailable entities so the box need not be running. */
+class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({mode:'open'});
+  }
+  setConfig(config) {
+    this._config = {...config};
+    this.render();
+  }
+  set hass(value) {
+    this._hass = value;
+    this.render();
+  }
+  render() {
+    if (!this.shadowRoot || !this._config) return;
+    const escape = value => String(value ?? '').replace(/[&<>"']/g,
+      char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const entity = this._config.entity || '';
+    const entities = Object.entries(this._hass?.states || {})
+      .filter(([id]) => id.startsWith('media_player.'))
+      .sort(([a], [b]) => a.localeCompare(b, 'de'));
+    const choices = entities.map(([id, state]) => `<option value="${escape(id)}" ${entity===id?'selected':''}>
+      ${escape(state.attributes?.friendly_name || id)} (${escape(id)})${state.state === 'unavailable' ? ' – Nicht verfügbar' : ''}
+    </option>`).join('');
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block;color:var(--primary-text-color)}
+      .field{display:block;margin:12px 0}
+      label{display:block;margin-bottom:6px;font-weight:500}
+      select,input{box-sizing:border-box;width:100%;padding:10px;border:1px solid var(--divider-color,#777);
+        border-radius:8px;background:var(--card-background-color,#222);color:var(--primary-text-color)}
+      .help{font-size:12px;color:var(--secondary-text-color);margin-top:6px}
+    </style>
+    <div class="field"><label for="entity">Toniebox auswählen</label>
+      <select id="entity"><option value="">– Toniebox auswählen –</option>${choices}</select>
+      <div class="help">Die Toniebox kann ausgeschaltet sein. Falls sie nicht in der Liste steht,
+      die Media-Player-Entitäts-ID unten manuell eingeben.</div>
+    </div>
+    <div class="field"><label for="manual">Media-Player-Entitäts-ID (optional)</label>
+      <input id="manual" placeholder="media_player.meine_toniebox_now_playing" value="${escape(entity)}"></div>
+    <div class="field"><label for="name">Anzeigename (optional)</label>
+      <input id="name" placeholder="Kinderzimmer" value="${escape(this._config.name || '')}"></div>
+    <div class="field"><label for="color">Boxfarbe (Hex)</label>
+      <input id="color" placeholder="#c991c5" value="${escape(this._config.color || '#c991c5')}"></div>
+    <div class="field"><label><input id="composition" type="checkbox" style="width:auto"
+      ${this._config.composition!==false?'checked':''}> Toniebox mit Figur anzeigen</label></div>`;
+    this.shadowRoot.getElementById('entity').addEventListener('change', e => {
+      this.change('entity',e.target.value);
+    });
+    this.shadowRoot.getElementById('manual').addEventListener('change', e => {
+      this.change('entity',e.target.value.trim());
+    });
+    for (const field of ['name','color']) {
+      this.shadowRoot.getElementById(field).addEventListener('change',e => this.change(field,e.target.value));
+    }
+    this.shadowRoot.getElementById('composition').addEventListener('change',
+      e => this.change('composition',e.target.checked));
+  }
+  change(field,value) {
+    this._config = {...this._config,[field]:value};
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail:{config:this._config}, bubbles:true, composed:true
+    }));
+    this.render();
+  }
+}
+if (!customElements.get('teddycloud-homeassistant-card-editor')) {
+  customElements.define('teddycloud-homeassistant-card-editor',TeddyCloudHomeAssistantCardEditor);
+}
+
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
 window.customCards = window.customCards || [];
-window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant',description:'TeddyCloud-MQTT-Titel, Cover und geschätzter Fortschritt'});
+window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
