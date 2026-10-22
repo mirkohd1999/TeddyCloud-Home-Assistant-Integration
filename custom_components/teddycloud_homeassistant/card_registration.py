@@ -3,10 +3,11 @@ import logging
 from pathlib import Path
 
 from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.lovelace.const import LOVELACE_DATA
 
 _LOGGER = logging.getLogger(__name__)
 CARD_PATH = "/teddycloud-homeassistant/card.js"
-CARD_VERSION = "0.2.0-dev2"
+CARD_VERSION = "0.2.1"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 
 
@@ -29,9 +30,9 @@ async def async_register_card(hass):
         pass
     hass.data[key] = True
 
-    lovelace = hass.data.get("lovelace")
+    lovelace = hass.data.get(LOVELACE_DATA)
     resources = getattr(lovelace, "resources", None)
-    if resources is None or getattr(lovelace, "mode", None) != "storage":
+    if resources is None or getattr(lovelace, "resource_mode", None) != "storage":
         _LOGGER.info("Card served at %s; manual resource registration required in YAML mode", CARD_PATH)
         return
 
