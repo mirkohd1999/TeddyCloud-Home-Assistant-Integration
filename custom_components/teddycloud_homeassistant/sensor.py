@@ -1,4 +1,5 @@
 """Read-only actual Toniebox playback volume as reported via MQTT."""
+from homeassistant.core import callback
 from homeassistant.components import mqtt
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import EntityCategory
@@ -34,6 +35,7 @@ class VolumeSensor(SensorEntity):
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
 
+        @callback
         def received(message):
             try:
                 raw = mqtt_text(message.payload)
