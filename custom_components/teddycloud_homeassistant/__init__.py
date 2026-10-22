@@ -4,12 +4,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from .const import DOMAIN, CONF_PREFIX, CONF_BOX_ID
 from .online_catalog import OnlineCatalog
+from .card_registration import async_register_card
 
 FIELDS = {"Playback", "ContentTitle", "ContentAudioId", "VolumeLevel", "VolumedB", "Charger", "TagValid", "LastSeen", "ContentPicture"}
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not await mqtt.async_wait_for_mqtt_client(hass):
         return False
+    await async_register_card(hass)
     from .media_player import BoxPlayer
     catalog = hass.data.setdefault(DOMAIN, {}).setdefault("online_catalog", OnlineCatalog(hass))
     player = BoxPlayer(entry, catalog)
