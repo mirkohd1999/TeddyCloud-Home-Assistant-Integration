@@ -4,6 +4,15 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     if (!config.entity) throw new Error('entity: media_player.x is required');
     this.config = config;
     if (!this.shadowRoot) this.attachShadow({mode:'open'});
+    this.shadowRoot.addEventListener('change', event => {
+      const el = event.target;
+      if (!el.matches('input[data-control]') || !this._hass) return;
+      const entityId = el.dataset.entity;
+      const value = Number(el.value);
+      if (!entityId || !Number.isFinite(value)) return;
+      this._hass.callService('number', 'set_value', {entity_id: entityId, value})
+        .catch(err => { console.error('TeddyCloud: Einstellung fehlgeschlagen', err); this.render(); });
+    });
     this.render();
   }
   set hass(hass) {
@@ -18,6 +27,16 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
   fmt(t) {
     const s = Math.max(0, Math.floor(t || 0));
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2,'0')}`;
+  }
+  resolveNumber(configKey, nameSuffix) {
+    const configured = this.config[configKey];
+    if (configured) return this._hass?.states?.[configured] ? configured : null;
+    const baseName = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name || '';
+    const boxName = baseName.replace(/ Now Playing$/, '');
+    return Object.keys(this._hass?.states || {}).find(id => {
+      const e = this._hass.states[id];
+      return id.startsWith('number.') && e.attributes?.friendly_name === boxName + ' ' + nameSuffix;
+    }) || null;
   }
   render() {
     if (!this.shadowRoot || !this.config) return;
@@ -34,9 +53,24 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const elapsed = playing && Number.isFinite(started) ? Math.max(0,(Date.now()-started)/1000) : null;
     const dur = Number(attr.media_duration) > 0 ? Number(attr.media_duration) : null;
     const progress = dur && elapsed !== null ? Math.min(100, elapsed / dur * 100) : 0;
+    const safeAttr = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const safeURL = /^(https?:\/\/|\/local\/)/i.test(url) ? safe(url) : '';
     const safeBoxURL = /^(https?:\/\/|\/local\/)/i.test(boxImage) ? safe(boxImage) : '';
+    const controls = [
+      ['speaker_entity', 'Lautsprecher-Lautstärkelimit', 'Lautsprecher-Limit', [25,50,75,100], '🔊'],
+      ['headphone_entity', 'Kopfhörer-Lautstärkelimit', 'Kopfhörer-Limit', [25,50,75,100], '🎧'],
+      ['led_entity', 'LED-Helligkeit', 'LED-Helligkeit', [0,50,100], '☀️']
+    ].map(([key, suffix, label, values, icon]) => {
+      const id = this.resolveNumber(key, suffix);
+      const state = id ? this._hass?.states?.[id] : null;
+      const value = state && Number(state.state);
+      const valid = state && state.state !== 'unknown' && state.state !== 'unavailable' && Number.isFinite(value);
+      const labels = values.map(v => key === 'led_entity' ? ({0:'Aus',50:'Gedimmt',100:'An'}[v]) : v+' %');
+      return `<div class="setting"><div class="setting-head"><span>${icon} ${safe(label)}</span><strong>${valid ? value+' %' : 'Unbekannt'}</strong></div>
+      <input type="range" data-control="${safe(key)}" data-entity="${safe(id || '')}" min="${values[0]}" max="${values[values.length-1]}" step="${values[1]-values[0]}" value="${valid ? value : values[0]}" ${valid ? '' : 'disabled'}>
+      <div class="ticks">${labels.map(x => `<span>${safe(x)}</span>`).join('')}</div></div>`;
+    }).join('');
     const artBlock = composition ? `<div class="stage" aria-label="Toniebox mit Tonie-Figur">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
       ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="Erkanntes Tonie-Bild" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">` : ''}
@@ -60,11 +94,19 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .bar{height:8px;background:var(--divider-color,#ddd);border-radius:12px;overflow:hidden;margin-top:20px}.fill{height:100%;background:${color};width:${progress.toFixed(2)}%}
     .times{display:flex;justify-content:space-between;opacity:.72;font-size:12px;margin-top:6px}.foot{font-size:12px;opacity:.75;margin-top:12px}
     @media(max-width:350px){.art{width:85px;height:85px}.title{font-size:17px}}
+    .panel{margin-top:18px;padding-top:14px;border-top:1px solid var(--divider-color,#ddd)}
+    .panel-title{font-weight:700;margin-bottom:15px}.setting{padding:10px 0 16px}
+    .setting + .setting{border-top:1px solid var(--divider-color,#ddd)}
+    .setting-head{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:12px}
+    .setting input{width:100%;accent-color:var(--primary-color,#8f77c7);cursor:pointer}
+    .setting input:disabled{opacity:.45;cursor:not-allowed}.ticks{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-top:4px}
     </style><ha-card><div class="flex">${artBlock}
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud')}</div><div class="title">${safe(title)}</div>
     <div class="state"><i class="dot"></i>${playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
-    <div class="foot">${attr.volume_level_raw !== undefined && attr.volume_level_raw !== null ? `Lautstärke: ${safe(attr.volume_level_raw)} · `:''}${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation':'Toniebox'}</div></ha-card>`;
+    <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
+    <div class="foot">Aktuelle Lautstärke: ${safe(attr.volume_level_raw ?? 'unbekannt')} / 16 · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
+    </ha-card>`;
   }
 }
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
