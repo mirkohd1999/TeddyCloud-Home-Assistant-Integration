@@ -141,3 +141,19 @@ Einstellungen ebenfalls bereitstellen, sodass ggf. Duplikate entstehen.
 **Voraussetzung:** Eine TeddyCloud-Version mit Unterstützung für
 `CmdVolLimitSpk` und `CmdVolLimitHdp`.
 Siehe [MQTT_CONTROL.md](https://github.com/toniebox-reverse-engineering/teddycloud/blob/master/MQTT_CONTROL.md).
+
+
+## LED-Helligkeit einstellen
+
+Pro Toniebox gibt es eine neue `select`-Entität **LED-Helligkeit** mit den Optionen
+**An**, **Gedimmt** und **Aus**. Sie verwendet die von TeddyCloud unterstützten
+Werte `0` (An), `2` (Gedimmt) und `1` (Aus). Die Integration sendet an
+`{prefix}/box/{box_id}/CmdLed/set` und liest den bestätigten Status unter
+`{prefix}/box/{box_id}/CmdLed`.
+
+TeddyCloud speichert die Einstellung sofort serverseitig, aber die Toniebox setzt
+sie erst beim **nächsten Freshness Check** um. Der Auswahlzustand zeigt
+den von TeddyCloud bestätigten *Sollwert*, nicht den gemessenen LED-Zustand.
+TeddyClouds automatische MQTT-Discovery kann die gleiche Einstellung
+bereits als eigene `number`-Entität bereitstellen; diese zusätzliche
+`select`-Entität bietet dafür verständliche Namen.
