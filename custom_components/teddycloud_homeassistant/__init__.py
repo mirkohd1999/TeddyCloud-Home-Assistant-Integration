@@ -23,11 +23,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if field in FIELDS:
             player.receive(field, message.payload)
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["media_player", "number", "sensor", "select"])
+    await hass.config_entries.async_forward_entry_setups(entry, ["media_player", "number", "sensor"])
     try:
         unsubscribe = await mqtt.async_subscribe(hass, topic, incoming, 0)
     except Exception:
-        await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor", "select"])
+        await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor"])
         hass.data[DOMAIN].pop(entry.entry_id, None)
         raise
     hass.data[DOMAIN][f"{entry.entry_id}_unsubscribe"] = unsubscribe
@@ -41,7 +41,7 @@ async def async_unload_entry(hass, entry):
     unsubscribe = hass.data[DOMAIN].pop(f"{entry.entry_id}_unsubscribe", None)
     if unsubscribe:
         unsubscribe()
-    unloaded = await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor", "select"])
+    unloaded = await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor"])
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unloaded
