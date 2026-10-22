@@ -1,0 +1,5 @@
+type: custom:teddycloud-homeassistant-card
+entity: media_player.meine_toniebox_now_playing
+name: Kinderzimmer
+# optional: color: '#76b6e1'
+# optional: fallback_cover: '/local/tonies/default.png'
