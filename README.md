@@ -152,3 +152,31 @@ Pro Toniebox gibt es eine `number`-Entität **LED-Helligkeit** als Schieberegler
 - **100 %** = An (MQTT-Wert `0`)
 
 Es sind nur diese drei Stufen möglich, keine stufenlose Helligkeit. Die Integration sendet den gewählten Modus an `{prefix}/box/{box_id}/CmdLed/set` und übernimmt Statusmeldungen von `{prefix}/box/{box_id}/CmdLed`. Die Toniebox setzt Änderungen erst beim nächsten Freshness Check um.
+
+
+## Lovelace-Dashboard für den ersten Release
+
+Die Karte `teddycloud-homeassistant-card` zeigt Figur/Box, Hörspieltitel,
+Wiedergabestatus, geschätzten Fortschritt, Ladestation und drei Regler
+(Lautsprecher-Limit, Kopfhörer-Limit und LED-Helligkeit).
+
+```yaml
+type: custom:teddycloud-homeassistant-card
+entity: media_player.meine_toniebox_now_playing
+composition: true
+# Optional, falls mehrere Entitäten ähnliche Namen haben:
+# speaker_entity: number.meine_toniebox_lautsprecher_lautstarkelimit
+# headphone_entity: number.meine_toniebox_kopfhorer_lautstarkelimit
+# led_entity: number.meine_toniebox_led_helligkeit
+# color: '#c991c5'
+```
+
+Die Entity-IDs im Beispiel müssen an deine Home-Assistant-Installation angepasst werden.
+Ohne optionale IDs sucht die Karte nach den passenden Entitäten anhand des
+angezeigten Box-Namens. Ist der Zustand einer Entität unbekannt, wird der Regler
+deaktiviert, statt einen Wert zu erfinden. Die Begrenzungen werden erst mit dem
+nächsten Freshness Check der Box wirksam.
+
+**Release-Status:** Entwicklungsversion; noch nicht mit echter Toniebox und
+Home Assistant getestet. Vor einem stabilen Release MQTT-Befehle, Zuordnung
+der Entitäten, Cache-Reload der JavaScript-Ressource sowie Mehrboxbetrieb prüfen.
