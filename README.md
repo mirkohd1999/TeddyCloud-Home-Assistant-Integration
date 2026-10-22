@@ -206,3 +206,18 @@ ist noch nicht umgesetzt. Die Box-ID kann weiterhin über MQTT-Ereignisse
 unter `teddyCloud/box/#` ermittelt werden.
 
 **Teststatus:** Diese Änderungen sind noch nicht auf echter Hardware geprüft.
+
+
+## Karteneditor auf Deutsch und ohne eingeschaltete Toniebox
+
+In der mitgelieferten Dashboard-Karte stehen die Beschriftungen jetzt auf
+Deutsch. Die Konfiguration ist auch dann möglich, wenn der Player
+`unavailable` ist oder gerade keine MQTT-Ereignisse sendet. Die Auswahl
+zeigt bestehende Media-Player-Entitäten; alternativ kann eine
+`media_player.*`-ID manuell eingegeben werden. Ohne konfigurierte
+Entität zeigt die Karte einen Platzhalter statt eines Konfigurationsfehlers.
+
+**Achtung:** Dies gilt für die Karte mit dem Typ
+`custom:teddycloud-homeassistant-card`. Andere Toniebox-Karten haben
+einen eigenen Editor; das Einspielen dieser Integration verändert deren
+englische Texte und Validierungen nicht.
