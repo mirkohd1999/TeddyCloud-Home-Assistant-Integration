@@ -180,3 +180,29 @@ nächsten Freshness Check der Box wirksam.
 **Release-Status:** Entwicklungsversion; noch nicht mit echter Toniebox und
 Home Assistant getestet. Vor einem stabilen Release MQTT-Befehle, Zuordnung
 der Entitäten, Cache-Reload der JavaScript-Ressource sowie Mehrboxbetrieb prüfen.
+
+
+## Vereinfachte Installation ab Version 0.2.0
+
+1. In **HACS → Benutzerdefinierte Repositories** die Adresse
+   `https://github.com/mirkohd1999/teddycloud-homeassistant` als **Integration** hinzufügen.
+2. Integration herunterladen, Home Assistant neu starten.
+3. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** TeddyCloud Home Assistant
+   einrichten (MQTT muss bereits verbunden sein; Box-ID und Prefix angeben).
+4. Im Dashboard **Bearbeiten → Karte hinzufügen → TeddyCloud Home Assistant** wählen,
+   die richtige `media_player`-Entität auswählen und speichern.
+
+Die Lovelace-Karte ist im Integrationsordner enthalten und wird in normalen
+Lovelace-Dashboards mit **Speicherverwaltung (Storage-Modus)** automatisch als
+JavaScript-Modul registriert. `/config/www`-Kopie und manuelle
+Ressourcenregistrierung sind dabei nicht mehr notwendig. Falls der Eintrag im
+Kartenkatalog nicht erscheint, Dashboard neu laden und die Browser-Cache-Version
+prüfen. Bei **YAML-Ressourcenmodus** kann Home Assistant keine automatisch
+gespeicherten Ressourcen hinzufügen; dort die Ressource
+`/teddycloud-homeassistant/card.js?v=0.2.0` als Modul in YAML eintragen.
+
+**Box-Erkennung:** Die automatische Erkennung und Auswahl verschiedener Boxen
+ist noch nicht umgesetzt. Die Box-ID kann weiterhin über MQTT-Ereignisse
+unter `teddyCloud/box/#` ermittelt werden.
+
+**Teststatus:** Diese Änderungen sind noch nicht auf echter Hardware geprüft.
