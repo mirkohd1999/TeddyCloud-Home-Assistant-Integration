@@ -6,7 +6,7 @@ from homeassistant.components.http import StaticPathConfig
 
 _LOGGER = logging.getLogger(__name__)
 CARD_PATH = "/teddycloud-homeassistant/card.js"
-CARD_VERSION = "0.2.0"
+CARD_VERSION = "0.2.0-dev2"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 
 
