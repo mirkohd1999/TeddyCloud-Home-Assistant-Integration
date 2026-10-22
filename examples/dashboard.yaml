@@ -1,5 +1,12 @@
 type: custom:teddycloud-homeassistant-card
 entity: media_player.meine_toniebox_now_playing
 name: Kinderzimmer
-# optional: color: '#76b6e1'
-# optional: fallback_cover: '/local/tonies/default.png'
+# Standardmäßig wird die Tonie-Figur vor einer farbigen Box dargestellt.
+composition: true
+# Farbe der Box (Hex):
+color: '#e33d35'
+# Optional: echtes Toniebox-Produktfoto statt der stilisierten Box
+# box_image: 'https://example.org/meine-toniebox.png'
+# Optional: Figurbild überschreiben, wenn Online-Katalog ein Cover zeigt
+# figure_image: 'https://example.org/meine-figur.png'
+# Optional: nur Titelbild anzeigen: composition: false

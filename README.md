@@ -1,6 +1,6 @@
 # TeddyCloud Home Assistant 🧸
 
-**Community-Prototyp v0.1.1 für Home Assistant – lokale TeddyCloud-MQTT-Anzeige.**
+**Community-Prototyp v0.1.5 für Home Assistant – lokale TeddyCloud-MQTT-Anzeige.**
 
 Diese Integration ergänzt den bereits in Home Assistant konfigurierten MQTT-Broker um eine **lesende Media-Player-Entität pro Toniebox** sowie eine optionale Lovelace-Karte.
 
@@ -8,6 +8,7 @@ Diese Integration ergänzt den bereits in Home Assistant konfigurierten MQTT-Bro
 
 - Mehrere Boxen, jeweils eigener Name, MQTT-Prefix, Box-ID (CN) und Boxfarbe.
 - Aktueller `ContentTitle`, `ContentAudioId`, `Playback`-Status, gemeldete Lautstärke und Ladestation.
+- **Automatische Online-Figurensuche** anhand der exakten `ContentAudioId` aus der öffentlichen [tonies-json-Datenbank](https://github.com/toniebox-reverse-engineering/tonies-json); tägliche Aktualisierung während der Nutzung und Fallback auf das lokale TeddyCloud-Cover.
 - Individueller Katalog je Box: `ContentAudioId` → `title`, `cover` und `duration_seconds`; optional Fallback-Cover.
 - Dashboard-Karte für Titel, Cover, Farbe und **geschätzten** Wiedergabefortschritt.
 - Kein eigener MQTT-Client und keine separaten MQTT-Zugangsdaten: die **bereits konfigurierte Home-Assistant-MQTT-Integration** wird verwendet.
@@ -17,7 +18,7 @@ Diese Integration ergänzt den bereits in Home Assistant konfigurierten MQTT-Bro
 
 TeddyCloud meldet über MQTT einen Wiedergabestatus (`Playback`: ON/OFF), Titel, Audio-ID und Cover-Entität. **Die tatsächliche Wiedergabeposition und eine garantierte Tracklänge liefert dieses MQTT-Schema nicht.** Fortschritt wird nur ab einem `Playback=ON`- oder neuen Audio-ID-Ereignis anhand der lokalen Uhr **geschätzt**. Bei Pausen, Puffern, Zeitsprüngen, Neustarts oder Kapitelwechseln ohne Audio-ID-Wechsel ist die Position ungenau. Die Leiste trägt deshalb ausdrücklich „geschätzt“. Ohne eigene Laufzeitangabe wird keine Zeit vorgetäuscht.
 
-**Alle jemals veröffentlichten Tonies** gehören **nicht** zum Paket: Katalog, Bildrechte und Audio-ID-Zuordnung müssten aus einer lizenzierten Datenquelle ergänzt werden. Füge eigene Bilder/URLs und Laufzeiten im Katalog hinzu. Das von TeddyCloud per Home-Assistant-MQTT-Discovery veröffentlichte `image`-Entity wird durch diese erste Karten-Version nicht automatisch als Bild übernommen.
+**Alle jemals veröffentlichten Tonies** gehören **nicht** zum Paket: Katalog, Bildrechte und Audio-ID-Zuordnung müssten aus einer lizenzierten Datenquelle ergänzt werden. Füge eigene Bilder/URLs und Laufzeiten im Katalog hinzu. Die Karte verwendet `ContentPicture` aus TeddyCloud-MQTT direkt. Das ist das **Cover des Inhalts**, nicht zwingend ein Foto der physischen Figur. Ein Figurenfoto erfordert eine separat gepflegte Bild-URL im Katalog.
 
 TeddyCloud bietet über MQTT **keine echte Play/Pause-Fernsteuerung** der Toniebox 1. Diese Erweiterung zeigt Status an, behauptet aber keine Steuerung. Dokumentation: [TeddyCloud MQTT_CONTROL.md](https://github.com/toniebox-reverse-engineering/teddycloud/blob/master/MQTT_CONTROL.md).
 
@@ -29,10 +30,21 @@ TeddyCloud bietet über MQTT **keine echte Play/Pause-Fernsteuerung** der Tonieb
 2. Den Ordner `custom_components/teddycloud_homeassistant` nach `/config/custom_components/` kopieren.
 3. Home Assistant **neu starten**.
 4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → TeddyCloud Home Assistant**.
-5. Eine **Box-ID (CN)** aus MQTT-Topic `teddyCloud/box/BOX_ID/Playback` eintragen. Das Prefix ist meist `teddyCloud`. Weitere Boxen als weitere Einträge hinzufügen.
+5. Die **Box-ID** anhand der folgenden Anleitung ermitteln und eintragen. Das Prefix ist meist `teddyCloud`. Weitere Boxen als weitere Einträge hinzufügen.
 6. Für die Karte `www/teddycloud-homeassistant-card.js` nach `/config/www/` kopieren.
 7. **Einstellungen → Dashboards → Ressourcen**: `/local/teddycloud-homeassistant-card.js` als **JavaScript-Modul** hinzufügen. Danach Browser-Cache neu laden.
 8. Manuelle Karte nach `examples/dashboard.yaml` hinzufügen. Die tatsächliche Media-Player-Entitäts-ID verwenden.
+
+## Box-ID bei der Einrichtung finden
+
+1. In Home Assistant **Einstellungen → Geräte & Dienste → MQTT → Konfigurieren** öffnen.
+2. Im Bereich **Ein Topic abonnieren** ein bestehendes Abo ggf. mit **Abo beenden** stoppen.
+3. Als Topic `teddyCloud/box/#` eingeben und **Abonnieren** wählen. Das Präfix `teddyCloud` bei Bedarf durch den eigenen TeddyCloud-MQTT-Topic-Präfix ersetzen.
+4. Toniebox einschalten und eine Figur aufstellen, damit MQTT-Statusmeldungen erscheinen.
+5. Ein Topic wie `teddyCloud/box/ABC123456/ContentTitle` oder `teddyCloud/box/ABC123456/Playback` suchen. **`ABC123456` ist die Box-ID.**
+6. Im Einrichtungsdialog bei **Box-ID** ausschließlich `ABC123456` eintragen, bei **MQTT-Topic-Präfix** `teddyCloud`.
+
+**Wichtig:** Im oberen Bereich **Ein Paket veröffentlichen** nichts eingeben oder veröffentlichen. `teddyCloud/status` mit der Nachricht `online` ist die Statusmeldung des Servers, **nicht** die Box-ID. Auch `teddyCloud/hass-id/status` bezeichnet den Server. Wenn unter `teddyCloud/box/#` nichts erscheint, zunächst unter `teddyCloud/#` prüfen, ob überhaupt Box-Ereignisse vorhanden sind.
 
 ## Optionen
 
@@ -59,3 +71,47 @@ Issues und Pull Requests willkommen. Für ein öffentliches Release: Tests mit m
 ## Lizenz
 
 MIT (siehe LICENSE).
+
+## Fehlerbehebung: „Leerlauf“ trotz Playback ON / „Unbekannter Tonie“
+
+In v0.1.4 wurde die MQTT-Payload-Dekodierung korrigiert: `b"ON"` wird als `ON` interpretiert.
+Die Integration hört auf `{prefix}/box/{box_id}/+` und unterstützt nun auch `ContentPicture`.
+Überprüfe die **Box-ID** und das Topic-Präfix. Teste in MQTT → Konfigurieren mit `teddyCloud/box/#`.
+Bei echten `Playback=ON` und `ContentTitle`-Meldungen aktualisiert sich der Player.
+Home Assistant benötigt nach dem Austausch der Python-Dateien einen **Neustart**. Gegebenenfalls die Figur abnehmen und wieder aufsetzen, damit neue MQTT-Nachrichten entstehen; die Box-Nachrichten sind eventuell nicht retained.
+
+### Coverbilder
+
+TeddyCloud liefert beispielsweise `http://localhost/cache/BILD.png`. Das `localhost` meint den TeddyCloud-Server und ist aus Home Assistant nicht direkt erreichbar.
+Unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant → Konfigurieren** `TeddyCloud-Adresse für Coverbilder` setzen, z. B. `http://192.168.180.81` (im eigenen Netzwerk anpassen).
+Das Cover wird aus `ContentPicture` aufgelöst; ein eigener Katalogeintrag mit `cover` hat Vorrang.
+**Achtung:** Die Bildadresse muss vom Browser, der das Dashboard anzeigt, erreichbar sein; bei Zugriff über HTTPS von außerhalb können HTTP-Bilder wegen Mixed Content blockiert werden. Diese Version ist ein lokaler Prototyp.
+Die tatsächliche physische Tonie-Figur ist nicht automatisch als Bild im MQTT-Datensatz enthalten. Für Figurenfotos `cover` je `ContentAudioId` im Katalog hinterlegen.
+
+
+## Neu in v0.1.4: Automatische Figurenbilder
+
+Unter **TeddyCloud Home Assistant → Konfigurieren → Automatisch Figurenbilder online anhand der Audio-ID suchen** lässt sich die Funktion an- oder ausschalten (standardmäßig an).
+
+1. TeddyCloud meldet `ContentAudioId`, z. B. `1725629281`.
+2. Home Assistant lädt bei Bedarf einen öffentlichen JSON-Katalog von `toniebox-reverse-engineering/tonies-json` über HTTPS; eine heruntergeladene Tabelle wird im Arbeitsspeicher bis zu 24 Stunden wiederverwendet und bei Fehlern frühestens nach einer Stunde erneut versucht.
+3. Nur eine **exakte Audio-ID-Übereinstimmung** zählt. Der Katalogeintrag liefert eine Bild-URL (`pic`), die vorrangig als Figurenbild verwendet wird.
+4. Gibt es keinen Treffer, bleibt das von TeddyCloud veröffentlichte `ContentPicture` als Ersatz verfügbar. Ist auch dieses nicht erreichbar, folgt die eigene `fallback_cover`-URL.
+5. Für ein bestimmtes Hörspiel kann im JSON-Katalog der Integration `"figure": "https://..."` gesetzt werden; das überschreibt den Online-Fund. Manuelle `cover`-URLs bleiben als sekundärer Fallback erhalten.
+
+**Hinweis:** Die Bilddatenbank enthält öffentlich verlinkte Produktabbildungen. **Ein passender Audio-ID-Datensatz garantiert nicht, dass das verlinkte Bild exakt die physische Figur fotografisch zeigt**, beispielsweise bei Sondereditionen oder nachträglich bespielten Kreativ-Tonies. Bei benutzerdefinierten Audio-Dateien kann die Audio-ID in der Community-Datenbank fehlen. Es wird dann **nicht willkürlich ein ähnlich betiteltes Bild ausgewählt**.
+
+**Datenschutz und Rechte:** Der Home-Assistant-Server kontaktiert `raw.githubusercontent.com`; der Browser lädt das gefundene Bild vom ursprünglichen Bildhost. Bildrechte verbleiben bei den Rechteinhabern. Keine Bilder werden mit diesem GitHub-Projekt ausgeliefert; für öffentliche Verbreitung oder lokales Caching fremder Bilder gesondert Rechte prüfen.
+
+**Technische Grenze:** Bei Ausfall der Datenquelle gibt es weiterhin MQTT-Titel und Cover aus TeddyCloud. Die Karte zeigt die eigentliche Quelle in `image_source` an (`online_catalog`, `manual_figure`, `teddycloud_cover`). Nach Upgrade Home Assistant neu starten und Tonie neu aufsetzen, um ein frisches `ContentAudioId`-Ereignis zu erzeugen.
+
+
+## Neu in v0.1.5: Box mit Figur wie auf einem Produktfoto
+
+Die Lovelace-Karte stellt standardmäßig eine **stilisiert gezeichnete Toniebox in der gewählten Farbe** dar und legt das per Audio-ID gefundene Online-Bild **davor**. Bei passendem freigestelltem Figurenbild entsteht eine Ansicht ähnlich einer Toniebox mit aufgestellter Figur. **Es ist kein garantiert authentisches Kombinationsfoto**. Bilder aus der Datenbank können auch quadratische Cover oder weiße Hintergründe enthalten. Ein zuverlässiges Entfernen von Hintergründen ist in der Erweiterung nicht enthalten.
+
+Mit `box_image: 'https://…'` kann eine **eigene zulässig genutzte Produktfoto-URL der Box** hinterlegt werden, oder mit `figure_image: 'https://…'` ein eigenes freigestelltes Figurenfoto. `color: '#e33d35'` legt die stilisierte Farbe fest. `composition: false` schaltet zurück auf die einfache Coveransicht. Die öffentliche Bildquelle ist nicht dauerhaft erreichbar garantiert.
+
+Derzeit findet **keine frei formulierte Internet-Bildersuche** statt: aus Zuverlässigkeits- und Rechte-Gründen verwendet die Integration nur den bekannten Tonies-Metadatenkatalog mit **exaktem Audio-ID-Match**. Für echtes fotorealistisches Box+Figur-Rendering wären separate, lizenzierte und freigestellte Box- und Figurenbilder nötig.
+
+Nach dem Aktualisieren `www/teddycloud-homeassistant-card.js` ersetzen und Browser-Cache hart aktualisieren. Python-Code gegenüber 0.1.4 ist unverändert, aber die Manifest-Version ist erhöht.

@@ -1,1 +1,32 @@
-{"config":{"step":{"user":{"title":"TeddyCloud-Box hinzufügen","description":"MQTT zuerst in Home Assistant einrichten. Box-ID aus teddyCloud/box/BOXID/Playback.","data":{"box_id":"Box-ID","box_name":"Name der Box","prefix":"MQTT-Topic-Präfix"}}}},"options":{"step":{"init":{"title":"Anzeige anpassen","data":{"box_color":"Box-Farbe (Hex)","fallback_cover":"Standard-Cover-URL","catalog":"JSON-Katalog nach Audio-ID"}}},"error":{"invalid_catalog":"Ungültiger JSON-Katalog"}}}
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TeddyCloud-Box hinzufügen",
+        "description": "**So findest du deine Box-ID:**\n1. In Home Assistant: Einstellungen → Geräte & Dienste → MQTT → Konfigurieren.\n2. Unter „Ein Topic abonnieren“ ein laufendes Abo bei Bedarf beenden.\n3. Topic `teddyCloud/box/#` eingeben und „Abonnieren“ anklicken (bei anderem Präfix entsprechend ersetzen).\n4. Toniebox einschalten und eine Figur aufstellen.\n5. In einer Nachricht wie `teddyCloud/box/ABC123/ContentTitle` ist `ABC123` deine Box-ID.\n6. Nur diese ID in das Feld „Box-ID“ eintragen, nicht das ganze Topic.\n**Nicht** oben unter „Ein Paket veröffentlichen“ senden.\n\n`teddyCloud/status` mit Wert `online` bestätigt nur den TeddyCloud-Server und ist **keine** Box-ID. Wenn noch keine Box-Nachrichten kommen, `teddyCloud/#` abonnieren und prüfen, ob die Box MQTT-Ereignisse sendet.",
+        "data": {
+          "box_id": "Box-ID (aus MQTT-Topic zwischen /box/ und /ContentTitle)",
+          "box_name": "Name der Box",
+          "prefix": "MQTT-Topic-Präfix"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Anzeige anpassen",
+        "data": {
+          "box_color": "Box-Farbe (Hex)",
+          "fallback_cover": "Standard-Cover-URL",
+          "catalog": "JSON-Katalog nach Audio-ID",
+          "teddycloud_url": "TeddyCloud-Adresse für Coverbilder (z. B. http://192.168.180.81)",
+          "online_images": "Automatisch Figurenbilder online anhand der Audio-ID suchen"
+        }
+      }
+    },
+    "error": {
+      "invalid_catalog": "Ungültiger JSON-Katalog"
+    }
+  }
+}
