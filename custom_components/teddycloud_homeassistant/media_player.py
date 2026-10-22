@@ -88,13 +88,19 @@ class BoxPlayer(MediaPlayerEntity):
             if not self._lookup_task or self._lookup_task.done():
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(audio_id))
 
+    async def async_will_remove_from_hass(self):
+        """Stop pending catalog requests when the entity is unloaded."""
+        if self._lookup_task and not self._lookup_task.done():
+            self._lookup_task.cancel()
+        await super().async_will_remove_from_hass()
+
     async def _lookup_image(self, audio_id):
         """Refresh artwork asynchronously without blocking the MQTT callback."""
         try:
             result = await self._online_catalog.find(audio_id)
         except Exception:
             return
-        if self._online_audio_id == audio_id:
+        if self._online_audio_id == audio_id and self.hass is not None:
             self._online_result = result
             if self.hass is not None:
                 self.async_write_ha_state()
