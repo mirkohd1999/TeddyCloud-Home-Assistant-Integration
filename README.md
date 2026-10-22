@@ -145,15 +145,10 @@ Siehe [MQTT_CONTROL.md](https://github.com/toniebox-reverse-engineering/teddyclo
 
 ## LED-Helligkeit einstellen
 
-Pro Toniebox gibt es eine neue `select`-Entität **LED-Helligkeit** mit den Optionen
-**An**, **Gedimmt** und **Aus**. Sie verwendet die von TeddyCloud unterstützten
-Werte `0` (An), `2` (Gedimmt) und `1` (Aus). Die Integration sendet an
-`{prefix}/box/{box_id}/CmdLed/set` und liest den bestätigten Status unter
-`{prefix}/box/{box_id}/CmdLed`.
+Pro Toniebox gibt es eine `number`-Entität **LED-Helligkeit** als Schieberegler, genau wie bei den Lautstärkelimits.
 
-TeddyCloud speichert die Einstellung sofort serverseitig, aber die Toniebox setzt
-sie erst beim **nächsten Freshness Check** um. Der Auswahlzustand zeigt
-den von TeddyCloud bestätigten *Sollwert*, nicht den gemessenen LED-Zustand.
-TeddyClouds automatische MQTT-Discovery kann die gleiche Einstellung
-bereits als eigene `number`-Entität bereitstellen; diese zusätzliche
-`select`-Entität bietet dafür verständliche Namen.
+- **0 %** = Aus (MQTT-Wert `1`)
+- **50 %** = Gedimmt (MQTT-Wert `2`)
+- **100 %** = An (MQTT-Wert `0`)
+
+Es sind nur diese drei Stufen möglich, keine stufenlose Helligkeit. Die Integration sendet den gewählten Modus an `{prefix}/box/{box_id}/CmdLed/set` und übernimmt Statusmeldungen von `{prefix}/box/{box_id}/CmdLed`. Die Toniebox setzt Änderungen erst beim nächsten Freshness Check um.
