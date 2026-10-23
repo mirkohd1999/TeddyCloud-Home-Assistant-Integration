@@ -44,6 +44,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self.async_show_form(step_id="discover", data_schema=vol.Schema({}))
         self._scan_task = self.hass.async_create_task(self._scan_mqtt())
+        self._discovered = None
         return await self.async_step_scan()
 
     async def _scan_mqtt(self):
@@ -52,7 +53,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         @callback
         def receive(message):
-            match = re.fullmatch(r"([^/]+)/box/([^/]+)/([^/]+)", message.topic)
+            match = re.fullmatch(r"(.+)/box/([^/]+)/([^/]+)", message.topic)
             if match and match.group(3) in (
                 "LastSeen", "Playback", "ContentTitle", "ContentAudioId",
                 "VolumeLevel", "VolumedB", "Charger", "TagValid",
@@ -63,14 +64,13 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not await mqtt.async_wait_for_mqtt_client(self.hass):
             raise RuntimeError("mqtt_unavailable")
         unsubscribe = await mqtt.async_subscribe(
-            self.hass, "+/box/+/+", receive, 0
+            self.hass, "#", receive, 0
         )
         try:
             # Allow retained MQTT topics to arrive, and give the user time
             # to switch on a box when there are no retained messages.
             for elapsed in range(25):
                 await asyncio.sleep(1)
-                self.async_update_progress((elapsed + 1) / 25)
                 if seen and elapsed >= 3:
                     break
         finally:
@@ -79,7 +79,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_scan(self, user_input=None):
         """Display a live progress message while MQTT discovery runs."""
-        if not hasattr(self, "_scan_task"):
+        if not hasattr(self, "_scan_task") or self._scan_task is None:
             self._scan_task = self.hass.async_create_task(self._scan_mqtt())
         if not self._scan_task.done():
             return self.async_show_progress(
@@ -89,7 +89,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_progress_done(next_step_id="scan_result")
 
     async def async_step_scan_result(self, user_input=None):
-        if not hasattr(self, "_discovered"):
+        if getattr(self, "_discovered", None) is None:
             try:
                 self._discovered = self._scan_task.result()
             except Exception:
