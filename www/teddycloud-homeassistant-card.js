@@ -61,6 +61,9 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
     const boxImage = this.config.box_image || '';
     const composition = this.config.composition !== false;
+    const mode = ['all', 'player', 'settings'].includes(this.config.mode) ? this.config.mode : 'all';
+    const charger = String(attr.charger ?? '').trim().toUpperCase();
+    const chargerText = ['ON','1','TRUE'].includes(charger) ? '🔌 Auf Ladestation' : ['OFF','0','FALSE'].includes(charger) ? '🔋 Nicht auf Ladestation' : '🔋 Ladestatus unbekannt';
     const playing = e?.state === 'playing';
     const started = attr.estimated_playback_started ? Date.parse(attr.estimated_playback_started) : NaN;
     const elapsed = playing && Number.isFinite(started) ? Math.max(0,(Date.now()-started)/1000) : null;
@@ -113,12 +116,15 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .setting-head{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:12px}
     .setting input{width:100%;accent-color:var(--primary-color,#8f77c7);cursor:pointer}
     .setting input:disabled{opacity:.45;cursor:not-allowed}.ticks{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-top:4px}
-    </style><ha-card><div class="flex">${artBlock}
+    .player .panel,.player .status-foot{display:none}
+    .settings .flex,.settings .bar,.settings .times,.settings .duration-foot{display:none}
+    .settings .panel{margin-top:0;padding-top:0;border-top:0}
+    </style><ha-card class="${mode}"><div class="flex">${artBlock}
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud')}</div><div class="title">${safe(title)}</div>
-    <div class="state"><i class="dot"></i>${attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div></div></div>
-    ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
+    <div class="state"><i class="dot"></i>${attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div><div class="state">${chargerText}</div></div></div>
+    ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot duration-foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
     <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
-    <div class="foot">Aktuelle Lautstärke: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : 'unbekannt'} · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
+    <div class="foot status-foot">Aktuelle Lautstärke: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : 'unbekannt'} · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
     </ha-card>`;
   }
 }
@@ -163,12 +169,14 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     </div>
     <div class="field"><label for="manual">Media-Player-Entitäts-ID (optional)</label>
       <input id="manual" placeholder="media_player.meine_toniebox_now_playing" value="${escape(entity)}"></div>
+    <div class="field"><label for="mode">Kartenansicht</label><select id="mode"><option value="all" ${(!this._config.mode || this._config.mode==='all')?'selected':''}>Alles zusammen</option><option value="player" ${this._config.mode==='player'?'selected':''}>Nur Toniebox und Titel</option><option value="settings" ${this._config.mode==='settings'?'selected':''}>Nur Einstellungen</option></select></div>
     <div class="field"><label for="name">Anzeigename (optional)</label>
       <input id="name" placeholder="Kinderzimmer" value="${escape(this._config.name || '')}"></div>
     <div class="field"><label for="color">Boxfarbe (Hex)</label>
       <input id="color" placeholder="#c991c5" value="${escape(this._config.color || '#c991c5')}"></div>
     <div class="field"><label><input id="composition" type="checkbox" style="width:auto"
       ${this._config.composition!==false?'checked':''}> Toniebox mit Figur anzeigen</label></div>`;
+    this.shadowRoot.getElementById('mode').addEventListener('change', e => this.change('mode',e.target.value));
     this.shadowRoot.getElementById('entity').addEventListener('change', e => {
       this.change('entity',e.target.value);
     });
