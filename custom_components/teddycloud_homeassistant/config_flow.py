@@ -43,6 +43,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Listen briefly for box status topics; no published probe required."""
         if user_input is None:
             seen = set()
+            @callback
             def receive(message):
                 match = re.fullmatch(r"(.+)/box/([^/]+)/([^/]+)", message.topic)
                 if match and match.group(3) in ("LastSeen", "Playback", "ContentTitle", "ContentAudioId"):
