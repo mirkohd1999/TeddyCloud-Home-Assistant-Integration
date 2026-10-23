@@ -153,12 +153,18 @@ class BoxPlayer(MediaPlayerEntity):
     def media_title(self):
         if self._figure_present is False:
             return 'Keine Figur aufgestellt'
-        return self._metadata().get('title') or self._values.get('ContentTitle') or 'Unbekannter Tonie'
+        return self._metadata().get('title') or self._values.get('ContentTitle') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None) or 'Unbekannter Tonie'
 
     @property
     def media_duration(self):
         duration = self._metadata().get('duration_seconds')
-        return duration if isinstance(duration, (int, float)) and duration > 0 else None
+        if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 0 < duration <= 86400:
+            return int(duration)
+        if self._online_audio_id == self._values.get('ContentAudioId'):
+            duration = (self._online_result or {}).get('duration_seconds')
+            if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 0 < duration <= 86400:
+                return int(duration)
+        return None
 
     @property
     def media_image_url(self):
@@ -190,5 +196,6 @@ class BoxPlayer(MediaPlayerEntity):
                              'teddycloud_cover' if self._values.get('ContentPicture') else 'fallback'),
             'estimated_playback_started': self._started.isoformat() if self._started else None,
             'progress_is_estimate': True,
+            'duration_source': ('manual' if self._metadata().get('duration_seconds') else 'online_catalog' if self.media_duration else None),
             'playback_control_available': False,
         }

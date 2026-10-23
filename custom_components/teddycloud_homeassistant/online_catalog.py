@@ -14,6 +14,17 @@ REFRESH = timedelta(hours=24)
 RETRY = timedelta(hours=1)
 MAX_SIZE = 30 * 1024 * 1024
 
+def duration_seconds(entry):
+    """Read explicit durations only; never guess length from a track list."""
+    seconds = entry.get("duration_seconds")
+    if isinstance(seconds, (int, float)) and not isinstance(seconds, bool):
+        return int(seconds) if 0 < seconds <= 86400 else None
+    minutes = entry.get("runtime")
+    if isinstance(minutes, (int, float)) and not isinstance(minutes, bool):
+        return round(minutes * 60) if 0 < minutes <= 1440 else None
+    return None
+
+
 class OnlineCatalog:
     def __init__(self, hass):
         self.hass = hass
@@ -58,7 +69,9 @@ class OnlineCatalog:
                     if not isinstance(entry, dict):
                         continue
                     pic = entry.get("pic")
-                    if not isinstance(pic, str) or not pic.startswith("https://"):
+                    pic = pic if isinstance(pic, str) and pic.startswith("https://") else None
+                    length = duration_seconds(entry)
+                    if not pic and length is None:
                         continue
                     ids = entry.get("audio_id") or []
                     if not isinstance(ids, list):
@@ -66,7 +79,11 @@ class OnlineCatalog:
                     for aid in ids:
                         key = str(aid).strip()
                         if key and key not in new_items:
-                            new_items[key] = {"figure": pic, "catalog_title": str(entry.get("title") or "")}
+                            new_items[key] = {
+                                "figure": pic,
+                                "catalog_title": str(entry.get("title") or ""),
+                                "duration_seconds": length,
+                            }
                 self.items = new_items
                 self.fetched_at = dt_util.utcnow()
                 self.failed_at = None
