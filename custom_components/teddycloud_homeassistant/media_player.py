@@ -68,8 +68,8 @@ class BoxPlayer(MediaPlayerEntity):
         # Clear active metadata on removal. Archived images remain on disk.
         # Never display the previous figurine as the currently playing one.
         if field == 'ContentAudioId' and text != previous:
-            self._values['ContentTitle'] = ''
-            self._values['ContentPicture'] = ''
+            # Title/picture may arrive BEFORE the audio ID via MQTT.
+            # Do not erase valid metadata simply because the ID arrived later.
             self._online_result = None
             self._local_artwork = self._archive.lookup(text) if text and self._archive else None
         self._values[field] = text
@@ -80,6 +80,10 @@ class BoxPlayer(MediaPlayerEntity):
             self._figure_present = True
             self._figure_removed_at = None
         if field == 'ContentAudioId' and not text:
+            self._values['ContentTitle'] = ''
+            self._values['ContentPicture'] = ''
+            self._local_artwork = None
+            self._online_result = None
             self._figure_present = False
             self._figure_removed_at = datetime.now(timezone.utc)
         if field == 'ContentAudioId' and not text:
