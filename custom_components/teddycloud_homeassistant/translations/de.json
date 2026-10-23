@@ -2,14 +2,41 @@
   "config": {
     "step": {
       "user": {
-        "title": "TeddyCloud-Box hinzufügen",
-        "description": "**So findest du deine Box-ID:**\n1. In Home Assistant: Einstellungen → Geräte & Dienste → MQTT → Konfigurieren.\n2. Unter „Ein Topic abonnieren“ ein laufendes Abo bei Bedarf beenden.\n3. Topic `teddyCloud/box/#` eingeben und „Abonnieren“ anklicken (bei anderem Präfix entsprechend ersetzen).\n4. Toniebox einschalten und eine Figur aufstellen.\n5. In einer Nachricht wie `teddyCloud/box/ABC123/ContentTitle` ist `ABC123` deine Box-ID.\n6. Nur diese ID in das Feld „Box-ID“ eintragen, nicht das ganze Topic.\n**Nicht** oben unter „Ein Paket veröffentlichen“ senden.\n\n`teddyCloud/status` mit Wert `online` bestätigt nur den TeddyCloud-Server und ist **keine** Box-ID. Wenn noch keine Box-Nachrichten kommen, `teddyCloud/#` abonnieren und prüfen, ob die Box MQTT-Ereignisse sendet.",
+        "title": "TeddyCloud einrichten",
+        "menu_options": {
+          "discover": "Toniebox automatisch suchen",
+          "manual": "Box-ID selbst eingeben"
+        }
+      },
+      "discover": {
+        "title": "Gefundene Toniebox auswählen",
+        "description": "Toniebox einschalten oder eine Figur aufstellen, damit TeddyCloud eine MQTT-Nachricht sendet.",
         "data": {
-          "box_id": "Box-ID (aus MQTT-Topic zwischen /box/ und /ContentTitle)",
-          "box_name": "Name der Box",
-          "prefix": "MQTT-Topic-Präfix"
+          "box": "Toniebox",
+          "name": "Name der Toniebox"
+        }
+      },
+      "not_found": {
+        "title": "Noch keine Toniebox gefunden",
+        "description": "Die Toniebox sendet vielleicht gerade keine MQTT-Nachrichten. Aktiviere die Box und versuche es erneut oder trage die ID manuell ein.",
+        "menu_options": {
+          "discover": "Erneut suchen",
+          "manual": "Box-ID selbst eingeben"
+        }
+      },
+      "manual": {
+        "title": "Toniebox manuell hinzufügen",
+        "description": "MQTT-Präfix normalerweise teddyCloud. Die Box-ID steht im Topic teddyCloud/box/BOX-ID/Playback.",
+        "data": {
+          "box_id": "Box-ID",
+          "box_name": "Name der Toniebox",
+          "prefix": "MQTT-Präfix"
         }
       }
+    },
+    "abort": {
+      "mqtt_unavailable": "MQTT-Verbindung ist nicht verfügbar",
+      "invalid_box": "Ungültige Toniebox-Daten"
     }
   },
   "options": {
@@ -17,11 +44,11 @@
       "init": {
         "title": "Anzeige anpassen",
         "data": {
-          "box_color": "Box-Farbe (Hex)",
+          "box_color": "Boxfarbe (Hex)",
           "fallback_cover": "Standard-Cover-URL",
-          "catalog": "JSON-Katalog nach Audio-ID",
-          "teddycloud_url": "TeddyCloud-Adresse für Coverbilder (z. B. http://192.168.180.81)",
-          "online_images": "Automatisch Figurenbilder online anhand der Audio-ID suchen"
+          "catalog": "Katalog als JSON",
+          "teddycloud_url": "TeddyCloud-Adresse für Coverbilder",
+          "online_images": "Figurenbilder automatisch online suchen"
         }
       }
     },

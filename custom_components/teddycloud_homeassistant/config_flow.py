@@ -1,5 +1,8 @@
 """TeddyCloud Home Assistant configuration UI."""
 import json
+import asyncio
+import re
+from homeassistant.components import mqtt
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
@@ -29,13 +32,61 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        """Offer MQTT discovery first, with manual setup as fallback."""
+        if user_input is not None:
+            if user_input.get("setup_mode") == "manual":
+                return await self.async_step_manual()
+            return await self.async_step_discover()
+        return self.async_show_menu(step_id="user", menu_options=["discover", "manual"])
+
+    async def async_step_discover(self, user_input=None):
+        """Listen briefly for box status topics; no published probe required."""
+        if user_input is None:
+            seen = set()
+            @callback
+            def receive(message):
+                match = re.fullmatch(r"(.+)/box/([^/]+)/([^/]+)", message.topic)
+                if match and match.group(3) in ("LastSeen", "Playback", "ContentTitle", "ContentAudioId"):
+                    seen.add((match.group(1), match.group(2)))
+            try:
+                unsubscribe = await mqtt.async_subscribe(self.hass, "+/box/+/+", receive, 0)
+                try:
+                    await asyncio.sleep(8)
+                finally:
+                    unsubscribe()
+            except Exception:
+                return self.async_abort(reason="mqtt_unavailable")
+            self._discovered = sorted(seen)
+            if not self._discovered:
+                return self.async_show_menu(step_id="not_found", menu_options=["discover", "manual"])
+        options = {f"{prefix}|{box}": f"{box} ({prefix})" for prefix, box in getattr(self, "_discovered", [])}
+        if user_input is not None:
+            prefix, box = user_input["box"].split("|", 1)
+            return await self._create_box(prefix, box, user_input["name"])
+        return self.async_show_form(step_id="discover", data_schema=vol.Schema({
+            vol.Required("box"): vol.In(options),
+            vol.Required("name", default="Meine Toniebox"): str,
+        }))
+
+    async def async_step_not_found(self, user_input=None):
+        return self.async_show_menu(step_id="not_found", menu_options=["discover", "manual"])
+
+    async def _create_box(self, prefix, box, name):
+        prefix, box, name = prefix.strip("/"), box.strip("/"), name.strip()
+        if not prefix or not box or not name or "/" in box:
+            return self.async_abort(reason="invalid_box")
+        key = f"{prefix}/{box}"
+        await self.async_set_unique_id(key)
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(title=name, data={
+            CONF_PREFIX: prefix, CONF_BOX_ID: box, CONF_BOX_NAME: name
+        })
+
+    async def async_step_manual(self, user_input=None):
         errors = {}
         if user_input is not None:
-            key = f"{user_input[CONF_PREFIX].strip('/')}/{user_input[CONF_BOX_ID].strip('/')}"
-            await self.async_set_unique_id(key)
-            self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=user_input[CONF_BOX_NAME], data=user_input)
-        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            return await self._create_box(user_input[CONF_PREFIX], user_input[CONF_BOX_ID], user_input[CONF_BOX_NAME])
+        return self.async_show_form(step_id="manual", data_schema=vol.Schema({
             vol.Required(CONF_BOX_ID): str,
             vol.Required(CONF_BOX_NAME, default="Meine Toniebox"): str,
             vol.Required(CONF_PREFIX, default=DEFAULT_PREFIX): str,
