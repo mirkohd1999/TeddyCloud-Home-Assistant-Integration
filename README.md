@@ -245,3 +245,25 @@ Passende Figurenbilder werden bei Bedarf in `/config/www/teddycloud_homeassistan
 Beim Entfernen der **letzten** TeddyCloud-Home-Assistant-Konfiguration wird die von der Integration registrierte Lovelace-Ressource entfernt und das integrationsinterne Bilderverzeichnis von automatisch gespeicherten, numerisch benannten PNG-, JPEG- und WebP-Dateien bereinigt. Andere Bilder werden nicht angerührt. Bereits manuell in Dashboards angelegte Karten bleiben zu deren Schutz bestehen und müssen über den Dashboard-Editor entfernt werden. Entferne zuerst die Integration unter **Geräte & Dienste** und erst danach die Dateien über HACS; eine reine HACS-Deinstallation führt den Aufräumcode nicht garantiert aus.
 
 Ungetesteter Entwicklungsstand: vor stabilem Release Home-Assistant-Installation und mehrere Boxen testen.
+
+
+## Automatische Titel- und Laufzeitinformationen (in Entwicklung)
+
+Die Integration kombiniert TeddyCloud-MQTT-Daten für den **aktuell aufgestellten
+Tonie** mit der öffentlichen Tonies-Metadatenliste. Eine exakte Übereinstimmung
+der `ContentAudioId` ist erforderlich. Vorhandene Katalog-Titel und explizite
+Laufzeiten werden übernommen; bereits von TeddyCloud gemeldete Titel haben
+Vorrang, manuelle Laufzeitkorrekturen bleiben möglich. Auch Tonies ohne
+Online-Figurenbild können eine Katalog-Laufzeit erhalten.
+
+Es ist keine zusätzliche Anmeldung oder IP-Adresse nötig, da die
+Metadatenliste bereits von der Online-Bildsuche genutzt wird. Eine
+Internetverbindung ist beim erstmaligen Abruf nötig. Da der öffentliche
+Katalog nicht für jeden Tonie verlässliche Laufzeiten enthält, bleiben
+unbekannte Laufzeiten unbekannt, statt sie zu erfinden. Die Fortschrittsleiste
+schätzt weiterhin nur die vergangene Zeit seit einem MQTT-Wiedergabeereignis.
+
+Ein von TeddyCloud gesendetes `localhost`-Cover kann ohne bekannte
+Netzwerkadresse des TeddyCloud-Servers nicht zuverlässig automatisch
+geladen werden. Das Online-Figurenbild wird deshalb zuerst über den
+Audio-ID-Katalog gesucht und nach Möglichkeit lokal archiviert.
