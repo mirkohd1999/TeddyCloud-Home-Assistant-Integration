@@ -50,6 +50,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _scan_mqtt(self):
         """Find boxes using retained or freshly published MQTT box status."""
         seen = set()
+        found = asyncio.Event()
 
         @callback
         def receive(message):
@@ -60,6 +61,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "ContentPicture",
             ):
                 seen.add((match.group(1), match.group(2)))
+                found.set()
 
         if not await mqtt.async_wait_for_mqtt_client(self.hass):
             raise RuntimeError("mqtt_unavailable")
@@ -67,12 +69,11 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.hass, "#", receive, 0
         )
         try:
-            # Allow retained MQTT topics to arrive, and give the user time
-            # to switch on a box when there are no retained messages.
-            for elapsed in range(25):
-                await asyncio.sleep(1)
-                if seen and elapsed >= 3:
-                    break
+            # Return immediately for the first confirmed box status.
+            try:
+                await asyncio.wait_for(found.wait(), timeout=25)
+            except asyncio.TimeoutError:
+                pass
         finally:
             unsubscribe()
         return sorted(seen)
@@ -83,6 +84,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._scan_task = self.hass.async_create_task(self._scan_mqtt())
         if not self._scan_task.done():
             return self.async_show_progress(
+                step_id="scan",
                 progress_action="searching_boxes",
                 progress_task=self._scan_task,
             )
