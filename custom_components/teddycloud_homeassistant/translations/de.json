@@ -36,6 +36,10 @@
           "box": "Gefundene Toniebox",
           "name": "Name der Toniebox"
         }
+      },
+      "scan": {
+        "title": "Suche läuft – bitte Toniebox einschalten oder Figur aufstellen",
+        "description": "**Jetzt die Toniebox einschalten oder eine Figur aufstellen.** Sobald eine Box über MQTT erkannt wird, endet die Suche sofort. Andernfalls nach spätestens 25 Sekunden."
       }
     },
     "abort": {
@@ -43,7 +47,7 @@
       "invalid_box": "Ungültige Toniebox-Daten"
     },
     "progress": {
-      "searching_boxes": "Suche nach Tonieboxen … Bitte die Toniebox einschalten oder eine Figur aufstellen. Erkannte Boxen werden automatisch übernommen."
+      "searching_boxes": "Bitte jetzt die Toniebox einschalten oder eine Figur aufstellen – suche nach MQTT-Signalen …"
     }
   },
   "options": {
