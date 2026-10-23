@@ -16,7 +16,7 @@ CATALOG_SOURCES = [
     ("v1", "https://raw.githubusercontent.com/toniebox-reverse-engineering/tonies-json/release/tonies.json"),
 ]
 REFRESH = timedelta(hours=24)
-RETRY = timedelta(minutes=10)
+RETRY = timedelta(seconds=20)
 MAX_SIZE = 60 * 1024 * 1024
 
 def duration_seconds(entry):
