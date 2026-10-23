@@ -237,3 +237,11 @@ manuelle Einrichtung ist jederzeit als Alternative verfügbar; nach der
 Einrichtung bleibt die Toniebox im Dashboard auch ausgeschaltet konfigurierbar.
 
 Diese Funktion ist vor Veröffentlichung mit Home Assistant zu testen.
+
+## Lokale Bilder und sichere Deinstallation (Entwicklung)
+
+Passende Figurenbilder werden bei Bedarf in `/config/www/teddycloud_homeassistant/figures/` anhand der Audio-ID gespeichert. Bereits archivierte Bilder bleiben nach einem Neustart erhalten; fehlende Onlinebilder lassen sich nicht garantieren. Die Boxgrafik verwendet die eingestellte Boxfarbe und benötigt selbst keinen externen Bildserver.
+
+Beim Entfernen der **letzten** TeddyCloud-Home-Assistant-Konfiguration wird die von der Integration registrierte Lovelace-Ressource entfernt und das integrationsinterne Bilderverzeichnis von automatisch gespeicherten, numerisch benannten PNG-, JPEG- und WebP-Dateien bereinigt. Andere Bilder werden nicht angerührt. Bereits manuell in Dashboards angelegte Karten bleiben zu deren Schutz bestehen und müssen über den Dashboard-Editor entfernt werden. Entferne zuerst die Integration unter **Geräte & Dienste** und erst danach die Dateien über HACS; eine reine HACS-Deinstallation führt den Aufräumcode nicht garantiert aus.
+
+Ungetesteter Entwicklungsstand: vor stabilem Release Home-Assistant-Installation und mehrere Boxen testen.
