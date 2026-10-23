@@ -17,7 +17,8 @@ class VolumeSensor(SensorEntity):
     """Display actual volume; TeddyCloud cannot remotely set this value."""
 
     _attr_should_poll = False
-    _attr_native_min_value = 0
+    _attr_native_unit_of_measurement = "%"
+    _attr_icon = "mdi:volume-high"
 
     def __init__(self, entry):
         self._attr_name = f"{entry.data[CONF_BOX_NAME]} Aktuelle Lautstärke"
@@ -44,7 +45,7 @@ class VolumeSensor(SensorEntity):
                     return
             except (ValueError, TypeError):
                 return
-            self._attr_native_value = level
+            self._attr_native_value = round(level * 100 / 16)
             self.async_write_ha_state()
 
         self.async_on_remove(await mqtt.async_subscribe(self.hass, self._topic, received, 0))
