@@ -42,7 +42,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_discover(self, user_input=None):
         """Explain how to wake the box before beginning live discovery."""
         if user_input is None:
-            return self.async_show_form(step_id="scan", data_schema=vol.Schema({}))
+            return self.async_show_form(step_id="discover", data_schema=vol.Schema({}))
         return await self.async_step_scan()
 
     async def async_step_scan(self, user_input=None):
@@ -69,7 +69,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             prefix, box = user_input["box"].split("|", 1)
             return await self._create_box(prefix, box, user_input["name"])
-        return self.async_show_form(step_id="discover", data_schema=vol.Schema({
+        return self.async_show_form(step_id="scan", data_schema=vol.Schema({
             vol.Required("box"): vol.In(options),
             vol.Required("name", default="Meine Toniebox"): str,
         }))
