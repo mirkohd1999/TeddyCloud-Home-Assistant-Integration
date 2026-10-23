@@ -52,9 +52,9 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     if (!this.shadowRoot || !this.config) return;
     const e = this._hass?.states?.[this.config.entity];
     const attr = e?.attributes || {};
-    const title = attr.media_title || (!e ? 'Toniebox auswählen' : 'Noch keine Titelinformationen');
+    const title = attr.figure_present === false ? 'Keine Figur aufgestellt' : (attr.media_title || (!e ? 'Toniebox auswählen' : 'Noch keine Titelinformationen'));
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
-    const url = this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || '';
+    const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || '');
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
     const boxImage = this.config.box_image || '';
     const composition = this.config.composition !== false;
@@ -112,7 +112,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .setting input:disabled{opacity:.45;cursor:not-allowed}.ticks{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-top:4px}
     </style><ha-card><div class="flex">${artBlock}
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud')}</div><div class="title">${safe(title)}</div>
-    <div class="state"><i class="dot"></i>${playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div></div></div>
+    <div class="state"><i class="dot"></i>${attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
     <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
     <div class="foot">Aktuelle Lautstärke: ${safe(attr.volume_level_raw ?? 'unbekannt')} / 16 · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>

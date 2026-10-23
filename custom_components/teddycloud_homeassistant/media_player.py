@@ -55,6 +55,8 @@ class BoxPlayer(MediaPlayerEntity):
         self._values = {}
         self._started = None
         self._was_playing = False
+        self._figure_present = None
+        self._figure_removed_at = None
 
     @property
     def device_info(self):
@@ -63,11 +65,28 @@ class BoxPlayer(MediaPlayerEntity):
     def receive(self, field, payload):
         text = mqtt_text(payload)
         previous = self._values.get(field)
-        # Empty metadata means a removed Tonie: keep the last known artwork/title
-        # in the dashboard, while Playback still correctly changes to idle.
-        if field in ('ContentTitle', 'ContentAudioId', 'ContentPicture') and not text:
-            return
+        # Clear active metadata on removal. Archived images remain on disk.
+        # Never display the previous figurine as the currently playing one.
+        if field == 'ContentAudioId' and text != previous:
+            self._values['ContentTitle'] = ''
+            self._values['ContentPicture'] = ''
+            self._online_result = None
+            self._local_artwork = self._archive.lookup(text) if text and self._archive else None
         self._values[field] = text
+        if field == 'TagValid' and text and not text.startswith('-'):
+            self._figure_present = True
+            self._figure_removed_at = None
+        if field == 'ContentAudioId' and text:
+            self._figure_present = True
+            self._figure_removed_at = None
+        if field == 'ContentAudioId' and not text:
+            self._figure_present = False
+            self._figure_removed_at = datetime.now(timezone.utc)
+        if field == 'ContentAudioId' and not text:
+            self._online_audio_id = None
+            if self._lookup_task and not self._lookup_task.done():
+                self._lookup_task.cancel()
+            self._started = None
         if field == 'Playback':
             playing = text.upper() in ('ON', '1', 'TRUE', 'PLAYING')
             if playing and not self._was_playing:
@@ -81,7 +100,7 @@ class BoxPlayer(MediaPlayerEntity):
             self._online_audio_id = text
             if self._was_playing:
                 self._started = datetime.now(timezone.utc)
-            if self.entry.options.get('online_images', True) and self.hass is not None:
+            if text and self.entry.options.get('online_images', True) and self.hass is not None:
                 if self._lookup_task and not self._lookup_task.done():
                     self._lookup_task.cancel()
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(text))
@@ -132,6 +151,8 @@ class BoxPlayer(MediaPlayerEntity):
 
     @property
     def media_title(self):
+        if self._figure_present is False:
+            return 'Keine Figur aufgestellt'
         return self._metadata().get('title') or self._values.get('ContentTitle') or 'Unbekannter Tonie'
 
     @property
@@ -141,6 +162,8 @@ class BoxPlayer(MediaPlayerEntity):
 
     @property
     def media_image_url(self):
+        if self._figure_present is False:
+            return None
         custom = self._metadata()
         # User-defined figurine photo overrides catalog; exact Audio-ID match
         # preferred over the book/episode cover reported by TeddyCloud.
@@ -152,6 +175,8 @@ class BoxPlayer(MediaPlayerEntity):
     def extra_state_attributes(self):
         return {
             'content_audio_id': self._values.get('ContentAudioId'),
+            'figure_present': self._figure_present,
+            'figure_removed_at': self._figure_removed_at.isoformat() if self._figure_removed_at else None,
             'volume_level_raw': self._values.get('VolumeLevel'),
             'volume_db': self._values.get('VolumedB'),
             'charger': self._values.get('Charger'),
