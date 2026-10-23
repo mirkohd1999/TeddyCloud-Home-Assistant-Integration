@@ -10,7 +10,7 @@
       },
       "discover": {
         "title": "Toniebox für die Suche vorbereiten",
-        "description": "**Bitte die Toniebox einschalten oder eine Figur auf die Box stellen.** Danach auf Weiter klicken. Die Suche hört anschließend **25 Sekunden** auf TeddyCloud-MQTT-Nachrichten. Bei ausgeschalteter Box ohne MQTT-Meldungen bitte die manuelle Einrichtung wählen."
+        "description": "**Toniebox einschalten oder eine Figur aufstellen.** Nach „Weiter“ erscheint sofort die laufende Suche. Die Erkennung dauert maximal 25 Sekunden und endet bei gefundenen Boxen früher."
       },
       "not_found": {
         "title": "Noch keine Toniebox gefunden",
@@ -29,7 +29,7 @@
           "prefix": "MQTT-Präfix"
         }
       },
-      "scan": {
+      "scan_result": {
         "title": "Erkannte Toniebox auswählen",
         "description": "Wähle deine Toniebox aus und gib ihr einen Namen.",
         "data": {
@@ -41,6 +41,9 @@
     "abort": {
       "mqtt_unavailable": "MQTT-Verbindung ist nicht verfügbar",
       "invalid_box": "Ungültige Toniebox-Daten"
+    },
+    "progress": {
+      "searching_boxes": "Suche nach Tonieboxen … Bitte die Toniebox einschalten oder eine Figur aufstellen. Erkannte Boxen werden automatisch übernommen."
     }
   },
   "options": {
