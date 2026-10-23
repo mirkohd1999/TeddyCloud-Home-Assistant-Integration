@@ -55,6 +55,8 @@ class BoxPlayer(MediaPlayerEntity):
         self._values = {}
         self._started = None
         self._was_playing = False
+        self._figure_present = None
+        self._figure_removed_at = None
 
     @property
     def device_info(self):
@@ -71,6 +73,15 @@ class BoxPlayer(MediaPlayerEntity):
             self._online_result = None
             self._local_artwork = self._archive.lookup(text) if text and self._archive else None
         self._values[field] = text
+        if field == 'TagValid' and text and not text.startswith('-'):
+            self._figure_present = True
+            self._figure_removed_at = None
+        if field == 'ContentAudioId' and text:
+            self._figure_present = True
+            self._figure_removed_at = None
+        if field == 'ContentAudioId' and not text:
+            self._figure_present = False
+            self._figure_removed_at = datetime.now(timezone.utc)
         if field == 'ContentAudioId' and not text:
             self._online_audio_id = None
             if self._lookup_task and not self._lookup_task.done():
@@ -140,6 +151,8 @@ class BoxPlayer(MediaPlayerEntity):
 
     @property
     def media_title(self):
+        if self._figure_present is False:
+            return 'Keine Figur aufgestellt'
         return self._metadata().get('title') or self._values.get('ContentTitle') or 'Unbekannter Tonie'
 
     @property
@@ -149,6 +162,8 @@ class BoxPlayer(MediaPlayerEntity):
 
     @property
     def media_image_url(self):
+        if self._figure_present is False:
+            return None
         custom = self._metadata()
         # User-defined figurine photo overrides catalog; exact Audio-ID match
         # preferred over the book/episode cover reported by TeddyCloud.
@@ -160,6 +175,8 @@ class BoxPlayer(MediaPlayerEntity):
     def extra_state_attributes(self):
         return {
             'content_audio_id': self._values.get('ContentAudioId'),
+            'figure_present': self._figure_present,
+            'figure_removed_at': self._figure_removed_at.isoformat() if self._figure_removed_at else None,
             'volume_level_raw': self._values.get('VolumeLevel'),
             'volume_db': self._values.get('VolumedB'),
             'charger': self._values.get('Charger'),
