@@ -1,7 +1,6 @@
 """Remove only integration-owned resources when the last box is deleted."""
 import asyncio
 import logging
-import shutil
 from pathlib import Path
 
 from homeassistant.components.lovelace.const import LOVELACE_DATA
@@ -12,11 +11,11 @@ from .card_registration import CARD_PATH
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_remove_owned_data(hass):
+async def async_remove_owned_data(hass, removed_entry_id):
     """Remove our resource and local archive, never unrelated /config/www files."""
     remaining = [
         entry for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.domain == DOMAIN
+        if entry.entry_id != removed_entry_id
     ]
     if remaining:
         return
@@ -38,7 +37,11 @@ async def async_remove_owned_data(hass):
     parent = Path(hass.config.path("www", DOMAIN))
     try:
         if directory.is_dir() and not directory.is_symlink():
-            await asyncio.to_thread(shutil.rmtree, directory)
+            for child in directory.iterdir():
+                # Only audio-ID named images downloaded by this integration.
+                if child.is_file() and not child.is_symlink() and child.stem.isdecimal() and child.suffix in (".png", ".jpg", ".webp"):
+                    await asyncio.to_thread(child.unlink)
+            await asyncio.to_thread(directory.rmdir)
         # Remove the empty parent folder only. Do not touch extra user files.
         if parent.is_dir() and not parent.is_symlink():
             await asyncio.to_thread(parent.rmdir)
