@@ -4,6 +4,7 @@ Exact audio ID matching only: no guessed image for ambiguous titles.
 """
 import asyncio
 import logging
+import json
 from datetime import timedelta
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
@@ -11,11 +12,11 @@ from homeassistant.util import dt as dt_util
 _LOGGER = logging.getLogger(__name__)
 CATALOG_SOURCES = [
     ("v2", "https://raw.githubusercontent.com/toniebox-reverse-engineering/tonies-json/release/toniesV2.json"),
-    ("v2", "https://api.revvox.de/toniesV2.json"),
+    ("v2", "https://cdn.jsdelivr.net/gh/toniebox-reverse-engineering/tonies-json@release/toniesV2.json"),
     ("v1", "https://raw.githubusercontent.com/toniebox-reverse-engineering/tonies-json/release/tonies.json"),
 ]
 REFRESH = timedelta(hours=24)
-RETRY = timedelta(hours=1)
+RETRY = timedelta(minutes=10)
 MAX_SIZE = 60 * 1024 * 1024
 
 def duration_seconds(entry):
@@ -55,8 +56,6 @@ class OnlineCatalog:
             if self.failed_at and now - self.failed_at < RETRY:
                 return
             try:
-                import json
-
                 session = async_get_clientsession(self.hass)
                 errors = []
                 for kind, url in CATALOG_SOURCES:
@@ -69,7 +68,13 @@ class OnlineCatalog:
                                 content = await response.content.read(MAX_SIZE + 1)
                                 if len(content) > MAX_SIZE:
                                     raise ValueError("Catalog exceeds allowed size")
-                        data = json.loads(content)
+                        try:
+                            data = json.loads(content)
+                        except json.JSONDecodeError as exc:
+                            raise ValueError(
+                                f"Invalid/incomplete JSON ({len(content)} bytes; "
+                                f"error at byte/character {exc.pos}): {exc.msg}"
+                            ) from exc
                         if not isinstance(data, list):
                             raise ValueError("Catalog must contain a list")
                         new_items = {}
