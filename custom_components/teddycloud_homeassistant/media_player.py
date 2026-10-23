@@ -194,6 +194,7 @@ class BoxPlayer(MediaPlayerEntity):
             'last_seen': self._values.get('LastSeen'),
             'box_color': self.entry.options.get(CONF_BOX_COLOR, DEFAULT_COLOR),
             'cover_url': self.media_image_url,
+            'catalog_match': bool(self._online_result),
             'image_source': ('manual_figure' if self._metadata().get('figure') else
                              'local_archive' if self._local_artwork else
                              'online_catalog' if (self._online_result or {}).get('figure') else

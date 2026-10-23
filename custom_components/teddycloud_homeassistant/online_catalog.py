@@ -69,9 +69,9 @@ class OnlineCatalog:
                     if not isinstance(entry, dict):
                         continue
                     pic = entry.get("pic")
-                    pic = pic if isinstance(pic, str) and pic.startswith("https://") else None
+                    pic = pic if isinstance(pic, str) and pic.startswith(("https://", "http://")) else None
                     length = duration_seconds(entry)
-                    if not pic and length is None:
+                    if not pic and length is None and not entry.get("title"):
                         continue
                     ids = entry.get("audio_id") or []
                     if not isinstance(ids, list):
@@ -87,7 +87,7 @@ class OnlineCatalog:
                 self.items = new_items
                 self.fetched_at = dt_util.utcnow()
                 self.failed_at = None
-                _LOGGER.info("TeddyCloud image catalog loaded: %s audio IDs", len(new_items))
+                _LOGGER.info("TeddyCloud catalog loaded: %s audio IDs", len(new_items))
             except Exception as err:
                 # Catalog availability must never interrupt MQTT updates.
                 self.failed_at = dt_util.utcnow()
