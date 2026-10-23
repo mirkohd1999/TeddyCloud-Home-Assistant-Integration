@@ -28,8 +28,8 @@ Eine Community-Integration für [TeddyCloud](https://github.com/toniebox-reverse
 **Voraussetzungen:** Home Assistant, eine funktionierende MQTT-Integration und ein TeddyCloud-Server, der Toniebox-Statusmeldungen per MQTT sendet.
 
 1. In **HACS → ⋮ → Benutzerdefinierte Repositories** diese Adresse als Typ **Integration** hinzufügen:
-   `https://github.com/mirkohd1999/teddycloud-homeassistant`
-2. **TeddyCloud Home Assistant** in HACS herunterladen.
+   `https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT`
+2. **Toniebox via TeddyCloud MQTT** in HACS herunterladen.
 3. Home Assistant **neu starten**.
 4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → TeddyCloud Home Assistant** öffnen.
 5. **Toniebox automatisch suchen** wählen. Die Toniebox während der laufenden Suche einschalten oder eine Figur aufstellen.
@@ -119,7 +119,7 @@ Lautstärkelimits und LED-Einstellungen verwenden die von TeddyCloud bereitgeste
 
 ## ❤️ Mithelfen
 
-Fehler und Verbesserungsvorschläge gerne unter [Issues](https://github.com/mirkohd1999/teddycloud-homeassistant/issues) melden. Hilfreich sind Home-Assistant-Version, TeddyCloud-Version, `catalog_status` und eine anonymisierte MQTT-Meldung. **Keine Passwörter, Zertifikate, Zugangstoken oder privaten MQTT-Daten veröffentlichen.**
+Fehler und Verbesserungsvorschläge gerne unter [Issues](https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT/issues) melden. Hilfreich sind Home-Assistant-Version, TeddyCloud-Version, `catalog_status` und eine anonymisierte MQTT-Meldung. **Keine Passwörter, Zertifikate, Zugangstoken oder privaten MQTT-Daten veröffentlichen.**
 
 Projekt inoffiziell; keine Zugehörigkeit zu tonies® oder den Rechteinhabern der Figuren. Bildrechte verbleiben bei den jeweiligen Rechteinhabern.
 
