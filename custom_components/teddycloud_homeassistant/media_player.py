@@ -1,9 +1,11 @@
 """TeddyCloud MQTT media player (read only)."""
 import json
+import asyncio
 from datetime import datetime, timezone
 from urllib.parse import urlsplit, urlunsplit
 from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerEntityFeature, MediaPlayerState
 from homeassistant.helpers.entity import DeviceInfo
+from .online_catalog import RETRY
 from .artwork_archive import ArtworkArchive
 from .const import (DOMAIN, CONF_BOX_NAME, CONF_BOX_COLOR, CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_COLOR)
 
@@ -130,23 +132,37 @@ class BoxPlayer(MediaPlayerEntity):
         await super().async_will_remove_from_hass()
 
     async def _lookup_image(self, audio_id):
-        """Refresh artwork asynchronously without blocking the MQTT callback."""
-        try:
-            result = await self._online_catalog.find(audio_id)
-        except Exception:
-            if self._online_audio_id == audio_id:
-                self._catalog_status = 'error'
+        """Retry catalog errors for the current figure without another MQTT event."""
+        while self._online_audio_id == audio_id and self.hass is not None:
+            try:
+                result = await self._online_catalog.find(audio_id)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                if self._online_audio_id == audio_id:
+                    self._catalog_status = 'error'
+                    self.async_write_ha_state()
+                return
+
+            if self._online_audio_id != audio_id:
+                return
+            if result is None and self._online_catalog.failed_at:
+                self._catalog_status = 'unavailable'
+                self.async_write_ha_state()
+                # find() respects its own retry interval. Wait slightly longer
+                # before another attempt to avoid hammering catalog servers.
+                await asyncio.sleep(RETRY.total_seconds() + 2)
+                continue
+
+            self._catalog_status = 'matched' if result else 'audio_id_not_found'
+            cached = self._archive.lookup(audio_id) if self._archive else None
+            if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
+                cached = await self._archive.store(audio_id, result['figure'])
+            if self._online_audio_id == audio_id and self.hass is not None:
+                self._online_result = result
+                self._local_artwork = cached
                 self.async_write_ha_state()
             return
-        if self._online_audio_id == audio_id:
-            self._catalog_status = 'matched' if result else ('unavailable' if self._online_catalog.failed_at else 'audio_id_not_found')
-        cached = self._archive.lookup(audio_id) if self._archive else None
-        if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
-            cached = await self._archive.store(audio_id, result['figure'])
-        if self._online_audio_id == audio_id and self.hass is not None:
-            self._online_result = result
-            self._local_artwork = cached
-            self.async_write_ha_state()
 
     @property
     def state(self):
