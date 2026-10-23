@@ -1,9 +1,9 @@
 {
   "domain": "teddycloud_homeassistant",
-  "name": "TeddyCloud Home Assistant",
+  "name": "Toniebox via TeddyCloud MQTT",
   "version": "0.3.0-dev19",
-  "documentation": "https://github.com/mirkohd1999/teddycloud-homeassistant",
-  "issue_tracker": "https://github.com/mirkohd1999/teddycloud-homeassistant/issues",
+  "documentation": "https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT",
+  "issue_tracker": "https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT/issues",
   "dependencies": [
     "mqtt",
     "frontend",

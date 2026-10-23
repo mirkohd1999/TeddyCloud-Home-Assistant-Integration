@@ -1,4 +1,4 @@
-# TeddyCloud Home Assistant v0.3.0 beta – Release Notes
+# Toniebox via TeddyCloud MQTT v0.3.0 beta – Release Notes
 
 **Status:** Beta-Kandidat auf Basis des Entwicklungsstands `0.3.0-dev18`.
 
@@ -17,7 +17,7 @@
 
 ## Installation und Aktualisierung
 
-1. HACS → Benutzerdefinierte Repositories: `https://github.com/mirkohd1999/teddycloud-homeassistant` als **Integration** hinzufügen (falls noch nicht installiert).
+1. HACS → Benutzerdefinierte Repositories: `https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT` als **Integration** hinzufügen (falls noch nicht installiert).
 2. Integration herunterladen bzw. erneut herunterladen.
 3. Home Assistant neu starten und im Dashboard ggf. **Strg + F5** drücken.
 4. Integration hinzufügen, Toniebox suchen und Dashboard-Karte konfigurieren; YAML-Beispiele stehen in der README.
