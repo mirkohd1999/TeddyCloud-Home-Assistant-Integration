@@ -9,10 +9,10 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
-CATALOG_URL = "https://raw.githubusercontent.com/toniebox-reverse-engineering/tonies-json/release/tonies.json"
+CATALOG_URL = "https://raw.githubusercontent.com/toniebox-reverse-engineering/tonies-json/release/toniesV2.json"
 REFRESH = timedelta(hours=24)
 RETRY = timedelta(hours=1)
-MAX_SIZE = 30 * 1024 * 1024
+MAX_SIZE = 60 * 1024 * 1024
 
 def duration_seconds(entry):
     """Read explicit durations only; never guess length from a track list."""
@@ -65,25 +65,31 @@ class OnlineCatalog:
                 if not isinstance(data, list):
                     raise ValueError("Catalog format is not a list")
                 new_items = {}
-                for entry in data:
-                    if not isinstance(entry, dict):
+                # V2 groups episodes by article. Audio IDs are in data[].ids[],
+                # not in the V1 top-level audio_id list.
+                for article in data:
+                    if not isinstance(article, dict):
                         continue
-                    pic = entry.get("pic")
-                    pic = pic if isinstance(pic, str) and pic.startswith(("https://", "http://")) else None
-                    length = duration_seconds(entry)
-                    if not pic and length is None and not entry.get("title"):
-                        continue
-                    ids = entry.get("audio_id") or []
-                    if not isinstance(ids, list):
-                        ids = [ids]
-                    for aid in ids:
-                        key = str(aid).strip()
-                        if key and key not in new_items:
-                            new_items[key] = {
-                                "figure": pic,
-                                "catalog_title": str(entry.get("title") or ""),
-                                "duration_seconds": length,
-                            }
+                    for entry in article.get("data", []):
+                        if not isinstance(entry, dict):
+                            continue
+                        pic = entry.get("image")
+                        if not isinstance(pic, str) or not pic.startswith(("https://", "http://")):
+                            pic = None
+                        length = duration_seconds(entry)
+                        series = str(entry.get("series") or "").strip()
+                        episode = str(entry.get("episode") or "").strip()
+                        title = " - ".join(filter(None, (series, episode)))
+                        for ident in entry.get("ids", []):
+                            if not isinstance(ident, dict):
+                                continue
+                            audio_id = str(ident.get("audio-id") or "").strip()
+                            if audio_id.isdecimal():
+                                new_items[audio_id] = {
+                                    "figure": pic,
+                                    "catalog_title": title,
+                                    "duration_seconds": length,
+                                }
                 self.items = new_items
                 self.fetched_at = dt_util.utcnow()
                 self.failed_at = None
