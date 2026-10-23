@@ -61,6 +61,11 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
     const boxImage = this.config.box_image || '';
     const composition = this.config.composition !== false;
+    const artworkMode = ['auto','figure','cover'].includes(this.config.artwork_mode) ? this.config.artwork_mode : 'auto';
+    // Online catalog images can be covers, not cut-out figurines. In auto,
+    // only an explicitly supplied figure image is known to be intended as a figurine.
+    const showFigure = artworkMode === 'figure' || (artworkMode === 'auto' && !!this.config.figure_image);
+    const showCover = !!safeURL && (artworkMode === 'cover' || !showFigure);
     const mode = ['all', 'player', 'settings'].includes(this.config.mode) ? this.config.mode : 'all';
     const charger = String(attr.charger ?? '').trim().toUpperCase();
     const chargerText = ['ON','1','TRUE'].includes(charger) ? '🔌 Auf Ladestation' : ['OFF','0','FALSE'].includes(charger) ? '🔋 Nicht auf Ladestation' : '🔋 Ladestatus unbekannt';
@@ -87,7 +92,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       <input type="range" data-control="${safe(key)}" data-entity="${safe(id || '')}" min="${values[0]}" max="${values[values.length-1]}" step="${values[1]-values[0]}" value="${valid ? value : values[0]}" ${valid ? '' : 'disabled'}>
       <div class="ticks">${labels.map(x => `<span>${safe(x)}</span>`).join('')}</div></div>`;
     }).join('');
-    const artBlock = composition ? `<div class="stage" aria-label="Toniebox mit Tonie-Figur">
+    const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="Tonie-Cover" loading="eager">` : composition ? `<div class="stage" aria-label="Toniebox mit Tonie-Figur">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
       ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="Erkanntes Tonie-Bild" loading="eager" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">` : ''}
       <div class="figure-fallback" style="display:${safeURL?'none':'grid'}">🧸</div>
@@ -105,6 +110,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .figure-fallback{position:absolute;bottom:8px;left:77px;place-items:center;width:63px;height:76px;font-size:57px;z-index:2;filter:drop-shadow(2px 5px 3px #0003)}
     .stage + .detail{min-width:0;flex:1}
     @media(max-width:440px){.flex{flex-direction:column;align-items:stretch}.stage{align-self:center}.title{font-size:19px}}.art{width:122px;height:122px;border-radius:16px;flex-shrink:0;object-fit:contain;object-position:center;background:${color}40}
+    .cover-art{width:205px;height:205px;object-fit:contain;object-position:center;background:transparent}
     .placeholder{display:grid;place-items:center;font-size:50px}.eyebrow{opacity:.7;font-size:12px}.title{font-size:21px;font-weight:700;line-height:1.3;margin-top:6px;overflow-wrap:anywhere}
     .state{margin-top:10px;font-size:13px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:${playing?'#36ad68':'#888'};margin-right:5px}
     .bar{height:8px;background:var(--divider-color,#ddd);border-radius:12px;overflow:hidden;margin-top:20px}.fill{height:100%;background:${color};width:${progress.toFixed(2)}%}
@@ -169,6 +175,7 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     </div>
     <div class="field"><label for="manual">Media-Player-Entitäts-ID (optional)</label>
       <input id="manual" placeholder="media_player.meine_toniebox_now_playing" value="${escape(entity)}"></div>
+    <div class="field"><label for="artwork_mode">Bilddarstellung</label><select id="artwork_mode"><option value="auto" ${(!this._config.artwork_mode || this._config.artwork_mode==='auto')?'selected':''}>Automatisch (Katalogbild als Cover)</option><option value="figure" ${this._config.artwork_mode==='figure'?'selected':''}>Figur auf Toniebox</option><option value="cover" ${this._config.artwork_mode==='cover'?'selected':''}>Nur Coverbild</option></select></div>
     <div class="field"><label for="mode">Kartenansicht</label><select id="mode"><option value="all" ${(!this._config.mode || this._config.mode==='all')?'selected':''}>Alles zusammen</option><option value="player" ${this._config.mode==='player'?'selected':''}>Nur Toniebox und Titel</option><option value="settings" ${this._config.mode==='settings'?'selected':''}>Nur Einstellungen</option></select></div>
     <div class="field"><label for="name">Anzeigename (optional)</label>
       <input id="name" placeholder="Kinderzimmer" value="${escape(this._config.name || '')}"></div>
@@ -176,6 +183,7 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
       <input id="color" placeholder="#c991c5" value="${escape(this._config.color || '#c991c5')}"></div>
     <div class="field"><label><input id="composition" type="checkbox" style="width:auto"
       ${this._config.composition!==false?'checked':''}> Toniebox mit Figur anzeigen</label></div>`;
+    this.shadowRoot.getElementById('artwork_mode').addEventListener('change', e => this.change('artwork_mode',e.target.value));
     this.shadowRoot.getElementById('mode').addEventListener('change', e => this.change('mode',e.target.value));
     this.shadowRoot.getElementById('entity').addEventListener('change', e => {
       this.change('entity',e.target.value);
