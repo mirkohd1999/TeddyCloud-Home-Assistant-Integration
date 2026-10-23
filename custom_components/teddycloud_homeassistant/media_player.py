@@ -50,6 +50,7 @@ class BoxPlayer(MediaPlayerEntity):
         self._online_result = None
         self._online_audio_id = None
         self._lookup_task = None
+        self._catalog_status = 'waiting_for_audio_id'
         self._attr_unique_id = f'{entry.entry_id}_player'
         self._attr_name = f'{entry.data[CONF_BOX_NAME]} Now Playing'
         self._values = {}
@@ -80,6 +81,7 @@ class BoxPlayer(MediaPlayerEntity):
             self._figure_present = True
             self._figure_removed_at = None
         if field == 'ContentAudioId' and not text:
+            self._catalog_status = 'waiting_for_audio_id'
             self._values['ContentTitle'] = ''
             self._values['ContentPicture'] = ''
             self._local_artwork = None
@@ -104,7 +106,8 @@ class BoxPlayer(MediaPlayerEntity):
             self._online_audio_id = text
             if self._was_playing:
                 self._started = datetime.now(timezone.utc)
-            if text and self.entry.options.get('online_images', True) and self.hass is not None:
+            if text and self.hass is not None:
+                self._catalog_status = 'loading'
                 if self._lookup_task and not self._lookup_task.done():
                     self._lookup_task.cancel()
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(text))
@@ -115,7 +118,7 @@ class BoxPlayer(MediaPlayerEntity):
         await super().async_added_to_hass()
         self._archive = self.hass.data.setdefault(DOMAIN, {}).setdefault('artwork_archive', ArtworkArchive(self.hass))
         audio_id = self._values.get('ContentAudioId')
-        if audio_id and self.entry.options.get('online_images', True):
+        if audio_id:
             self._online_audio_id = audio_id
             if not self._lookup_task or self._lookup_task.done():
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(audio_id))
@@ -131,9 +134,14 @@ class BoxPlayer(MediaPlayerEntity):
         try:
             result = await self._online_catalog.find(audio_id)
         except Exception:
+            if self._online_audio_id == audio_id:
+                self._catalog_status = 'error'
+                self.async_write_ha_state()
             return
+        if self._online_audio_id == audio_id:
+            self._catalog_status = 'matched' if result else ('unavailable' if self._online_catalog.failed_at else 'audio_id_not_found')
         cached = self._archive.lookup(audio_id) if self._archive else None
-        if not cached and result and result.get('figure') and self._archive:
+        if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
             cached = await self._archive.store(audio_id, result['figure'])
         if self._online_audio_id == audio_id and self.hass is not None:
             self._online_result = result
@@ -177,7 +185,7 @@ class BoxPlayer(MediaPlayerEntity):
         custom = self._metadata()
         # User-defined figurine photo overrides catalog; exact Audio-ID match
         # preferred over the book/episode cover reported by TeddyCloud.
-        figure = custom.get('figure') or self._local_artwork or (self._online_result or {}).get('figure') or (self._archive.lookup(self._values.get('ContentAudioId')) if self._archive else None)
+        figure = custom.get('figure') or self._local_artwork or ((self._online_result or {}).get('figure') if self.entry.options.get('online_images', True) else None) or (self._archive.lookup(self._values.get('ContentAudioId')) if self._archive else None)
         url = figure or custom.get('cover') or self._values.get('ContentPicture') or self.entry.options.get(CONF_FALLBACK_COVER, '')
         return resolved_picture(url, self.entry.options.get('teddycloud_url', ''))
 
@@ -195,6 +203,8 @@ class BoxPlayer(MediaPlayerEntity):
             'box_color': self.entry.options.get(CONF_BOX_COLOR, DEFAULT_COLOR),
             'cover_url': self.media_image_url,
             'catalog_match': bool(self._online_result),
+            'catalog_status': self._catalog_status,
+            'catalog_audio_id': self._online_audio_id,
             'image_source': ('manual_figure' if self._metadata().get('figure') else
                              'local_archive' if self._local_artwork else
                              'online_catalog' if (self._online_result or {}).get('figure') else
