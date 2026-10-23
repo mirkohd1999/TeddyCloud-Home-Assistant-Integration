@@ -1,4 +1,4 @@
-# 🧸 TeddyCloud Home Assistant
+# 🧸 TeddyCloud in Home Assistant
 
 **Deine Toniebox in Home Assistant – mit Titel, Figurenbild, Status und einer eigenen Dashboard-Karte.**
 
