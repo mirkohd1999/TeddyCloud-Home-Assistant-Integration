@@ -75,7 +75,7 @@ class OnlineCatalog:
                             f"Range recovery unsupported: HTTP {response.status}"
                         )
                     match = re.fullmatch(
-                        r"bytes (\\d+)-(\\d+)/(\\d+)",
+                        r"bytes ([0-9]+)-([0-9]+)/([0-9]+)",
                         response.headers.get("Content-Range", ""),
                     )
                     if not match:
