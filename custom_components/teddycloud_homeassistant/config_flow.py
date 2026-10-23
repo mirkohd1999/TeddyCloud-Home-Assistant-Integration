@@ -40,7 +40,13 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_menu(step_id="user", menu_options=["discover", "manual"])
 
     async def async_step_discover(self, user_input=None):
-        """Listen briefly for box status topics; no published probe required."""
+        """Explain how to wake the box before beginning live discovery."""
+        if user_input is None:
+            return self.async_show_form(step_id="scan", data_schema=vol.Schema({}))
+        return await self.async_step_scan()
+
+    async def async_step_scan(self, user_input=None):
+        """Listen to status topics for 25 seconds; do not publish probes."""
         if user_input is None:
             seen = set()
             @callback
@@ -51,7 +57,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 unsubscribe = await mqtt.async_subscribe(self.hass, "+/box/+/+", receive, 0)
                 try:
-                    await asyncio.sleep(8)
+                    await asyncio.sleep(25)
                 finally:
                     unsubscribe()
             except Exception:
