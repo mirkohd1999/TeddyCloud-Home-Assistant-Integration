@@ -29,7 +29,8 @@
         "data": {
           "box_id": "Box-ID",
           "box_name": "Name der Toniebox",
-          "prefix": "MQTT-Präfix"
+          "prefix": "MQTT-Präfix",
+          "box_color": "Farbe deiner Toniebox"
         }
       },
       "scan_result": {
@@ -37,7 +38,8 @@
         "description": "Wähle deine Toniebox aus und gib ihr einen Namen.",
         "data": {
           "box": "Gefundene Toniebox",
-          "name": "Name der Toniebox"
+          "name": "Name der Toniebox",
+          "box_color": "Farbe deiner Toniebox"
         }
       },
       "scan": {
@@ -58,7 +60,7 @@
       "init": {
         "title": "Anzeige anpassen",
         "data": {
-          "box_color": "Boxfarbe (Hex)",
+          "box_color": "Boxfarbe (Hex, auch nachträglich änderbar)",
           "fallback_cover": "Standard-Cover-URL",
           "catalog": "Katalog als JSON",
           "teddycloud_url": "TeddyCloud-Adresse für Coverbilder",
