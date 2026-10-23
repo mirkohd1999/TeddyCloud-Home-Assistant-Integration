@@ -221,3 +221,19 @@ Entität zeigt die Karte einen Platzhalter statt eines Konfigurationsfehlers.
 `custom:teddycloud-homeassistant-card`. Andere Toniebox-Karten haben
 einen eigenen Editor; das Einspielen dieser Integration verändert deren
 englische Texte und Validierungen nicht.
+
+
+## Einfacher Einrichtungsassistent (in Entwicklung)
+
+Unter **Integration hinzufügen → TeddyCloud Home Assistant** kannst du
+**Toniebox automatisch suchen** oder **Box-ID selbst eingeben** wählen.
+Die automatische Suche hört acht Sekunden auf MQTT-Statusmeldungen unter
+`+/box/+/+`. Währenddessen die Toniebox einschalten oder eine Figur
+auflegen. Anschließend eine gefundene Box auswählen und benennen.
+
+Da TeddyCloud-Nachrichten oft **nicht retained** sind, kann eine ausgeschaltete
+Box ohne aktuelle MQTT-Nachricht nicht automatisch erkannt werden. Die
+manuelle Einrichtung ist jederzeit als Alternative verfügbar; nach der
+Einrichtung bleibt die Toniebox im Dashboard auch ausgeschaltet konfigurierbar.
+
+Diese Funktion ist vor Veröffentlichung mit Home Assistant zu testen.
