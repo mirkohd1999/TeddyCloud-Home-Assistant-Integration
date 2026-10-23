@@ -63,11 +63,19 @@ class BoxPlayer(MediaPlayerEntity):
     def receive(self, field, payload):
         text = mqtt_text(payload)
         previous = self._values.get(field)
-        # Empty metadata means a removed Tonie: keep the last known artwork/title
-        # in the dashboard, while Playback still correctly changes to idle.
-        if field in ('ContentTitle', 'ContentAudioId', 'ContentPicture') and not text:
-            return
+        # Clear active metadata on removal. Archived images remain on disk.
+        # Never display the previous figurine as the currently playing one.
+        if field == 'ContentAudioId' and text != previous:
+            self._values['ContentTitle'] = ''
+            self._values['ContentPicture'] = ''
+            self._online_result = None
+            self._local_artwork = self._archive.lookup(text) if text and self._archive else None
         self._values[field] = text
+        if field == 'ContentAudioId' and not text:
+            self._online_audio_id = None
+            if self._lookup_task and not self._lookup_task.done():
+                self._lookup_task.cancel()
+            self._started = None
         if field == 'Playback':
             playing = text.upper() in ('ON', '1', 'TRUE', 'PLAYING')
             if playing and not self._was_playing:
@@ -81,7 +89,7 @@ class BoxPlayer(MediaPlayerEntity):
             self._online_audio_id = text
             if self._was_playing:
                 self._started = datetime.now(timezone.utc)
-            if self.entry.options.get('online_images', True) and self.hass is not None:
+            if text and self.entry.options.get('online_images', True) and self.hass is not None:
                 if self._lookup_task and not self._lookup_task.done():
                     self._lookup_task.cancel()
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(text))
