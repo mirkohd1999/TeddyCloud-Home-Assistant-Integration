@@ -7,7 +7,7 @@ from homeassistant.components.lovelace.const import LOVELACE_DATA
 
 _LOGGER = logging.getLogger(__name__)
 CARD_PATH = "/teddycloud-homeassistant/card.js"
-CARD_VERSION = "0.3.0-dev18"
+CARD_VERSION = "0.3.0-dev23"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 
 
