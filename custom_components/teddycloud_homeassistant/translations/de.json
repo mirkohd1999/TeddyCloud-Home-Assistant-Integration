@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "TeddyCloud einrichten",
+        "title": "Toniebox via TeddyCloud MQTT einrichten",
         "menu_options": {
           "discover": "Toniebox automatisch suchen",
           "manual": "Box-ID selbst eingeben"
