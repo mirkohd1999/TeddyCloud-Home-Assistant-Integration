@@ -70,9 +70,10 @@ class BoxPlayer(MediaPlayerEntity):
             if text.startswith('-'):
                 self._set_figure_removed()
             elif text:
+                # A repeated TagValid is not another figure change.
+                # Keep metadata already delivered before the tag event.
                 self._figure_present = True
                 self._figure_removed_at = None
-                self._clear_content()
         elif field == 'TagInvalid' and text.startswith('-'):
             self._set_figure_removed()
         elif field == 'ContentAudioId':
@@ -96,6 +97,8 @@ class BoxPlayer(MediaPlayerEntity):
             self._figure_present = True
             self._figure_removed_at = None
 
+        # When a new audio ID arrives without an intervening removal event,
+        # never preserve artwork belonging to the previous ID.
         self._values[field] = text
         if field == 'Playback':
             playing = text.upper() in ('ON', '1', 'TRUE', 'PLAYING')
