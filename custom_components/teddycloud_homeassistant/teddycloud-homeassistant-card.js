@@ -115,7 +115,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     <div class="state"><i class="dot"></i>${attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
     <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
-    <div class="foot">Aktuelle Lautstärke: ${safe(attr.volume_level_raw ?? 'unbekannt')} / 16 · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
+    <div class="foot">Aktuelle Lautstärke: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : 'unbekannt'} · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
     </ha-card>`;
   }
 }
