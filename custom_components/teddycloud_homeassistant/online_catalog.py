@@ -6,6 +6,7 @@ import asyncio
 import logging
 import json
 from datetime import timedelta
+import re
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
@@ -38,6 +39,60 @@ class OnlineCatalog:
         self.failed_at = None
         self._lock = asyncio.Lock()
 
+    async def _download_json(self, session, url):
+        """Read valid JSON; retry truncated responses using HTTP byte ranges."""
+        headers = {"Accept": "application/json", "Accept-Encoding": "identity",
+                   "Cache-Control": "no-cache"}
+        async with asyncio.timeout(45):
+            async with session.get(url, headers=headers) as response:
+                response.raise_for_status()
+                if response.content_length and response.content_length > MAX_SIZE:
+                    raise ValueError("Catalog exceeds allowed size")
+                content = await response.content.read(MAX_SIZE + 1)
+                if len(content) > MAX_SIZE:
+                    raise ValueError("Catalog exceeds allowed size")
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as exc:
+            _LOGGER.warning(
+                "Tonie catalog JSON incomplete (%s bytes, error at %s); attempting HTTP Range recovery",
+                len(content), exc.pos
+            )
+        # Raw/CDN endpoints may support ranged downloads even when a full
+        # response is truncated by a reverse proxy. Never append a server's
+        # 200 full response to an existing range.
+        part_size = 32768
+        offset = 0
+        parts = []
+        total = None
+        async with asyncio.timeout(120):
+            while total is None or offset < total:
+                end = offset + part_size - 1
+                hdrs = dict(headers, Range=f"bytes={offset}-{end}")
+                async with session.get(url, headers=hdrs) as response:
+                    if response.status != 206:
+                        raise ValueError(
+                            f"Range recovery unsupported: HTTP {response.status}"
+                        )
+                    match = re.fullmatch(
+                        r"bytes ([0-9]+)-([0-9]+)/([0-9]+)",
+                        response.headers.get("Content-Range", ""),
+                    )
+                    if not match:
+                        raise ValueError("Missing valid Content-Range")
+                    start, finish, length = map(int, match.groups())
+                    if start != offset or finish < start or length > MAX_SIZE:
+                        raise ValueError("Inconsistent HTTP range")
+                    if total is not None and total != length:
+                        raise ValueError("HTTP resource changed during download")
+                    total = length
+                    chunk = await response.read()
+                    if len(chunk) != finish - start + 1:
+                        raise ValueError("Truncated HTTP range")
+                    parts.append(chunk)
+                    offset = finish + 1
+        return json.loads(b"".join(parts))
+
     async def find(self, audio_id):
         """Lookup by exact ContentAudioId; do not infer from the title."""
         audio_id = str(audio_id or "").strip()
@@ -60,21 +115,7 @@ class OnlineCatalog:
                 errors = []
                 for kind, url in CATALOG_SOURCES:
                     try:
-                        async with asyncio.timeout(45):
-                            async with session.get(url, headers={"Accept": "application/json"}) as response:
-                                response.raise_for_status()
-                                if response.content_length and response.content_length > MAX_SIZE:
-                                    raise ValueError("Catalog exceeds allowed size")
-                                content = await response.content.read(MAX_SIZE + 1)
-                                if len(content) > MAX_SIZE:
-                                    raise ValueError("Catalog exceeds allowed size")
-                        try:
-                            data = json.loads(content)
-                        except json.JSONDecodeError as exc:
-                            raise ValueError(
-                                f"Invalid/incomplete JSON ({len(content)} bytes; "
-                                f"error at byte/character {exc.pos}): {exc.msg}"
-                            ) from exc
+                        data = await self._download_json(session, url)
                         if not isinstance(data, list):
                             raise ValueError("Catalog must contain a list")
                         new_items = {}
