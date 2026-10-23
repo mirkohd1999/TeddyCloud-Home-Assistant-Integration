@@ -20,7 +20,10 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     this.render();
   }
   connectedCallback() {
-    this._timer = setInterval(() => this.render(), 1000);
+    this._timer = setInterval(() => {
+      const e = this._hass?.states?.[this.config?.entity];
+      if (e?.state === "playing" && Number(e.attributes?.media_duration) > 0) this.render();
+    }, 1000);
   }
   disconnectedCallback() { clearInterval(this._timer); }
   static getConfigElement() {
