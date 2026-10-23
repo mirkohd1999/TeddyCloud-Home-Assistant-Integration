@@ -12,6 +12,21 @@ from .const import (
 )
 
 
+BOX_COLORS = {
+    "#D82F38": "Rot",
+    "#5B5D60": "Anthrazit",
+    "#78C9E5": "Hellblau",
+    "#E95B9D": "Pink",
+    "#913A78": "Beere",
+    "#8AAB32": "Grün",
+    "#B8D75A": "Hellgrün",
+    "#35BFC3": "Türkis",
+    "#26272B": "Schwarz",
+    "#243B70": "Marineblau",
+    "#8f77c7": "Lila / Standard",
+}
+
+
 def valid_catalog(value):
     """JSON keyed by ContentAudioId, with title/cover/duration_seconds."""
     try:
@@ -108,16 +123,17 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
         if user_input is not None:
             prefix, box = user_input["box"].split("|", 1)
-            return await self._create_box(prefix, box, user_input["name"])
+            return await self._create_box(prefix, box, user_input["name"], user_input[CONF_BOX_COLOR])
         return self.async_show_form(step_id="scan_result", data_schema=vol.Schema({
             vol.Required("box"): vol.In(options),
             vol.Required("name", default="Meine Toniebox"): str,
+            vol.Required(CONF_BOX_COLOR, default=DEFAULT_COLOR): vol.In(BOX_COLORS),
         }))
 
     async def async_step_not_found(self, user_input=None):
         return self.async_show_menu(step_id="not_found", menu_options=["discover", "manual"])
 
-    async def _create_box(self, prefix, box, name):
+    async def _create_box(self, prefix, box, name, color=DEFAULT_COLOR):
         prefix, box, name = prefix.strip("/"), box.strip("/"), name.strip()
         if not prefix or not box or not name or "/" in box:
             return self.async_abort(reason="invalid_box")
@@ -125,17 +141,19 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(key)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(title=name, data={
-            CONF_PREFIX: prefix, CONF_BOX_ID: box, CONF_BOX_NAME: name
+            CONF_PREFIX: prefix, CONF_BOX_ID: box, CONF_BOX_NAME: name,
+            CONF_BOX_COLOR: color
         })
 
     async def async_step_manual(self, user_input=None):
         errors = {}
         if user_input is not None:
-            return await self._create_box(user_input[CONF_PREFIX], user_input[CONF_BOX_ID], user_input[CONF_BOX_NAME])
+            return await self._create_box(user_input[CONF_PREFIX], user_input[CONF_BOX_ID], user_input[CONF_BOX_NAME], user_input[CONF_BOX_COLOR])
         return self.async_show_form(step_id="manual", data_schema=vol.Schema({
             vol.Required(CONF_BOX_ID): str,
             vol.Required(CONF_BOX_NAME, default="Meine Toniebox"): str,
             vol.Required(CONF_PREFIX, default=DEFAULT_PREFIX): str,
+            vol.Required(CONF_BOX_COLOR, default=DEFAULT_COLOR): vol.In(BOX_COLORS),
         }), errors=errors)
 
     @staticmethod
@@ -157,7 +175,7 @@ class TeddyCloudOptionsFlow(config_entries.OptionsFlow):
     def _schema(self):
         current = self.config_entry.options
         return vol.Schema({
-            vol.Required(CONF_BOX_COLOR, default=current.get(CONF_BOX_COLOR, DEFAULT_COLOR)): str,
+            vol.Required(CONF_BOX_COLOR, default=current.get(CONF_BOX_COLOR, self.config_entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR))): str,
             vol.Required("online_images", default=current.get("online_images", True)): bool,
             vol.Optional(CONF_FALLBACK_COVER, default=current.get(CONF_FALLBACK_COVER, "")): str,
             vol.Optional("teddycloud_url", default=current.get("teddycloud_url", "")): str,
