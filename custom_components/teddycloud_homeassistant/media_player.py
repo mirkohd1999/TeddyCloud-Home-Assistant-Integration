@@ -216,7 +216,7 @@ class BoxPlayer(MediaPlayerEntity):
             'charger': self._values.get('Charger'),
             'tag_valid': self._values.get('TagValid'),
             'last_seen': self._values.get('LastSeen'),
-            'box_color': self.entry.options.get(CONF_BOX_COLOR, DEFAULT_COLOR),
+            'box_color': self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
             'cover_url': self.media_image_url,
             'catalog_match': bool(self._online_result),
             'catalog_status': self._catalog_status,
