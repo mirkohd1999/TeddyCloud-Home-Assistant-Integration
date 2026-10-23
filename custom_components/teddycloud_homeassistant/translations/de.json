@@ -10,7 +10,10 @@
       },
       "discover": {
         "title": "Toniebox für die Suche vorbereiten",
-        "description": "**Toniebox einschalten oder eine Figur aufstellen.** Nach „Weiter“ erscheint sofort die laufende Suche. Die Erkennung dauert maximal 25 Sekunden und endet bei gefundenen Boxen früher."
+        "description": "**Toniebox einschalten oder eine Figur aufstellen.** MQTT-Präfix optional eingeben (z. B. `teddyCloud` oder `meinTeddy`). Leer lassen, um alle Präfixe automatisch zu durchsuchen. Danach auf OK klicken; die Suche endet sofort beim ersten Treffer.",
+        "data": {
+          "search_prefix": "MQTT-Präfix (optional; leer = automatisch erkennen)"
+        }
       },
       "not_found": {
         "title": "Noch keine Toniebox gefunden",
@@ -22,7 +25,7 @@
       },
       "manual": {
         "title": "Toniebox manuell hinzufügen",
-        "description": "MQTT-Präfix normalerweise teddyCloud. Die Box-ID steht im Topic teddyCloud/box/BOX-ID/Playback.",
+        "description": "Box-ID und den eigenen MQTT-Präfix eintragen (z. B. `meinTeddy` statt `teddyCloud`).",
         "data": {
           "box_id": "Box-ID",
           "box_name": "Name der Toniebox",

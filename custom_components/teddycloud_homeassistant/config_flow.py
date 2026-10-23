@@ -42,7 +42,8 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_discover(self, user_input=None):
         """Explain how to wake the box before beginning live discovery."""
         if user_input is None:
-            return self.async_show_form(step_id="discover", data_schema=vol.Schema({}))
+            return self.async_show_form(step_id="discover", data_schema=vol.Schema({vol.Optional("search_prefix", default=""): str}))
+        self._search_prefix = user_input.get("search_prefix", "").strip().strip("/")
         self._scan_task = self.hass.async_create_task(self._scan_mqtt())
         self._discovered = None
         return await self.async_step_scan()
@@ -55,7 +56,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         @callback
         def receive(message):
             match = re.fullmatch(r"(.+)/box/([^/]+)/([^/]+)", message.topic)
-            if match and match.group(3) in (
+            if match and (not self._search_prefix or match.group(1) == self._search_prefix) and match.group(3) in (
                 "LastSeen", "Playback", "ContentTitle", "ContentAudioId",
                 "VolumeLevel", "VolumedB", "Charger", "TagValid",
                 "ContentPicture",
@@ -66,7 +67,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not await mqtt.async_wait_for_mqtt_client(self.hass):
             raise RuntimeError("mqtt_unavailable")
         unsubscribe = await mqtt.async_subscribe(
-            self.hass, "#", receive, 0
+            self.hass, f"{self._search_prefix}/box/+/+" if self._search_prefix else "#", receive, 0
         )
         try:
             # Return immediately for the first confirmed box status.
@@ -81,6 +82,7 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_scan(self, user_input=None):
         """Display a live progress message while MQTT discovery runs."""
         if not hasattr(self, "_scan_task") or self._scan_task is None:
+            self._search_prefix = ""
             self._scan_task = self.hass.async_create_task(self._scan_mqtt())
         if not self._scan_task.done():
             return self.async_show_progress(
