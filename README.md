@@ -37,6 +37,17 @@ Eine Community-Integration für [TeddyCloud](https://github.com/toniebox-reverse
 
 Es ist **kein zweiter MQTT-Broker-Login** nötig. Die Integration nutzt die vorhandene Home-Assistant-MQTT-Verbindung.
 
+## 📸 Dashboard-Ansichten
+
+Die Integration bietet drei Layouts. Die folgenden Abbildungen sind **vereinfachte Vorschauen** der drei Kartenvarianten, keine echten Home-Assistant-Screenshots. Die Anzeige zeigt im Betrieb den tatsächlichen Tonie-Titel und, sofern verfügbar, das Figurenbild.
+
+| Wiedergabe | Alles zusammen | Einstellungen |
+| :---: | :---: | :---: |
+| ![Toniebox mit Titel](docs/images/dashboard-player.svg) | ![Toniebox mit Reglern](docs/images/dashboard-all.svg) | ![Regler für Limits und LED](docs/images/dashboard-settings.svg) |
+| `mode: player` | `mode: all` | `mode: settings` |
+
+**Hinweis zur Benennung:** Der sichtbare Media-Player-Name lautet jetzt nur noch „Meine Toniebox“ (bzw. dein Boxname). Bestehende Entity-IDs mit `_now_playing` bleiben aus Kompatibilitätsgründen bestehen. Falls du die Entität früher selbst in Home Assistant umbenannt hast, kann ein individueller Anzeigename weiterhin Vorrang haben.
+
 ## 🖥️ Dashboard-Karten
 
 Nach Installation und Neustart unter **Dashboard → Bearbeiten → Karte hinzufügen → Manuell** eine Karte anlegen.
@@ -130,3 +141,9 @@ Projekt inoffiziell; keine Zugehörigkeit zu tonies® oder den Rechteinhabern de
 ### 🖼️ Integrationslogo
 
 Das Projekt liefert ein eigenes Logo mit **Toniebox und Teddy** unter `custom_components/teddycloud_homeassistant/brand/icon.png` und `brand/logo.png` mit. Home Assistant **2026.3 oder neuer** unterstützt solche lokalen Brand-Dateien für benutzerdefinierte Integrationen. Nach HACS-Update und Neustart sollte das Branding übernommen werden; ältere Home-Assistant-Versionen benötigen die externe Home-Assistant-Brands-Datenbank. Die interne Domain bleibt `teddycloud_homeassistant`, damit bestehende Entitäten erhalten bleiben.
+
+### Deinstallation
+
+Wenn der **letzte** Eintrag der Integration über **Einstellungen → Geräte & Dienste** entfernt wird, werden die von Home Assistant verwalteten Entitäten/Geräte regulär entfernt. Die Integration bereinigt zusätzlich ihre gespeicherten Tonie-Figurenbilder und den eigenen Arbeitsspeicher-Cache. Seit dieser Version werden automatisch neu erstellte Dashboard-Ressourcen anhand ihrer gespeicherten ID wieder entfernt.
+
+Manuell hinzugefügte Dashboard-Karten, manuell eingetragene Ressourcen und andere Benutzerdateien werden **bewusst nicht automatisch gelöscht**. Auch automatisch angelegte Ressourcen aus älteren Versionen ohne gespeicherten Eigentumsnachweis müssen ggf. einmal unter **Einstellungen → Dashboards → Ressourcen** entfernt werden. Es werden keine fremden Dashboards, Views oder MQTT-Geräte gelöscht.
