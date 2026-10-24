@@ -1,48 +1,31 @@
-# TeddyCloud Home Assistant Integration v0.3.1
+# TeddyCloud Home Assistant Integration v0.3.2
 
-## Veröffentlichung
+## Neu: Ohrtasten als eigene Sensoren
 
-Diese Version bereitet die Integration auf die Aufnahme in den HACS-Katalog und den zukünftigen Home-Assistant-Marketplace vor. Sie behebt insbesondere die bislang unterschiedliche Versionsnummer zwischen GitHub-Release und Integrationsmanifest.
+- **Großes Ohr (lauter)** und **Kleines Ohr (leiser)** erscheinen als zwei eigenständige Diagnose-Sensoren an jeder eingerichteten Toniebox.
+- TeddyCloud-MQTT-Ereignisse `VolUp` und `VolDown` werden ausgewertet. Möglich sind `pressed`, `double-pressed` und `triple-pressed`.
+- Jeder Sensor zeigt den letzten erkannten Tastendruck. Die Attribute `last_pressed` (UTC) und `press_count` (seit Sensorstart) werden bei jedem Tastendruck aktualisiert, auch bei wiederholtem gleichen Tastendruck.
+- Retained-Nachrichten und unbekannte oder ungültige MQTT-Inhalte werden nicht als neue Tastendrücke gezählt.
+- Die Erkennung nutzt die bereits eingerichtete MQTT-Verbindung in Home Assistant. Es werden keine weiteren Zugangsdaten benötigt.
+- Automatisierte Tests der MQTT-Ereignisverarbeitung ergänzen die bestehenden HACS-, hassfest- und Paketprüfungen.
 
-### Funktionen
+## Weiterhin verfügbar
 
-- Toniebox automatisch über TeddyCloud-MQTT erkennen oder manuell einrichten
-- Frei wählbares MQTT-Präfix und mehrere Tonieboxen
-- Toniebox-Farbe in den Integrationsoptionen auswählen
-- Wiedergabestatus, Titel, Audio-ID und Ladestationsstatus anzeigen
-- Figurenbilder anhand der Audio-ID aus dem Community-Katalog suchen und lokal zwischenspeichern
-- Laufzeit aus Katalogdaten anzeigen und den Wiedergabefortschritt schätzen
-- Aktuelle Lautstärke anzeigen (nur lesend)
-- Lautsprecher-/Kopfhörerlimits und LED-Helligkeit über MQTT ändern
-- Eigene Lovelace-Karte mit `player`, `settings` und `all` sowie deutschem Karteneditor
-- Automatische Kartenressourcen-Registrierung (bei Storage-Dashboards)
-- Aufräumen integrationsinterner Bilder und eindeutig eigener Ressourcen beim Entfernen der letzten Box
+- Toniebox-Erkennung über TeddyCloud MQTT
+- Media-Player mit Wiedergabestatus, aktuellem Titel, Figurenbildern und geschätztem Fortschritt
+- Aktuelle Lautstärke als lesender Sensor
+- Konfiguration von Lautsprecher- und Kopfhörer-Lautstärkelimits sowie LED-Helligkeit
+- Die gebündelte Lovelace-Karte mit Player-, Alles- und Einstellungsansicht
+- Mehrere Tonieboxen sowie deutsche und englische Übersetzungen
 
-### Neu für HACS / Marketplace
+## Wichtig zur Steuerung
 
-- Manifestversion und Lovelace-Ressourcenversion auf `0.3.1` abgestimmt
-- HACS- und Hassfest-Validierung mit GitHub Actions hinzugefügt
-- Automatisierte Python-, JavaScript- und JSON-Paketprüfungen
-- GitHub-Maintainer als `codeowners` eingetragen (die optionale Marketplace-Kategorie wird nach Aktualisierung der Hassfest-Prüfung ergänzt)
-- Englische UI-Übersetzung zusätzlich zur deutschen Übersetzung
-- README und Projektbranding unter **TeddyCloud Home Assistant Integration**
+Die Ohrtasten-Sensoren **lesen ausschließlich Ereignisse aus**. Sie können die Lautstärke der Toniebox nicht ferngesteuert verändern. TeddyCloud unterstützt dafür nur die Einstellung der maximalen Lautstärkegrenzen; diese Änderungen greifen gegebenenfalls erst beim nächsten Freshness Check.
 
-### Installation
+## Installation / Aktualisierung
 
-1. In HACS unter **Benutzerdefinierte Repositories** die Adresse `https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration` als **Integration** hinzufügen.
-2. Integration herunterladen und Home Assistant neu starten.
-3. Unter **Einstellungen → Geräte & Dienste** die Integration hinzufügen und die Toniebox per MQTT erkennen lassen.
-4. Die Dashboard-Karte wie in der [README](README.md) einrichten.
+Über HACS das Repository `https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration` als benutzerdefinierte **Integration** installieren bzw. nach Veröffentlichung von `v0.3.2` aktualisieren. Anschließend Home Assistant neu starten und bei den Entitäten der Toniebox nach den beiden neuen Diagnose-Sensoren suchen.
 
-Bereits installierte Systeme können die Integration über HACS aktualisieren. Die internen Kennungen `teddycloud_homeassistant` und `custom:teddycloud-homeassistant-card` bleiben unverändert.
+Die bisherigen internen Kennungen `teddycloud_homeassistant` und `custom:teddycloud-homeassistant-card` bleiben erhalten. Die neuen Sensoren erfordern eine TeddyCloud-Version, die `VolUp`/`VolDown`-MQTT-Ereignisse veröffentlicht.
 
-### Bekannte Einschränkungen
-
-- Es wird keine echte Wiedergabeposition von der Toniebox geliefert. Der Fortschritt ist eine Schätzung.
-- Die aktuelle Lautstärke kann nicht ferngesteuert werden. Einstellbar sind nur die Limits und LED-Helligkeit.
-- Kein verlässlicher Akku-Prozentwert und keine Play/Pause-Fernsteuerung.
-- Figurenbilder und Laufzeiten hängen vom externen Katalog ab; einzelne Tonies können fehlen.
-- MQTT-Kommandos können erst beim nächsten Freshness Check wirksam werden.
-- Manuell eingerichtete Lovelace-Karten und Ressourcen werden beim Entfernen nicht gelöscht.
-
-**Hinweis:** Diese Datei ist der vorbereitete Release-Text. Erst ein echter GitHub-Release mit dem Tag `v0.3.1`, der nach erfolgreichen Prüfungen auf dem aktuellen `main` erstellt wird, stellt diese Version für HACS bereit.
+*Veröffentlichungshinweis: Die Manifestversion ist vorbereitet. Erst wenn ein GitHub-Release `v0.3.2` auf dem getesteten `main` veröffentlicht wird, ist diese Version als normales HACS-Update verfügbar.*
