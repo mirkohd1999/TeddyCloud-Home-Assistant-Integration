@@ -21,7 +21,7 @@ Die Android-App verbindet sich **direkt** mit dem MQTT-Broker von TeddyCloud und
 ## Technische Hinweise
 Das Android-Projekt liegt auf diesem ersten Entwicklungszweig als `android-app-source.zip.b64`. Der Workflow dekodiert und entpackt es für den APK-Build. Eine normal entpackte Projektstruktur ist im bereitgestellten Android-Projekt-ZIP enthalten; der ZIP-Inhalt enthält auch eine ausführliche `README.md`.
 
-**Stand:** erster Entwicklungsstand, keine Veröffentlichungsversion. Die MQTT-Zustandslogik ist lokal getestet. Eine erfolgreiche Android-Kompilierung und ein Praxistest mit echter Toniebox müssen vor der Veröffentlichung bestätigt werden.
+**Stand:** erster Entwicklungsstand, keine Veröffentlichungsversion. Die MQTT-Zustandslogik ist lokal getestet. Der Android-Build über GitHub Actions (Gradle-Tests und Debug-APK) ist erfolgreich. Ein Praxistest mit einer echten Toniebox steht vor der Veröffentlichung noch aus.
 
 **Einschränkungen:** Play/Pause, echte Wiedergabeposition, verlässlicher Akku-Prozentstand und die direkte Änderung der aktuellen Wiedergabelautstärke sind über die vorliegenden MQTT-Felder nicht verfügbar. Die Verbindung bleibt nur im App-Vordergrund aktiv.
 
