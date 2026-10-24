@@ -23,7 +23,7 @@ Diese Version bereitet die Integration auf die Aufnahme in den HACS-Katalog und 
 - Manifestversion und Lovelace-Ressourcenversion auf `0.3.1` abgestimmt
 - HACS- und Hassfest-Validierung mit GitHub Actions hinzugefügt
 - Automatisierte Python-, JavaScript- und JSON-Paketprüfungen
-- `codeowners` und passende Marketplace-Kategorie ergänzt
+- GitHub-Maintainer als `codeowners` eingetragen (die optionale Marketplace-Kategorie wird nach Aktualisierung der Hassfest-Prüfung ergänzt)
 - Englische UI-Übersetzung zusätzlich zur deutschen Übersetzung
 - README und Projektbranding unter **TeddyCloud Home Assistant Integration**
 
