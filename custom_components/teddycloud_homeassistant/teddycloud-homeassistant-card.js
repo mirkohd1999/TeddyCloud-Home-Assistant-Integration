@@ -1,4 +1,4 @@
-/* TeddyCloud Home Assistant — custom Lovelace card (no build tooling). */
+/* TeddyCloud Home Assistant Integration — custom Lovelace card (no build tooling). */
 class TeddyCloudNowPlayingCard extends HTMLElement {
   setConfig(config) {
     // Allow editing and saving the card while the Toniebox is offline.
@@ -11,7 +11,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       const value = Number(el.value);
       if (!entityId || !Number.isFinite(value)) return;
       this._hass.callService('number', 'set_value', {entity_id: entityId, value})
-        .catch(err => { console.error('TeddyCloud: Einstellung fehlgeschlagen', err); this.render(); });
+        .catch(err => { console.error('TeddyCloud Home Assistant Integration: Einstellung fehlgeschlagen', err); this.render(); });
     });
     this.render();
   }
@@ -126,7 +126,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .settings .flex,.settings .bar,.settings .times,.settings .duration-foot{display:none}
     .settings .panel{margin-top:0;padding-top:0;border-top:0}
     </style><ha-card class="${mode}"><div class="flex">${artBlock}
-    <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud')}</div><div class="title">${safe(title)}</div>
+    <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud Home Assistant Integration')}</div><div class="title">${safe(title)}</div>
     <div class="state"><i class="dot"></i>${attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div><div class="state">${chargerText}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot duration-foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
     <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
@@ -211,4 +211,4 @@ if (!customElements.get('teddycloud-homeassistant-card-editor')) {
 
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
 window.customCards = window.customCards || [];
-window.customCards.push({type:'teddycloud-homeassistant-card',name:'Toniebox via TeddyCloud MQTT',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
+window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
