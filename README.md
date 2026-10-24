@@ -4,15 +4,15 @@
   <img src="assets/toniebox-via-teddycloud-mqtt.svg" alt="Toniebox via TeddyCloud MQTT" width="480">
 </p>
 
-**Meine Toniebox in Home Assistant – über TeddyCloud und MQTT.**
+**Toniebox-Status und Einstellungen direkt in Home Assistant – über TeddyCloud MQTT.**
 
-Ich wollte meine Toniebox nicht nur in TeddyCloud sehen, sondern auch direkt in Home Assistant. Deshalb habe ich diese Integration gebaut. Sie zeigt mir, welcher Tonie gerade auf der Box steht, und bietet ein eigenes Dashboard mit Titel, Bild und den wichtigsten Einstellungen.
+**Toniebox via TeddyCloud MQTT** bindet Tonieboxen über TeddyCloud und die vorhandene MQTT-Integration in Home Assistant ein. Angezeigt werden unter anderem der aktuelle Titel, der gemeldete Wiedergabestatus und – sofern verfügbar – Figurenbilder und Laufzeiten. Lautstärkelimits und LED-Helligkeit lassen sich ebenfalls über Home Assistant einstellen.
 
-Ich habe versucht, die Einrichtung so einfach wie möglich zu machen: Toniebox suchen, Farbe auswählen, Karte ins Dashboard – fertig.
+Die Einrichtung ist bewusst einfach gehalten: Toniebox automatisch suchen oder manuell hinzufügen, Boxfarbe auswählen und die gewünschte Karte ins Dashboard einfügen.
 
 > **Hinweis:** Das Projekt ist eine inoffizielle Community-Integration und befindet sich noch in der Weiterentwicklung. Es gibt Funktionen, die je nach TeddyCloud-Version und Tonie nicht immer verfügbar sind. Bitte vor größeren Updates ein Backup machen.
 
-## ✨ Was kann die Integration?
+## ✨ Funktionen
 
 | Funktion | Beschreibung |
 | --- | --- |
@@ -28,25 +28,25 @@ Ich habe versucht, die Einrichtung so einfach wie möglich zu machen: Toniebox s
 | 🖥️ Dashboard | Eine gemeinsame Karte oder getrennte Karten für Wiedergabe und Einstellungen |
 | 📦 Mehrere Tonieboxen | Jede Box kann als eigener Integrationseintrag eingerichtet werden |
 
-**Was aktuell nicht geht:** Play/Pause über diese Integration steuern, den tatsächlichen Akku-Prozentstand zuverlässig auslesen oder die echte Wiedergabeposition anzeigen. Ein gemeldeter Ladestationsstatus ist auch keine sichere Aussage darüber, ob der Akku gerade geladen wird.
+**Aktuelle Einschränkungen:** Play/Pause über diese Integration steuern, den tatsächlichen Akku-Prozentstand zuverlässig auslesen oder die echte Wiedergabeposition anzeigen. Ein gemeldeter Ladestationsstatus ist auch keine sichere Aussage darüber, ob der Akku gerade geladen wird.
 
-## 📸 So sieht es in Home Assistant aus
+## 📸 Dashboard-Vorschau
 
-Das sind meine echten Screenshots aus Home Assistant. Ich habe nur den äußeren Hintergrund entfernt, damit die Karten in der README besser zu erkennen sind.
+Die folgenden Screenshots zeigen die drei Kartenansichten in Home Assistant. Der äußere Dashboard-Hintergrund wurde für eine übersichtlichere Darstellung entfernt.
 
 | Nur Wiedergabe | Alles zusammen | Nur Einstellungen |
 | :---: | :---: | :---: |
 | <img src="docs/images/dashboard-player-original.webp" alt="Toniebox mit Titel und Bild" width="300"> | <img src="docs/images/dashboard-all-original.webp" alt="Toniebox mit Wiedergabe und Einstellungen" width="300"> | <img src="docs/images/dashboard-settings-original.webp" alt="Lautstärkelimits und LED-Helligkeit" width="300"> |
 | `mode: player` | `mode: all` | `mode: settings` |
 
-## 📦 Was du brauchst
+## 📦 Voraussetzungen
 
 - **Home Assistant** mit eingerichteter [MQTT-Integration](https://www.home-assistant.io/integrations/mqtt/)
 - Einen funktionierenden [TeddyCloud-Server](https://github.com/toniebox-reverse-engineering/teddycloud), der Toniebox-Daten über MQTT veröffentlicht
 - **HACS** zur einfachen Installation (oder eine manuelle Installation der Custom-Integration)
 - Für automatische Figurenbilder und Laufzeiten: Internetzugriff von Home Assistant auf den öffentlichen Tonies-Katalog
 
-Du musst in meiner Integration **keine zweiten MQTT-Zugangsdaten** eingeben. Sie nutzt die vorhandene MQTT-Verbindung von Home Assistant.
+**Zusätzliche MQTT-Zugangsdaten sind nicht erforderlich.** Die Integration nutzt die bereits eingerichtete MQTT-Verbindung von Home Assistant.
 
 ## 🚀 Installation über HACS
 
@@ -83,7 +83,7 @@ Falls keine Toniebox auftaucht, kannst du die Einrichtung erneut starten oder di
 
 Öffne **Einstellungen → Geräte & Dienste → Toniebox via TeddyCloud MQTT → Konfigurieren**. Dort kannst du die Farbe auch nachträglich als Hex-Wert einstellen.
 
-## 🖥️ Meine Dashboard-Karte einfügen
+## 🖥️ Dashboard-Karte hinzufügen
 
 Öffne dein Dashboard, klicke auf **Bearbeiten → Karte hinzufügen → Manuell** und füge den passenden YAML-Code ein.
 
@@ -116,9 +116,9 @@ mode: all
 artwork_mode: auto
 ```
 
-**Wichtig:** `media_player.meine_toniebox_now_playing` ist ein Beispiel aus meiner Einrichtung. Verwende die **Entitäts-ID deiner eigenen Toniebox**. Du findest sie unter **Einstellungen → Geräte & Dienste → Entitäten**.
+**Wichtig:** `media_player.meine_toniebox_now_playing` ist nur eine Beispiel-Entitäts-ID. Hier muss die **eigene Media-Player-Entitäts-ID** eingetragen werden. Sie steht unter **Einstellungen → Geräte & Dienste → Entitäten**.
 
-Der sichtbare Name heißt jetzt einfach **Meine Toniebox** oder so, wie du deine Box genannt hast. Alte Entitäts-IDs mit `_now_playing` bleiben aus Kompatibilitätsgründen erhalten, damit vorhandene Karten nicht kaputtgehen.
+Der angezeigte Name entspricht dem bei der Einrichtung gewählten Boxnamen, beispielsweise **Meine Toniebox**. Bestehende Entitäts-IDs mit `_now_playing` bleiben aus Kompatibilitätsgründen erhalten.
 
 ### Bilddarstellung
 
@@ -199,7 +199,7 @@ Bei `catalog_status: unavailable` helfen die Meldungen unter **Einstellungen →
 
 ## 💬 Fehler melden und mithelfen
 
-Das Projekt ist aus meiner eigenen Nutzung entstanden. Wenn dir ein Fehler auffällt oder du eine Idee hast, kannst du gerne ein [GitHub-Issue](https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT/issues) erstellen.
+Fehlerberichte, Verbesserungsvorschläge und Ideen sind willkommen. Dafür einfach ein [GitHub-Issue](https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT/issues) erstellen.
 
 Hilfreich sind dabei die Versionen von Home Assistant und TeddyCloud, der beobachtete Fehler sowie passende Protokollmeldungen. Bitte **keine Passwörter, Zugangstoken, Zertifikate oder privaten MQTT-Daten** veröffentlichen.
 
@@ -207,7 +207,7 @@ Hilfreich sind dabei die Versionen von Home Assistant und TeddyCloud, der beobac
 
 Dies ist **kein offizielles Projekt von tonies® oder TeddyCloud**. Die Rechte an den Tonie-Figuren und deren Bildern liegen bei den jeweiligen Rechteinhabern. Die optionalen Online-Bilder/Katalogdaten werden über Drittanbieterquellen abgerufen; dafür muss Home Assistant diese Server erreichen können.
 
-Die Integration heißt intern weiterhin `teddycloud_homeassistant`. Diese Kennung habe ich bewusst nicht geändert, damit bestehende Installationen und Dashboard-Entitäten möglichst kompatibel bleiben.
+Die interne Integrationskennung bleibt `teddycloud_homeassistant`, um bestehende Installationen und Dashboard-Entitäten möglichst kompatibel zu halten.
 
 Das eigene Integrationslogo mit Toniebox und Teddy liegt im `brand/`-Ordner. Für dessen Darstellung in Home Assistant ist eine ausreichend neue Home-Assistant-Version erforderlich.
 
