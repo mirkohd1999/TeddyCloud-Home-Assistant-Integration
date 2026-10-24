@@ -19,6 +19,7 @@ Die Einrichtung ist bewusst einfach gehalten: Toniebox automatisch suchen oder m
 | 🧸 Tonie-Bilder | Versucht das passende Bild anhand der Audio-ID aus dem Tonies-Katalog zu laden und lokal zu speichern |
 | ⏱️ Laufzeit | Zeigt, wenn verfügbar, die Kataloglaufzeit und einen **geschätzten** Fortschritt |
 | 🔊 Aktuelle Lautstärke | Wird als Prozentwert angezeigt – **nicht fernsteuerbar** |
+| 👂 Ohrtasten | Großes und kleines Ohr als eigene Sensoren; erkennt einfache, doppelte und dreifache Tastendrücke |
 | 🎚️ Lautstärkelimits | Lautsprecher- und Kopfhörerlimit auf 25, 50, 75 oder 100 % einstellen |
 | 💡 LED-Helligkeit | Aus, gedimmt oder an |
 | 🔌 Ladestation | Zeigt den von TeddyCloud gemeldeten Ladestationsstatus |
@@ -126,6 +127,32 @@ Die Karte unterstützt drei Varianten:
 - `artwork_mode: cover` – Bild als eigenständiges Cover anzeigen.
 
 Du kannst auch `composition: false` verwenden, wenn du keine stilisierte Box möchtest. Die normale Einstellung ist `composition: true`. Mit `color: '#D82F38'` kannst du eine Kartenfarbe fest vorgeben; ohne diesen Eintrag wird die in der Integration ausgewählte Farbe verwendet.
+
+## 👂 Große und kleine Ohrtaste als Sensoren
+
+Die Integration stellt für jede eingerichtete Toniebox jetzt zwei zusätzliche **lesende Sensoren** bereit:
+
+- **Großes Ohr (lauter)** – MQTT-Topic `{prefix}/box/{box_id}/VolUp`
+- **Kleines Ohr (leiser)** – MQTT-Topic `{prefix}/box/{box_id}/VolDown`
+
+Der Sensorzustand zeigt die letzte erkannte Betätigung: `pressed`, `double-pressed` oder `triple-pressed`. TeddyCloud sendet dafür eine MQTT-Nachricht wie `{"event_type":"pressed"}`.
+
+Die Sensorattribute `last_pressed` (Zeitpunkt) und `press_count` (Anzahl der seit dem letzten Start empfangenen Ereignisse) werden bei **jedem** Tastendruck aktualisiert. Dadurch lassen sich auch wiederholte einfache Tastendrücke in Automationen erkennen. Der Zähler beginnt nach einem Neustart der Integration wieder bei null.
+
+Für eine Home-Assistant-Automation kann zum Beispiel auf Änderungen des Attributs `press_count` reagiert werden:
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.DEINE_GROSSES_OHR_ENTITAET
+    attribute: press_count
+actions:
+  - action: persistent_notification.create
+    data:
+      message: "Großes Ohr wurde gedrückt"
+```
+
+Die tatsächlich vergebenen Sensor-Entitäts-IDs stehen unter **Einstellungen → Geräte & Dienste → Entitäten**. Beim ersten Start bleibt der Sensor auf `unknown`, bis TeddyCloud einen Tastendruck meldet. Die MQTT-Daten müssen dafür vom TeddyCloud-Server übertragen werden. Die neuen Sensoren lösen selbst **keine Lautstärkeänderung** aus.
 
 ## 🧸 Figurenbilder und Laufzeiten
 
