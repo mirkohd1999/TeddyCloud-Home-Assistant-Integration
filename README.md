@@ -126,3 +126,7 @@ Projekt inoffiziell; keine Zugehörigkeit zu tonies® oder den Rechteinhabern de
 ## Lizenz
 
 [MIT](LICENSE)
+
+### 🖼️ Integrationslogo
+
+Das Projekt liefert ein eigenes Logo mit **Toniebox und Teddy** unter `custom_components/teddycloud_homeassistant/brand/icon.png` und `brand/logo.png` mit. Home Assistant **2026.3 oder neuer** unterstützt solche lokalen Brand-Dateien für benutzerdefinierte Integrationen. Nach HACS-Update und Neustart sollte das Branding übernommen werden; ältere Home-Assistant-Versionen benötigen die externe Home-Assistant-Brands-Datenbank. Die interne Domain bleibt `teddycloud_homeassistant`, damit bestehende Entitäten erhalten bleiben.
