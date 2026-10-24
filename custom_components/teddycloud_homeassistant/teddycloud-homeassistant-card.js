@@ -77,7 +77,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const safeURL = /^(https?:\/\/|\/local\/)/i.test(url) ? safe(url) : '';
     const safeBoxURL = /^(https?:\/\/|\/local\/)/i.test(boxImage) ? safe(boxImage) : '';
-    const showCover = !!safeURL && (artworkMode === 'cover' || !showFigure);
+    const showCover = Boolean(url) && (artworkMode === 'cover' || !showFigure);
     const controls = [
       ['speaker_entity', 'Lautsprecher-Lautstärkelimit', 'Lautsprecher-Limit', [25,50,75,100], '🔊'],
       ['headphone_entity', 'Kopfhörer-Lautstärkelimit', 'Kopfhörer-Limit', [25,50,75,100], '🎧'],
