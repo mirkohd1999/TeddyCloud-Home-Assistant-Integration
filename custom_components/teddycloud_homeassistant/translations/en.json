@@ -1,0 +1,75 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up TeddyCloud Home Assistant Integration",
+        "menu_options": {
+          "discover": "Discover Toniebox automatically",
+          "manual": "Enter box ID manually"
+        }
+      },
+      "discover": {
+        "title": "Prepare your Toniebox for discovery",
+        "description": "**Turn on the Toniebox or place a figurine on it.** Optionally enter an MQTT prefix (for example `teddyCloud` or `myTeddy`). Leave it empty to search across prefixes. Press OK to start; discovery finishes as soon as a matching box is found.",
+        "data": {
+          "search_prefix": "MQTT prefix (optional; empty = automatic discovery)"
+        }
+      },
+      "not_found": {
+        "title": "No Toniebox found yet",
+        "description": "Your Toniebox may not have sent any MQTT messages. Wake it up and try again, or enter its box ID manually.",
+        "menu_options": {
+          "discover": "Search again",
+          "manual": "Enter box ID manually"
+        }
+      },
+      "manual": {
+        "title": "Add a Toniebox manually",
+        "description": "Enter the box ID and its MQTT prefix (for example `myTeddy` instead of `teddyCloud`).",
+        "data": {
+          "box_id": "Box ID",
+          "box_name": "Toniebox name",
+          "prefix": "MQTT prefix",
+          "box_color": "Toniebox color"
+        }
+      },
+      "scan_result": {
+        "title": "Choose a discovered Toniebox",
+        "description": "Select your Toniebox and give it a name.",
+        "data": {
+          "box": "Discovered Toniebox",
+          "name": "Toniebox name",
+          "box_color": "Toniebox color"
+        }
+      },
+      "scan": {
+        "title": "Searching – turn on the Toniebox or place a figurine",
+        "description": "**Turn on the Toniebox or place a figurine on it now.** Discovery ends immediately once a box is detected over MQTT, or after 25 seconds at the latest."
+      }
+    },
+    "abort": {
+      "mqtt_unavailable": "MQTT connection is unavailable",
+      "invalid_box": "Invalid Toniebox configuration"
+    },
+    "progress": {
+      "searching_boxes": "Turn on the Toniebox or place a figurine on it – waiting for MQTT messages…"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Customize display",
+        "data": {
+          "box_color": "Toniebox color (hex, editable later)",
+          "fallback_cover": "Fallback cover URL",
+          "catalog": "Custom catalog JSON",
+          "teddycloud_url": "TeddyCloud address for cover images",
+          "online_images": "Automatically find figurine images online"
+        }
+      }
+    },
+    "error": {
+      "invalid_catalog": "Invalid JSON catalog"
+    }
+  }
+}
