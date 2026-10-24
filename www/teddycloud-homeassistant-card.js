@@ -65,7 +65,6 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     // Online catalog images can be covers, not cut-out figurines. In auto,
     // only an explicitly supplied figure image is known to be intended as a figurine.
     const showFigure = artworkMode === 'figure' || (artworkMode === 'auto' && !!this.config.figure_image);
-    const showCover = !!safeURL && (artworkMode === 'cover' || !showFigure);
     const mode = ['all', 'player', 'settings'].includes(this.config.mode) ? this.config.mode : 'all';
     const charger = String(attr.charger ?? '').trim().toUpperCase();
     const chargerText = ['ON','1','TRUE'].includes(charger) ? '🔌 Auf Ladestation' : ['OFF','0','FALSE'].includes(charger) ? '🔋 Nicht auf Ladestation' : '🔋 Ladestatus unbekannt';
@@ -78,6 +77,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const safeURL = /^(https?:\/\/|\/local\/)/i.test(url) ? safe(url) : '';
     const safeBoxURL = /^(https?:\/\/|\/local\/)/i.test(boxImage) ? safe(boxImage) : '';
+    const showCover = !!safeURL && (artworkMode === 'cover' || !showFigure);
     const controls = [
       ['speaker_entity', 'Lautsprecher-Lautstärkelimit', 'Lautsprecher-Limit', [25,50,75,100], '🔊'],
       ['headphone_entity', 'Kopfhörer-Lautstärkelimit', 'Kopfhörer-Limit', [25,50,75,100], '🎧'],
