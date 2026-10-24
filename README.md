@@ -39,11 +39,14 @@ Es ist **kein zweiter MQTT-Broker-Login** nötig. Die Integration nutzt die vorh
 
 ## 📸 Dashboard-Ansichten
 
-Hier siehst du die **echten Home-Assistant-Karten** aus der laufenden Integration – zusammengestellt aus den bereitgestellten Screenshots. Der äußere Hintergrund wurde für die Dokumentation entfernt.
+Drei Ansichten der Integration mit **deinen echten Home-Assistant-Screenshots**, einzeln zugeschnitten und ohne den äußeren Dashboard-Hintergrund:
 
-![Original-Screenshots: Player, alle Einstellungen, kombinierte Karte und Standard-Media-Player](docs/images/dashboard-original-screenshots.webp)
+| Nur Wiedergabe | Alles zusammen | Nur Einstellungen |
+| :---: | :---: | :---: |
+| <img src="docs/images/dashboard-player-original.webp" alt="Toniebox-Player mit Titel und Figur" width="300"> | <img src="docs/images/dashboard-all-original.webp" alt="Toniebox mit Wiedergabe und Einstellungen" width="300"> | <img src="docs/images/dashboard-settings-original.webp" alt="Einstellungen für Lautsprecher, Kopfhörer und LED" width="300"> |
+| `mode: player` | `mode: all` | `mode: settings` |
 
-Die Darstellung unterstützt `mode: player` (Wiedergabe), `mode: all` (Wiedergabe und Einstellungen) und `mode: settings` (nur Regler). Die Standard-Media-Player-Karte ist ebenfalls abgebildet.
+Die Bilder stammen direkt aus den bereitgestellten Screenshots, nicht aus nachgebauten Beispielen. Für eine größere Ansicht auf das jeweilige Bild klicken und **„Bild in neuem Tab öffnen“** wählen.
 
 **Hinweis zur Benennung:** Der sichtbare Media-Player-Name lautet jetzt nur noch „Meine Toniebox“ (bzw. dein Boxname). Bestehende Entity-IDs mit `_now_playing` bleiben aus Kompatibilitätsgründen bestehen. Falls du die Entität früher selbst in Home Assistant umbenannt hast, kann ein individueller Anzeigename weiterhin Vorrang haben.
 
