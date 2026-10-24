@@ -19,6 +19,7 @@ Die Einrichtung ist bewusst einfach gehalten: Toniebox automatisch suchen oder m
 | 🧸 Tonie-Bilder | Versucht das passende Bild anhand der Audio-ID aus dem Tonies-Katalog zu laden und lokal zu speichern |
 | ⏱️ Laufzeit | Zeigt, wenn verfügbar, die Kataloglaufzeit und einen **geschätzten** Fortschritt |
 | 🔊 Aktuelle Lautstärke | Wird als Prozentwert angezeigt – **nicht fernsteuerbar** |
+| 👂 Ohrtasten | Eigene Sensoren für großes/kleines Ohr: letzter Tastendruck (einfach, doppelt, dreifach), UTC-Zeitpunkt und Ereigniszähler. **Nur Anzeige**, keine Fernsteuerung |
 | 👂 Ohrtasten | Großes und kleines Ohr als eigene Sensoren; erkennt einfache, doppelte und dreifache Tastendrücke |
 | 🎚️ Lautstärkelimits | Lautsprecher- und Kopfhörerlimit auf 25, 50, 75 oder 100 % einstellen |
 | 💡 LED-Helligkeit | Aus, gedimmt oder an |
@@ -27,6 +28,17 @@ Die Einrichtung ist bewusst einfach gehalten: Toniebox automatisch suchen oder m
 | 📦 Mehrere Tonieboxen | Jede Box kann als eigener Integrationseintrag eingerichtet werden |
 
 **Aktuelle Einschränkungen:** Play/Pause über diese Integration steuern, den tatsächlichen Akku-Prozentstand zuverlässig auslesen oder die echte Wiedergabeposition anzeigen. Ein gemeldeter Ladestationsstatus ist auch keine sichere Aussage darüber, ob der Akku gerade geladen wird.
+
+## 👂 Ohrtasten-Sensoren
+
+Für jede Toniebox werden zwei **Diagnose-Sensoren** angelegt:
+
+- **Großes Ohr (lauter)**: hört auf `<MQTT-Präfix>/box/<Box-ID>/VolUp`
+- **Kleines Ohr (leiser)**: hört auf `<MQTT-Präfix>/box/<Box-ID>/VolDown`
+
+Beide Sensoren zeigen den letzten erkannten Tastendruck als `pressed`, `double-pressed` oder `triple-pressed` an. Die zusätzlichen Attribute `last_pressed` (Zeitpunkt in UTC) und `press_count` (seit Laden des Sensors) werden bei jedem neuen Tastendruck aktualisiert, auch wenn derselbe Tastendrucktyp wiederholt wird. Vor dem ersten Ereignis lautet der Zustand `unknown`. Der Ereigniszähler wird bei einem Neustart zurückgesetzt. MQTT-Retained-Meldungen werden nicht als neue Tastendrücke gewertet.
+
+**Wichtig:** Diese MQTT-Topics sind ausschließlich Ereignismeldungen *von* der Toniebox; sie können die Lautstärke nicht fernsteuern. Über TeddyCloud können nur die maximalen Lautstärkelimits konfiguriert werden.
 
 ## 📸 Dashboard-Vorschau
 
