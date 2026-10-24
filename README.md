@@ -1,9 +1,9 @@
-# 🧸     TeddyCloud Home Assistant Integration
+# 🧸 TeddyCloud Home Assistant Integration
 
 
 **Toniebox-Status und Einstellungen direkt in Home Assistant – über TeddyCloud MQTT.**
 
-**Toniebox via TeddyCloud MQTT** bindet Tonieboxen über TeddyCloud und die vorhandene MQTT-Integration in Home Assistant ein. Angezeigt werden unter anderem der aktuelle Titel, der gemeldete Wiedergabestatus und – sofern verfügbar – Figurenbilder und Laufzeiten. Lautstärkelimits und LED-Helligkeit lassen sich ebenfalls über Home Assistant einstellen.
+**TeddyCloud Home Assistant Integration** bindet Tonieboxen über TeddyCloud und die vorhandene MQTT-Integration in Home Assistant ein. Angezeigt werden unter anderem der aktuelle Titel, der gemeldete Wiedergabestatus und – sofern verfügbar – Figurenbilder und Laufzeiten. Lautstärkelimits und LED-Helligkeit lassen sich ebenfalls über Home Assistant einstellen.
 
 Die Einrichtung ist bewusst einfach gehalten: Toniebox automatisch suchen oder manuell hinzufügen, Boxfarbe auswählen und die gewünschte Karte ins Dashboard einfügen.
 
@@ -52,12 +52,12 @@ Die folgenden Screenshots zeigen die drei Kartenansichten in Home Assistant. Der
 3. Füge diese Adresse ein und wähle als Typ **Integration**:
 
    ```text
-   https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT
+   https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration
    ```
 
-4. Suche in HACS nach **Toniebox via TeddyCloud MQTT** und lade die Integration herunter.
+4. Suche in HACS nach **TeddyCloud Home Assistant Integration** und lade die Integration herunter.
 5. **Starte Home Assistant neu.**
-6. Gehe zu **Einstellungen → Geräte & Dienste → Integration hinzufügen** und wähle **Toniebox via TeddyCloud MQTT**.
+6. Gehe zu **Einstellungen → Geräte & Dienste → Integration hinzufügen** und wähle **TeddyCloud Home Assistant Integration**.
 
 **Manuelle Installation:** Kopiere den Ordner `custom_components/teddycloud_homeassistant` nach `/config/custom_components/` und starte Home Assistant neu.
 
@@ -78,7 +78,7 @@ Falls keine Toniebox auftaucht, kannst du die Einrichtung erneut starten oder di
 
 ### Farben später ändern
 
-Öffne **Einstellungen → Geräte & Dienste → Toniebox via TeddyCloud MQTT → Konfigurieren**. Dort kannst du die Farbe auch nachträglich als Hex-Wert einstellen.
+Öffne **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren**. Dort kannst du die Farbe auch nachträglich als Hex-Wert einstellen.
 
 ## 🖥️ Dashboard-Karte hinzufügen
 
@@ -188,7 +188,7 @@ Bei `catalog_status: unavailable` helfen die Meldungen unter **Einstellungen →
 
 ## 🔄 Aktualisieren und entfernen
 
-**Aktualisieren:** In **HACS → Toniebox via TeddyCloud MQTT → Erneut herunterladen**, anschließend Home Assistant neu starten. Falls die Karte noch alt aussieht, das Dashboard neu laden. Vor größeren Änderungen empfiehlt sich ein Backup.
+**Aktualisieren:** In **HACS → TeddyCloud Home Assistant Integration → Erneut herunterladen**, anschließend Home Assistant neu starten. Falls die Karte noch alt aussieht, das Dashboard neu laden. Vor größeren Änderungen empfiehlt sich ein Backup.
 
 **Entfernen:** Entferne die Integration unter **Einstellungen → Geräte & Dienste**. Wenn die **letzte** eingerichtete Toniebox entfernt wird, bereinigt die Integration ihre lokal gespeicherten Figurenbilder, den internen Cache und automatisch angelegte Dashboard-Ressourcen, sofern deren Eigentum eindeutig gespeichert wurde.
 
@@ -196,7 +196,7 @@ Bei `catalog_status: unavailable` helfen die Meldungen unter **Einstellungen →
 
 ## 💬 Fehler melden und mithelfen
 
-Fehlerberichte, Verbesserungsvorschläge und Ideen sind willkommen. Dafür einfach ein [GitHub-Issue](https://github.com/mirkohd1999/Toniebox-via-TeddyCloud-MQTT/issues) erstellen.
+Fehlerberichte, Verbesserungsvorschläge und Ideen sind willkommen. Dafür einfach ein [GitHub-Issue](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/issues) erstellen.
 
 Hilfreich sind dabei die Versionen von Home Assistant und TeddyCloud, der beobachtete Fehler sowie passende Protokollmeldungen. Bitte **keine Passwörter, Zugangstoken, Zertifikate oder privaten MQTT-Daten** veröffentlichen.
 

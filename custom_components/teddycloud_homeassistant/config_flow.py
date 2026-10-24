@@ -1,4 +1,4 @@
-"""TeddyCloud Home Assistant configuration UI."""
+"""TeddyCloud Home Assistant Integration configuration UI."""
 import json
 import asyncio
 import re

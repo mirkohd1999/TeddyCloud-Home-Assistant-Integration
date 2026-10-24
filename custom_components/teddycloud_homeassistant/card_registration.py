@@ -8,7 +8,7 @@ from homeassistant.helpers.storage import Store
 
 _LOGGER = logging.getLogger(__name__)
 CARD_PATH = "/teddycloud-homeassistant/card.js"
-CARD_VERSION = "0.3.0-dev30"
+CARD_VERSION = "0.3.0-dev31"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
 
