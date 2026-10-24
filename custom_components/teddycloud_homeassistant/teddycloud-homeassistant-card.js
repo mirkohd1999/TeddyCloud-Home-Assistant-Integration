@@ -32,7 +32,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
   static getStubConfig(hass) {
     const entity = Object.keys(hass?.states || {}).find(id =>
       id.startsWith('media_player.') &&
-      hass.states[id].attributes?.friendly_name?.endsWith(' Now Playing')
+      (hass.states[id].attributes?.content_audio_id !== undefined || hass.states[id].attributes?.box_color !== undefined)
     );
     return {entity: entity || 'media_player.meine_toniebox_now_playing', composition: true};
   }
