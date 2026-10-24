@@ -1,4 +1,4 @@
-# 🧸 Toniebox via TeddyCloud MQTT
+# 🧸     TeddyCloud Home Assistant Integration
 
 
 **Toniebox-Status und Einstellungen direkt in Home Assistant – über TeddyCloud MQTT.**
