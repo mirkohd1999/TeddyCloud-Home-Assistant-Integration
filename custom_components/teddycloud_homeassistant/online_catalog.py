@@ -48,9 +48,16 @@ class OnlineCatalog:
                 response.raise_for_status()
                 if response.content_length and response.content_length > MAX_SIZE:
                     raise ValueError("Catalog exceeds allowed size")
-                content = await response.content.read(MAX_SIZE + 1)
-                if len(content) > MAX_SIZE:
-                    raise ValueError("Catalog exceeds allowed size")
+                # aiohttp read(n) may return only the first available bytes.
+                # Read every chunk until EOF instead of parsing partial JSON.
+                chunks = []
+                size = 0
+                async for chunk in response.content.iter_chunked(64 * 1024):
+                    size += len(chunk)
+                    if size > MAX_SIZE:
+                        raise ValueError("Catalog exceeds allowed size")
+                    chunks.append(chunk)
+                content = b"".join(chunks)
         try:
             return json.loads(content)
         except json.JSONDecodeError as exc:
