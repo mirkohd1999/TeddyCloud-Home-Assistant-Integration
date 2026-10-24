@@ -38,6 +38,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Python syntax
         run: python3 -m compileall -q custom_components/teddycloud_homeassistant
+      - name: Ear-button MQTT payload tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Lovelace JavaScript syntax
         run: |
           node --check custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js
