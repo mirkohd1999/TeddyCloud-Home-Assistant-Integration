@@ -1,17 +1,19 @@
 {
   "domain": "teddycloud_homeassistant",
   "name": "TeddyCloud Home Assistant Integration",
-  "version": "0.3.0-dev31",
-  "documentation": "https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration",
-  "issue_tracker": "https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/issues",
+  "codeowners": [
+    "@mirkohd1999"
+  ],
+  "config_flow": true,
   "dependencies": [
     "mqtt",
     "frontend",
     "http",
     "lovelace"
   ],
-  "codeowners": [],
-  "config_flow": true,
+  "documentation": "https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration",
+  "integration_type": "hub",
   "iot_class": "local_push",
-  "integration_type": "hub"
+  "issue_tracker": "https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/issues",
+  "version": "0.3.1"
 }
