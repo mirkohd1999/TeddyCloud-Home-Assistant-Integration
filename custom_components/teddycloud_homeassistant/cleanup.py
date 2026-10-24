@@ -4,9 +4,10 @@ import logging
 from pathlib import Path
 
 from homeassistant.components.lovelace.const import LOVELACE_DATA
+from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .card_registration import CARD_PATH
+from .card_registration import CARD_PATH, BRANDING_STORE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,17 +21,30 @@ async def async_remove_owned_data(hass, removed_entry_id):
     if remaining:
         return
 
+    # Only delete a resource we can prove this integration created.
+    # In particular, leave manually registered card resources untouched.
+    store = Store(hass, 1, BRANDING_STORE)
+    owned = await store.async_load() or {}
+    resource_id = owned.get("resource_id")
     lovelace = hass.data.get(LOVELACE_DATA)
     resources = getattr(lovelace, "resources", None)
-    if resources is not None and getattr(lovelace, "resource_mode", None) == "storage":
+    if resource_id and resources is not None and getattr(lovelace, "resource_mode", None) == "storage":
         try:
             if not getattr(resources, "loaded", False):
                 await resources.async_load()
-            for item in list(resources.async_items()):
-                if item.get("url", "").split("?")[0] == CARD_PATH:
-                    await resources.async_delete_item(item["id"])
+            match = next(
+                (item for item in resources.async_items()
+                 if item.get("id") == resource_id
+                 and item.get("url", "").split("?")[0] == CARD_PATH),
+                None,
+            )
+            if match:
+                await resources.async_delete_item(resource_id)
+                await store.async_remove()
         except Exception:
-            _LOGGER.exception("Could not remove TeddyCloud Lovelace resource")
+            _LOGGER.exception("Could not remove integration-created Lovelace resource")
+    elif not resource_id:
+        _LOGGER.debug("No integration-owned Lovelace resource registered")
 
     # Delete only the dedicated directory created by our own image archive.
     directory = Path(hass.config.path("www", DOMAIN, "figures"))
@@ -48,3 +62,5 @@ async def async_remove_owned_data(hass, removed_entry_id):
     except OSError:
         _LOGGER.info("TeddyCloud images cleaned up; keeping nonempty or custom directory")
     hass.data.pop("teddycloud_homeassistant_card_registered", None)
+    hass.data.get(DOMAIN, {}).pop("online_catalog", None)
+    hass.data.get(DOMAIN, {}).pop("artwork_archive", None)

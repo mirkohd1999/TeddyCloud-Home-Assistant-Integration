@@ -54,7 +54,7 @@ class BoxPlayer(MediaPlayerEntity):
         self._lookup_task = None
         self._catalog_status = 'waiting_for_audio_id'
         self._attr_unique_id = f'{entry.entry_id}_player'
-        self._attr_name = f'{entry.data[CONF_BOX_NAME]} Now Playing'
+        self._attr_name = entry.data[CONF_BOX_NAME]
         self._values = {}
         self._started = None
         self._was_playing = False
@@ -63,7 +63,7 @@ class BoxPlayer(MediaPlayerEntity):
 
     @property
     def device_info(self):
-        return DeviceInfo(identifiers={(DOMAIN, self.entry.unique_id)}, name=self.entry.data[CONF_BOX_NAME], manufacturer='TeddyCloud', model='MQTT box monitor')
+        return DeviceInfo(identifiers={(DOMAIN, self.entry.unique_id)}, name=self.entry.data[CONF_BOX_NAME], manufacturer='TeddyCloud', model='Toniebox (MQTT)')
 
     def receive(self, field, payload):
         text = mqtt_text(payload)

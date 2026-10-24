@@ -4,11 +4,13 @@ from pathlib import Path
 
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.lovelace.const import LOVELACE_DATA
+from homeassistant.helpers.storage import Store
 
 _LOGGER = logging.getLogger(__name__)
 CARD_PATH = "/teddycloud-homeassistant/card.js"
-CARD_VERSION = "0.3.0-dev29"
+CARD_VERSION = "0.3.0-dev30"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
+BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
 
 
 async def async_register_card(hass):
@@ -51,7 +53,9 @@ async def async_register_card(hass):
                         item["id"], {"url": CARD_URL, "res_type": "module"}
                     )
         else:
-            await resources.async_create_item({"url": CARD_URL, "res_type": "module"})
+            created = await resources.async_create_item({"url": CARD_URL, "res_type": "module"})
+            if created and created.get("id"):
+                await Store(hass, 1, BRANDING_STORE).async_save({"resource_id": created["id"]})
     except Exception:
         _LOGGER.exception(
             "Automatic card registration failed. Add %s as a module under Dashboard resources.",
