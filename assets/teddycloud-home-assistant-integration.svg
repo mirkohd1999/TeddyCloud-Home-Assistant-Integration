@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+<title id="title">TeddyCloud Home Assistant Integration</title><desc id="desc">Violette stilisierte Toniebox, Wolke und MQTT-Verbindung</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#121a38"/><stop offset="1" stop-color="#233a68"/></linearGradient><linearGradient id="box" x2="0" y2="1"><stop stop-color="#d9adff"/><stop offset="1" stop-color="#7956bc"/></linearGradient><linearGradient id="cloud" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#a2dfff"/></linearGradient></defs>
+<rect width="960" height="520" rx="36" fill="url(#bg)"/>
+<path d="M316 163 Q308 126 353 114 Q371 78 422 91 Q456 44 515 73 Q563 66 581 114 Q632 114 641 157 Q646 192 603 201 L358 201 Q309 201 316 163Z" fill="url(#cloud)"/>
+<g stroke="#7245d7" stroke-width="9" stroke-linecap="round" fill="none"><path d="M445 141 L500 116 L528 155 L445 141"/></g><g fill="#7d53d7"><circle cx="445" cy="141" r="15"/><circle cx="500" cy="116" r="15"/><circle cx="528" cy="155" r="15"/></g>
+<g stroke="#8a81fc" stroke-width="5" stroke-dasharray="12 13" fill="none"><path d="M329 211 Q220 199 182 291"/><path d="M638 211 Q742 199 790 290"/></g>
+<circle cx="170" cy="319" r="45" fill="#4f3895" stroke="#a893ff" stroke-width="5"/><g fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"><path d="M149 304 Q171 303 187 326"/><path d="M150 319 Q161 319 168 329"/></g><circle cx="153" cy="334" r="6" fill="#fff"/>
+<circle cx="800" cy="319" r="47" fill="#4f3895" stroke="#a893ff" stroke-width="5"/><text x="800" y="329" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="bold" fill="white">MQTT</text>
+<path d="M347 255 L371 215 Q390 190 404 243 L415 259 L542 259 L555 216 Q565 198 584 249 L592 265Z" fill="#8056bc"/>
+<rect x="343" y="256" width="266" height="174" rx="30" fill="url(#box)" stroke="#e0c0ff" stroke-width="5"/>
+<rect x="366" y="266" width="219" height="30" rx="15" fill="#ebd3fc" opacity=".65"/>
+<g fill="#493071"><circle cx="418" cy="329" r="5"/><circle cx="439" cy="329" r="5"/><circle cx="460" cy="329" r="5"/><circle cx="481" cy="329" r="5"/><circle cx="502" cy="329" r="5"/><circle cx="523" cy="329" r="5"/><circle cx="544" cy="329" r="5"/><circle cx="418" cy="352" r="5"/><circle cx="439" cy="352" r="5"/><circle cx="460" cy="352" r="5"/><circle cx="481" cy="352" r="5"/><circle cx="502" cy="352" r="5"/><circle cx="523" cy="352" r="5"/><circle cx="544" cy="352" r="5"/><circle cx="439" cy="375" r="5"/><circle cx="460" cy="375" r="5"/><circle cx="481" cy="375" r="5"/><circle cx="502" cy="375" r="5"/><circle cx="523" cy="375" r="5"/></g>
+<text x="480" y="471" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="38" font-weight="bold" fill="#fff">TeddyCloud</text>
+<text x="480" y="507" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="28" fill="#90dafa">Home Assistant Integration</text>
+</svg>
