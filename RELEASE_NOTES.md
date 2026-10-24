@@ -1,36 +1,48 @@
-# TeddyCloud Home Assistant Integration v0.3.0 beta – Release Notes
+# TeddyCloud Home Assistant Integration v0.3.1
 
-**Status:** Beta-Kandidat auf Basis des Entwicklungsstands `0.3.0-dev18`.
+## Veröffentlichung
 
-## Highlights
+Diese Version bereitet die Integration auf die Aufnahme in den HACS-Katalog und den zukünftigen Home-Assistant-Marketplace vor. Sie behebt insbesondere die bislang unterschiedliche Versionsnummer zwischen GitHub-Release und Integrationsmanifest.
 
-- Automatische Toniebox-Erkennung über MQTT, unabhängig vom gewählten Präfix; optional gezielte Präfix-Suche
-- Deutsche Einrichtungsoberfläche mit sichtbaren Suchhinweisen; Suche endet beim ersten gefundenen Gerät
-- Lovelace-Karte mit frei wählbaren Modi `all`, `player` und `settings`
-- Figur, Titel und Wiedergabestatus; Figurenbilder anhand exakter Audio-ID aus dem Online-Katalog, sofern verfügbar
-- Geschätzte Wiedergabezeit mithilfe verfügbarer Kataloglaufzeiten (keine echte Abspielposition)
-- Read-only Anzeige der aktuellen Lautstärke in Prozent
-- Einstellbare Lautsprecher-/Kopfhörerlimits und LED-Helligkeit
-- Ladestationsstatus ohne irreführende Akku-Prozentwerte
-- Verbesserte Katalog-Fallbacks, lokale Bilder und Diagnoseattribute
-- Automatische Kartenressourcen-Registrierung mit aktualisierter Browsercache-Version
+### Funktionen
 
-## Installation und Aktualisierung
+- Toniebox automatisch über TeddyCloud-MQTT erkennen oder manuell einrichten
+- Frei wählbares MQTT-Präfix und mehrere Tonieboxen
+- Toniebox-Farbe in den Integrationsoptionen auswählen
+- Wiedergabestatus, Titel, Audio-ID und Ladestationsstatus anzeigen
+- Figurenbilder anhand der Audio-ID aus dem Community-Katalog suchen und lokal zwischenspeichern
+- Laufzeit aus Katalogdaten anzeigen und den Wiedergabefortschritt schätzen
+- Aktuelle Lautstärke anzeigen (nur lesend)
+- Lautsprecher-/Kopfhörerlimits und LED-Helligkeit über MQTT ändern
+- Eigene Lovelace-Karte mit `player`, `settings` und `all` sowie deutschem Karteneditor
+- Automatische Kartenressourcen-Registrierung (bei Storage-Dashboards)
+- Aufräumen integrationsinterner Bilder und eindeutig eigener Ressourcen beim Entfernen der letzten Box
 
-1. HACS → Benutzerdefinierte Repositories: `https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration` als **Integration** hinzufügen (falls noch nicht installiert).
-2. Integration herunterladen bzw. erneut herunterladen.
-3. Home Assistant neu starten und im Dashboard ggf. **Strg + F5** drücken.
-4. Integration hinzufügen, Toniebox suchen und Dashboard-Karte konfigurieren; YAML-Beispiele stehen in der README.
+### Neu für HACS / Marketplace
 
-## Bekannte Einschränkungen
+- Manifestversion und Lovelace-Ressourcenversion auf `0.3.1` abgestimmt
+- HACS- und Hassfest-Validierung mit GitHub Actions hinzugefügt
+- Automatisierte Python-, JavaScript- und JSON-Paketprüfungen
+- `codeowners` und passende Marketplace-Kategorie ergänzt
+- Englische UI-Übersetzung zusätzlich zur deutschen Übersetzung
+- README und Projektbranding unter **TeddyCloud Home Assistant Integration**
 
-- Community-Beta: nicht alle Home-Assistant-/TeddyCloud-Konfigurationen sind getestet.
-- Katalogdownload kann trotz Fallbacks scheitern; `catalog_status` und Home-Assistant-Protokolle helfen bei der Fehlersuche.
-- Exakte Laufzeit und authentische freigestellte Figurenbilder stehen nicht für jeden Tonie zur Verfügung.
-- Der Fortschritt ist eine Schätzung, keine verlässliche echte Wiedergabeposition.
-- Keine echte Play/Pause-Fernsteuerung oder verlässliche Akku-Prozentanzeige.
-- Kartenressource ggf. manuell im Dashboard registrieren, wenn der automatische Eintrag nicht funktioniert.
+### Installation
 
-## Hinweis zur Veröffentlichung
+1. In HACS unter **Benutzerdefinierte Repositories** die Adresse `https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration` als **Integration** hinzufügen.
+2. Integration herunterladen und Home Assistant neu starten.
+3. Unter **Einstellungen → Geräte & Dienste** die Integration hinzufügen und die Toniebox per MQTT erkennen lassen.
+4. Die Dashboard-Karte wie in der [README](README.md) einrichten.
 
-Diese Datei enthält den Text für die GitHub-Release-Seite. Der GitHub-Release-Eintrag und das Git-Tag sind **nicht** allein durch diese Datei erstellt. Für ein öffentliches Release in GitHub unter **Releases → Draft a new release** ein Tag `v0.3.0-beta.1` vom aktuellen `main` wählen und diese Release-Notizen verwenden.
+Bereits installierte Systeme können die Integration über HACS aktualisieren. Die internen Kennungen `teddycloud_homeassistant` und `custom:teddycloud-homeassistant-card` bleiben unverändert.
+
+### Bekannte Einschränkungen
+
+- Es wird keine echte Wiedergabeposition von der Toniebox geliefert. Der Fortschritt ist eine Schätzung.
+- Die aktuelle Lautstärke kann nicht ferngesteuert werden. Einstellbar sind nur die Limits und LED-Helligkeit.
+- Kein verlässlicher Akku-Prozentwert und keine Play/Pause-Fernsteuerung.
+- Figurenbilder und Laufzeiten hängen vom externen Katalog ab; einzelne Tonies können fehlen.
+- MQTT-Kommandos können erst beim nächsten Freshness Check wirksam werden.
+- Manuell eingerichtete Lovelace-Karten und Ressourcen werden beim Entfernen nicht gelöscht.
+
+**Hinweis:** Diese Datei ist der vorbereitete Release-Text. Erst ein echter GitHub-Release mit dem Tag `v0.3.1`, der nach erfolgreichen Prüfungen auf dem aktuellen `main` erstellt wird, stellt diese Version für HACS bereit.
