@@ -1,8 +1,5 @@
 # 🧸 Toniebox via TeddyCloud MQTT
 
-<p align="center">
-  <img src="assets/toniebox-via-teddycloud-mqtt.svg" alt="Toniebox via TeddyCloud MQTT" width="480">
-</p>
 
 **Toniebox-Status und Einstellungen direkt in Home Assistant – über TeddyCloud MQTT.**
 
