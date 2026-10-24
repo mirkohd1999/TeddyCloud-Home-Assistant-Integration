@@ -26,9 +26,9 @@ def valid_image_file(path):
             file.seek(max(0, size - 16))
             tail = file.read()
         if path.name.endswith(".png") or path.name.endswith(".png.tmp"):
-            return header.startswith(b"\\x89PNG\\r\\n\\x1a\\n") and tail.endswith(b"\\x00\\x00\\x00\\x00IEND\\xaeB\\x60\\x82")
+            return header.startswith(bytes.fromhex("89504e470d0a1a0a")) and tail.endswith(bytes.fromhex("0000000049454e44ae426082"))
         if path.name.endswith(".jpg") or path.name.endswith(".jpg.tmp"):
-            return header.startswith(b"\\xff\\xd8") and tail.endswith(b"\\xff\\xd9")
+            return header.startswith(bytes.fromhex("ffd8")) and tail.endswith(bytes.fromhex("ffd9"))
         if path.name.endswith(".webp") or path.name.endswith(".webp.tmp"):
             return header.startswith(b"RIFF") and header[8:12] == b"WEBP" and int.from_bytes(header[4:8], "little") + 8 == size
     except OSError:
@@ -50,7 +50,7 @@ class ArtworkArchive:
         for extension in ALLOWED_TYPES.values():
             candidate = self.path / f"{key}{extension}"
             if candidate.is_file() and valid_image_file(candidate):
-                return f"/local/teddycloud_homeassistant/figures/{key}{extension}"
+                return f"/local/teddycloud_homeassistant/figures/{key}{extension}?v={candidate.stat().st_mtime_ns}"
         return None
 
     async def store(self, audio_id, url):
