@@ -211,4 +211,4 @@ if (!customElements.get('teddycloud-homeassistant-card-editor')) {
 
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
 window.customCards = window.customCards || [];
-window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
+window.customCards.push({type:'teddycloud-homeassistant-card',name:'Toniebox via TeddyCloud MQTT',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
