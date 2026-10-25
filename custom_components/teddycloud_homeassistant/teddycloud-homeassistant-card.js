@@ -589,13 +589,17 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     return document.createElement('teddycloud-tonie-library-editor');
   }
   getCardSize() { return 7; }
+  get _isAdmin() { return this._hass?.user?.is_admin === true; }
   setConfig(config) {
     this._config = {...config};
     this.render();
   }
   set hass(hass) {
+    const wasAdmin = this._isAdmin;
     this._hass = hass;
+    if (!this._isAdmin) { this._edit = null; this._upload = null; }
     this._subscribe();
+    if (wasAdmin !== this._isAdmin) this.render();
   }
   connectedCallback() {
     this._connected = true;
@@ -694,6 +698,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       : 'Laufzeit unbekannt';
   }
   _openEdit(id) {
+    if (!this._isAdmin) return;
     const found = (this._entries || []).find(item => item.audio_id === id);
     this._edit = {
       audio_id: found?.audio_id || '',
@@ -707,7 +712,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     this.render();
   }
   async _save() {
-    if (this._saving || !this._hass) return;
+    if (this._saving || !this._hass || !this._isAdmin) return;
     const get = id => this.shadowRoot.getElementById(id)?.value ?? '';
     const audioId = get('library-audio').trim();
     const duration = get('library-duration').trim();
@@ -770,15 +775,16 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     if (!this.shadowRoot || !this._config) return;
     const e = value => this._escape(value);
     const entries = this._entries || [];
-    const view = this._edit ? (() => {
+    const view = this._edit && this._isAdmin ? (() => {
       const item = this._edit;
       const editing = Boolean(item.audio_id);
       const minutes = item.duration_seconds ? Math.round(Number(item.duration_seconds) / 6) / 10 : '';
       return '<section class="form-panel"><h3>' +
         (editing ? 'Tonie bearbeiten' : 'Tonie hinzufügen') +
-        '</h3><div class="field"><label for="library-audio">Audio-ID</label><input id="library-audio" maxlength="80"' +
+        '</h3>' + (editing ? '<details class="technical"><summary>Technische Details</summary>' : '') +
+        '<div class="field"><label for="library-audio">Audio-ID</label><input id="library-audio" maxlength="80"' +
         (editing ? ' readonly' : '') + ' value="' + e(item.audio_id) +
-        '" placeholder="Audio-ID des Tonies"></div>' +
+        '" placeholder="Audio-ID des Tonies"></div>' + (editing ? '</details>' : '') +
         '<div class="field"><label for="library-title">Titel</label><input id="library-title" maxlength="200" value="' +
         e(item.title) + '" placeholder="Titel des Hörspiels"></div>' +
         '<div class="field"><label for="library-duration">Hörspiellänge in Minuten</label>' +
@@ -795,7 +801,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
         (this._saving ? ' disabled' : '') + '>Änderungen speichern</button></div></section>';
     })() : (
       '<div class="toolbar"><input id="library-search" aria-label="Tonie suchen" placeholder="🔎 Tonies suchen …" value="' +
-      e(this._query) + '"><button class="primary" type="button" data-action="add">+ Tonie hinzufügen</button></div>' +
+      e(this._query) + '">' + (this._isAdmin ? '<button class="primary" type="button" data-action="add">+ Tonie hinzufügen</button>' : '') + '</div>' +
       (!this._entries ? '<p class="hint">Bibliothek wird geladen …</p>' :
         !entries.length ? '<p class="empty-library">Noch keine Tonies gespeichert. Stelle eine Figur auf die Toniebox, damit sie automatisch hier erscheint.</p>' :
           '<div class="library-grid">' + entries.map(item => {
@@ -806,15 +812,14 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
               this._image(item.image) +
               '<div class="tonie-body"><strong>' + e(title) + '</strong>' +
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
-              '<span class="id">Audio-ID: ' + e(item.audio_id) + '</span>' +
               (Number(item.times_seen) > 0 ? '<span class="id">Schon ' + e(item.times_seen) + '× erkannt</span>' : '') +
               (item.last_seen ? '<span class="id">Zuletzt erkannt: ' + e(new Date(item.last_seen).toLocaleDateString('de-DE')) + '</span>' : '') +
               (removed ?
                 '<p class="warning">Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.</p>' +
                 '<div class="actions"><button data-action="cancel-delete">Abbrechen</button>' +
                 '<button class="danger" data-action="confirm-delete" data-id="' + e(item.audio_id) + '">Ja, löschen</button></div>' :
-                '<div class="actions"><button data-action="edit" data-id="' + e(item.audio_id) +
-                '">✏️ Bearbeiten</button><button data-action="delete" data-id="' +
+                '<div class="actions">' + (this._isAdmin ? '<button data-action="edit" data-id="' + e(item.audio_id) +
+                '">✏️ Bearbeiten</button>' : '') + '<button data-action="delete" data-id="' +
                 e(item.audio_id) + '">Löschen</button></div>') +
               '</div></article>';
           }).join('') + '</div>')
@@ -837,6 +842,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '.tonie-body strong{font-size:14px;overflow-wrap:anywhere;line-height:1.3}',
       '.duration,.id,.hint{font-size:12px;color:var(--secondary-text-color)}',
       '.id{overflow-wrap:anywhere}',
+      '.technical{margin-bottom:15px;font-size:12px;color:var(--secondary-text-color)}.technical summary{cursor:pointer;margin-bottom:8px}',
       '.actions,.edit-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:auto}',
       'button{border:1px solid var(--divider-color,#777);border-radius:9px;padding:9px 12px;background:transparent;color:var(--primary-text-color);font:inherit;font-size:12px;cursor:pointer}',
       'button.primary{background:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff);border-color:transparent;font-weight:600}',
@@ -852,7 +858,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '</style><ha-card>',
       '<header class="header"><h2>🧸 Meine Tonie-Bibliothek</h2>',
       '<span class="hint">' + entries.length + ' Tonies</span></header>',
-      '<p class="subtitle">Deine Figuren – automatisch gemerkt und direkt hier bearbeitbar, auch ohne Administratorrechte.</p>',
+      '<p class="subtitle">Deine Figuren – automatisch gesammelt. Bearbeiten nur für Admins; Löschen für alle angemeldeten Nutzer.</p>',
       this._error ? '<p class="error" role="alert">' + e(this._error) + '</p>' : '',
       view, '</ha-card>'
     ].join('');
@@ -880,3 +886,4 @@ if (!window.customCards.some(item => item.type === 'teddycloud-tonie-library-car
   description:'Deine Tonie-Sammlung ansehen, bearbeiten, Bilder ändern und Tonies hinzufügen – direkt im Dashboard',
   preview:true});
 }
+
