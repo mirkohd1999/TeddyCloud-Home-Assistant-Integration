@@ -16,6 +16,7 @@ def get_library(hass):
     return hass.data.get(DOMAIN, {}).get("library")
 
 
+@websocket_api.ws_require_user()
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/library/list",
 })
@@ -28,6 +29,7 @@ async def ws_library_list(hass, connection, msg):
     connection.send_result(msg["id"], {"entries": library.public_entries()})
 
 
+@websocket_api.ws_require_user()
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/library/save",
     vol.Required("audio_id"): str,
@@ -56,6 +58,7 @@ async def ws_library_save(hass, connection, msg):
     connection.send_result(msg["id"], entry)
 
 
+@websocket_api.ws_require_user()
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/library/delete",
     vol.Required("audio_id"): str,
@@ -70,6 +73,7 @@ async def ws_library_delete(hass, connection, msg):
     connection.send_result(msg["id"], {"deleted": True})
 
 
+@websocket_api.ws_require_user()
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/library/subscribe",
 })
