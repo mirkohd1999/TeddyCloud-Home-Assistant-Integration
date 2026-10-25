@@ -86,7 +86,7 @@ class TonieLibrary:
     def _notify(self, audio_id):
         async_dispatcher_send(self.hass, SIGNAL_CHANGED, audio_id)
 
-    async def async_seen(self, box_id, audio_id, title=None, image=None, duration=None):
+    async def async_seen(self, box_id, audio_id, title=None, image=None, duration=None, retained=False):
         """Collect on a NEW placement; ordinary status replays don't resurrect deletions."""
         if not valid_audio_id(audio_id):
             return
