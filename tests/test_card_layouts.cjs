@@ -237,5 +237,5 @@ libraryCard._deleteId = null;
 libraryCard.render();
 assert.ok(!libraryCard.shadowRoot.innerHTML.includes('<script>'));
 assert.ok(!libraryCard.shadowRoot.innerHTML.includes('src="javascript'));
-assert.ok(window === undefined || true); // registration is inspected via components above
+assert.ok(components.has('teddycloud-tonie-library-editor'));
 console.log('Dashboard layout, editor and Tonie library tests passed.');
