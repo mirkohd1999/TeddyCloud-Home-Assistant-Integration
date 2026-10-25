@@ -64,7 +64,18 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     );
     return {entity: entity || 'media_player.meine_toniebox_now_playing', composition: true};
   }
-  getCardSize() { return 8; }
+  getCardSize() {
+    const mode = this.config?.mode || 'all';
+    if (mode === 'compact') return 2;
+    if (mode === 'artwork') return 5;
+    if (mode === 'status') return 4;
+    if (mode === 'tiles') return 6;
+    if (mode === 'custom') {
+      const n = teddySelectedSections(this.config).length;
+      return Math.max(2, Math.min(12, Math.ceil(n / (this.config?.layout === 'grid' ? 2 : 1)) * 2));
+    }
+    return 8;
+  }
   fmt(t) {
     const s = Math.max(0, Math.floor(t || 0));
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2,'0')}`;
