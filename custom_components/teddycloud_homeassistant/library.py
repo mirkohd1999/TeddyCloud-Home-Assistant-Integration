@@ -21,6 +21,22 @@ SIGNAL_CHANGED = f"{DOMAIN}_library_changed"
 AUDIO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 MAX_UPLOAD = 2 * 1024 * 1024
 IMAGE_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+SYSTEM_SOUND_TITLE_RE = re.compile(
+    r"^system\s+sounds?(?:\s+[a-z]{2}[-_][a-z]{2})?(?:\s*[-–:]\s*|\s*$)",
+    re.IGNORECASE,
+)
+
+
+def is_system_sound_entry(item):
+    """Recognize TeddyCloud system labels, not generic words like 'Startup'.
+
+    Inspect detected metadata even when an admin renamed the entry. Keep raw
+    records internally: MQTT titles and audio IDs can arrive out of order, so
+    later real figure metadata must be able to correct the classification.
+    This also filters existing stored sounds without deleting user data.
+    """
+    title = item.get("title")
+    return isinstance(title, str) and bool(SYSTEM_SOUND_TITLE_RE.match(title.strip()))
 
 
 def valid_audio_id(value):
@@ -75,7 +91,8 @@ class TonieLibrary:
 
     def entries(self):
         return sorted(
-            (dict({"audio_id": key}, **item) for key, item in self._entries.items()),
+            (dict({"audio_id": key}, **item) for key, item in self._entries.items()
+             if not is_system_sound_entry(item)),
             key=lambda item: (item.get("title") or item.get("audio_id") or "").casefold(),
         )
 
@@ -211,7 +228,8 @@ class TonieLibrary:
 
     def public_entries(self):
         return sorted(
-            (self._public_entry(audio_id) for audio_id in self._entries),
+            (self._public_entry(audio_id) for audio_id, item in self._entries.items()
+             if not is_system_sound_entry(item)),
             key=lambda item: item["title"].casefold(),
         )
 

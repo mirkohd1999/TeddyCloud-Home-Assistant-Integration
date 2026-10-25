@@ -119,6 +119,44 @@ class TestLibrary(unittest.TestCase):
             self.assertEqual(len(lib.public_entries()), 1)
         asyncio.run(run())
 
+    def test_system_sounds_excluded_in_all_library_views_and_after_restart(self):
+        async def run():
+            lib = await self.load()
+            for index, title in enumerate((
+                "System sounds de-de - Jingle (Startup)",
+                "System sounds en-gb - Jingle (Shutdown)",
+                " SYSTEM SOUNDS fr-fr - Signal ",
+                "System sounds - Warning",
+            )):
+                await lib.async_seen("box", str(index), title=title)
+            await lib.async_seen("box", "real", title="Mein Hörspiel")
+            self.assertEqual([e["audio_id"] for e in lib.public_entries()], ["real"])
+            self.assertEqual([e["audio_id"] for e in lib.entries()], ["real"])
+            # Existing storage is filtered without having to delete every sound.
+            lib = await self.load()
+            self.assertEqual([e["audio_id"] for e in lib.public_entries()], ["real"])
+            lib.box_cleared("box")
+            await lib.async_seen("box", "0", title="System sounds de-de - Jingle (Startup)")
+            self.assertEqual(len(lib.public_entries()), 1)
+            await lib.async_edit("0", title="Renamed startup sound")
+            self.assertEqual(len(lib.public_entries()), 1)
+        asyncio.run(run())
+
+    def test_late_titles_filter_sounds_without_permanently_blocking_real_figures(self):
+        async def run():
+            lib = await self.load()
+            await lib.async_seen("box", "123")
+            await lib.async_metadata("123", title="System sounds de-de - Jingle (Startup)")
+            self.assertEqual(lib.public_entries(), [])
+            # A title from the previous sound may arrive before the new figure's
+            # ID; subsequent metadata must recover the real figure, not blacklist it.
+            await lib.async_metadata("123", title="Der kleine Rabe Socke")
+            self.assertEqual(lib.public_entries()[0]["title"], "Der kleine Rabe Socke")
+            for index, title in enumerate(("Startup", "Jingle Bells", "System Sounds of Nature", "Unbekannter Tonie")):
+                await lib.async_seen("box", f"figure{index}", title=title)
+            self.assertEqual(len(lib.public_entries()), 5)
+        asyncio.run(run())
+
     def test_safe_image_upload_and_validation(self):
         async def run():
             lib = await self.load()
