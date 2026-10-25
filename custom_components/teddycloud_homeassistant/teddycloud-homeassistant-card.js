@@ -58,11 +58,12 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     return document.createElement('teddycloud-homeassistant-card-editor');
   }
   static getStubConfig(hass) {
-    const entity = Object.keys(hass?.states || {}).find(id =>
-      id.startsWith('media_player.') &&
-      (hass.states[id].attributes?.content_audio_id !== undefined || hass.states[id].attributes?.box_color !== undefined)
-    );
-    return {entity: entity || 'media_player.meine_toniebox_now_playing', composition: true};
+    const players = Object.entries(hass?.states || {}).filter(([id]) => id.startsWith('media_player.'));
+    const candidate = players.find(([id, state]) =>
+      state.attributes?.box_color !== undefined ||
+      state.attributes?.content_audio_id !== undefined ||
+      /tonie|teddy/i.test(id + ' ' + (state.attributes?.friendly_name || '')));
+    return {entity: candidate?.[0] || '', mode: 'all', composition: true};
   }
   getCardSize() {
     const mode = this.config?.mode || 'all';
