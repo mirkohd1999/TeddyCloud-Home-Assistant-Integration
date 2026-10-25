@@ -174,7 +174,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
           '</span><span>' + this.fmt(dur) + '</span></div><div class="board-note">Fortschritt geschätzt</div>'
         : '<div class="board-note">Laufzeit unbekannt</div>';
       const modules = {
-        artwork: mode === 'compact' ? smallArt : '<div class="board-artwork">' + artBlock + '</div>',
+        artwork: mode === 'compact' ? smallArt : '<div class="board-artwork-media">' + artBlock + '</div>',
         title: titleMarkup,
         playback: '<div class="board-value"><span class="board-dot"></span>' + safe(playText) + '</div>',
         charger: '<div class="board-value">' + safe(chargerText) + '</div>',
@@ -195,14 +195,27 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       const cols = mode === 'custom' ? Math.min(3, Math.max(1, parseInt(this.config.columns, 10) || 2)) : 2;
       const items = selected.map(id => {
         const label = TEDDY_SECTIONS.find(([name]) => name === id)?.[1] || id;
-        return '<section class="board-section board-' + id + '"><div class="section-label">' +
-          safe(label) + '</div>' + modules[id] + '</section>';
+        // User-defined width of every module in grid mode, clamped to the
+        // current number of columns. Old cards without widths stay 1-column.
+        const requestedWidth = this.config?.section_widths?.[id];
+        const parsedWidth = Number(requestedWidth);
+        const span = Number.isInteger(parsedWidth) && parsedWidth >= 1
+          ? Math.min(cols, parsedWidth) : 1;
+        const widthStyle = mode === 'custom' && layout === 'grid'
+          ? ' style="--section-span:' + span + '"' : '';
+        // An artwork heading used to push the image sideways because the
+        // artwork container and section shared one CSS class.
+        const labelHtml = id === 'artwork' ? '' :
+          '<div class="section-label">' + safe(label) + '</div>';
+        return '<section class="board-section board-' + id + '"' + widthStyle +
+          '>' + labelHtml + modules[id] + '</section>';
       }).join('');
       this.shadowRoot.innerHTML = `<style>
         :host{display:block}
         ha-card{padding:16px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${color}20,transparent 73%),var(--ha-card-background,var(--card-background-color,#fff))}
         .board{display:grid;gap:12px;min-width:0}
         .board.grid{grid-template-columns:repeat(var(--board-cols),minmax(0,1fr))}
+        .board.grid .board-section{grid-column:span min(var(--section-span,1),var(--board-cols))}
         .board.compact{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
         .board-section{min-width:0;padding:13px;border-radius:13px;border:1px solid var(--divider-color,#ddd);background:color-mix(in srgb,var(--card-background-color,#fff),${color} 5%)}
         .board.compact .board-section{padding:0;border:0;background:none}
@@ -226,10 +239,10 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         .ear-row span:last-child{font-weight:600}
         .small-art{display:block;width:64px;height:64px;object-fit:contain;border-radius:12px;background:${color}23}
         .fallback-art{display:grid;place-items:center;font-size:32px}
-        .board-artwork{display:flex;justify-content:center;align-items:center}
-        .board-artwork .art{width:min(100%,205px);height:205px;object-fit:contain;border-radius:14px}
-        .board-artwork .placeholder{display:grid;place-items:center;font-size:52px;background:${color}25}
-        .stage{position:relative;width:205px;height:210px;overflow:hidden;border-radius:16px;flex-shrink:0;background:radial-gradient(circle at 45% 37%,#ffffff15,transparent 70%)}
+        .board-artwork-media{display:flex;justify-content:center;align-items:center;min-width:0;overflow:hidden}
+        .board-artwork-media .art{width:min(100%,205px);height:205px;object-fit:contain;border-radius:14px}
+        .board-artwork-media .placeholder{display:grid;place-items:center;font-size:52px;background:${color}25}
+        .stage{position:relative;width:205px;max-width:100%;height:210px;overflow:hidden;border-radius:16px;flex-shrink:1;background:radial-gradient(circle at 45% 37%,#ffffff15,transparent 70%)}
         .toy-box{position:absolute;left:18px;top:35px;width:170px;height:156px;border-radius:19px 24px 10px 12px;background:var(--box-color);box-shadow:inset -14px -6px 23px #0003,inset 12px 11px 20px #fff3,9px 10px 14px #0002;transform:skewY(-2deg)}
         .toy-box::before{content:'';position:absolute;left:13px;top:-10px;width:144px;height:30px;border-radius:70% 65% 35% 35%;background:color-mix(in srgb,var(--box-color),white 35%);transform:skewY(2deg)}
         .ear{position:absolute;top:-24px;width:26px;height:31px;background:#929294;clip-path:polygon(50% 0,100% 100%,0 100%);z-index:1}.ear.left{left:39px}.ear.right{right:34px}
@@ -241,7 +254,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         .setting input{width:100%;accent-color:${color};cursor:pointer}
         .setting input:disabled{opacity:.45;cursor:not-allowed}
         .ticks{display:flex;justify-content:space-between;font-size:10px;opacity:.7;margin-top:4px}
-        @media(max-width:640px){.board.grid{grid-template-columns:1fr}}
+        @media(max-width:640px){.board.grid{grid-template-columns:1fr}.board.grid .board-section{grid-column:1/-1}}
         @media(max-width:370px){ha-card{padding:9px}.board-section{padding:9px}.board-track{font-size:16px}}
       </style><ha-card><div class="board ${layout}" style="--board-cols:${cols}">${items ||
         '<div class="board-note">Keine Bausteine ausgewählt – im Karteneditor auswählen.</div>'}</div></ha-card>`;
