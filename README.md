@@ -63,7 +63,7 @@
 | 🔌 Ladestation | Von TeddyCloud gemeldeter Zustand |
 | 👂 Ohrtasten | Je ein Sensor für großes/kleines Ohr, einschließlich Mehrfachdruck und Ereigniszähler |
 | 🎨 Dashboard | **8 Vorlagen**, Live-Vorschau, frei wählbare Bausteine, Reihenfolge und Breite |
-| 📚 Tonie-Bibliothek | Einmal erkannte Tonies dauerhaft merken und direkt im Dashboard verwalten, auch ohne Admin-Rechte |
+| 📚 Tonie-Bibliothek | Einmal erkannte Tonies dauerhaft merken; Admins bearbeiten, alle angemeldeten Nutzer dürfen löschen |
 
 **Nicht möglich:** Die aktuelle Lautstärke fernsteuern, Play/Pause auslösen, eine echte Abspielposition oder einen zuverlässigen Akku-Prozentstand abfragen. Ein erkannter Ladestationsstatus bedeutet nicht zwingend, dass der Akku gerade lädt. Lautstärkelimits und LED-Einstellungen können erst bei einem späteren *Freshness Check* wirksam werden.
 
@@ -166,23 +166,23 @@ Ab **v0.3.6** gibt es eine **zweite Dashboard-Karte: „TeddyCloud Tonie-Bibliot
 2. Dashboard öffnen → **Bearbeiten → Karte hinzufügen**.
 3. **TeddyCloud Tonie-Bibliothek** auswählen und speichern.
 
-Danach können **alle angemeldeten Home-Assistant-Nutzer, auch ohne Admin-Rechte**, die Tonies **direkt in dieser Karte** verwalten. Sie benötigen **keine Berechtigung zum Bearbeiten des Dashboards**. Alle Änderungen gelten für die **gemeinsame Bibliothek** dieses Home-Assistant-Systems; Nutzer sehen deshalb dieselben Tonies.
+Danach können **alle angemeldeten Home-Assistant-Nutzer** die Tonies **direkt in dieser Karte ansehen und löschen**. **Hinzufügen und Bearbeiten** (Titel, Laufzeit und Bilder) sind ausschließlich Administratoren erlaubt. Sie benötigen **keine Berechtigung zum Bearbeiten des Dashboards**. Alle Änderungen gelten für die **gemeinsame Bibliothek** dieses Home-Assistant-Systems; Nutzer sehen deshalb dieselben Tonies.
 
 ### Was kann die Bibliothek?
 
 - **Automatisch sammeln:** Sobald die Integration eine bislang unbekannte **Audio-ID** von einer Toniebox meldet, wird der Tonie zur Bibliothek hinzugefügt. Auch Tonies, die später nicht mehr aufgelegt sind, bleiben gespeichert.
-- **Suchen und stöbern:** Alle gesammelten Tonies als Bilderkacheln mit Titel, Hörspiellänge und Audio-ID anzeigen.
-- **Titel und Hörspiellänge bearbeiten:** Direkt mit **Bearbeiten** im Dashboard. Die Laufzeit wird in Minuten eingetragen.
-- **Figurenbild ändern:** Eine Bildadresse eingeben **oder eine JPG-/PNG-/WebP-Datei vom eigenen Gerät hochladen** (maximal 2 MB). Hochgeladene Bilder werden lokal unter `/config/www/teddycloud_homeassistant/library/` abgelegt; kein externer Bildhost notwendig.
+- **Suchen und stöbern:** Alle gesammelten Tonies als Bilderkacheln mit Titel und Hörspiellänge anzeigen. Die Audio-ID steht beim Bearbeiten unter den standardmäßig eingeklappten **Technischen Details**; beim manuellen Hinzufügen ist sie weiterhin ein sichtbares Pflichtfeld.
+- **Titel und Hörspiellänge bearbeiten (nur Admins):** Direkt mit **Bearbeiten** im Dashboard. Die Laufzeit wird in Minuten eingetragen.
+- **Figurenbild ändern (nur Admins):** Eine Bildadresse eingeben **oder eine JPG-/PNG-/WebP-Datei vom eigenen Gerät hochladen** (maximal 2 MB). Hochgeladene Bilder werden lokal unter `/config/www/teddycloud_homeassistant/library/` abgelegt; kein externer Bildhost notwendig.
 - **Tonie löschen:** Über den Löschknopf und eine zusätzliche Bestätigung aus der Bibliothek entfernen.
 - **Wieder hinzufügen:** Wird ein gelöschter Tonie nach dem Abnehmen **erneut aufgelegt**, nimmt die Integration ihn bei einem **neuen Erkennungsereignis** wieder auf. Ein alter zwischengespeicherter Status oder eine laufende Katalogsuche hebt das Löschen nicht sofort auf.
-- **Manuell hinzufügen:** Über **+ Tonie hinzufügen** mit Audio-ID, beispielsweise für Figuren, die derzeit nicht aufgestellt werden können.
+- **Manuell hinzufügen (nur Admins):** Über **+ Tonie hinzufügen** mit Audio-ID, beispielsweise für Figuren, die derzeit nicht aufgestellt werden können.
 
 **Wichtig:** Die automatische Sammlung beginnt mit der Installation dieser Funktion. Tonies, die **vorher** benutzt wurden und seitdem keine Erkennungsdaten mehr gesendet haben, lassen sich **nicht rückwirkend aus einer vollständigen Toniebox-Historie rekonstruieren**. Du kannst sie jederzeit wieder auflegen oder manuell hinzufügen.
 
 Die Bearbeitung von Titel, Bild und Laufzeit wirkt sich zusätzlich auf die **Anzeige der aktuell erkannten Figur** im vorhandenen Toniebox-Media-Player aus. Bereits gespeicherte eigene Angaben gehen dabei nicht verloren, wenn der Online-Katalog andere Werte liefert.
 
-**Datenschutz und Rollen:** Die Bibliothek nutzt Home Assistants **authentifizierte WebSocket-Verbindung**. Es wird **keine offene API** für anonyme Nutzer bereitgestellt. Weil die Bibliothek bewusst auch ohne Admin-Rechte bearbeitbar ist, können **alle angemeldeten Home-Assistant-Nutzer gemeinsam Einträge ändern oder löschen**. Admin-Rechte sind weiterhin erforderlich, um das Dashboard selbst zu bearbeiten und die Bibliothekskarte dort erstmalig hinzuzufügen.
+**Datenschutz und Rollen:** Die Bibliothek nutzt Home Assistants **authentifizierte WebSocket-Verbindung**. Es wird **keine offene API** für anonyme Nutzer bereitgestellt. **Alle angemeldeten Home-Assistant-Nutzer können Einträge löschen. Nur Administratoren können Einträge hinzufügen oder bearbeiten**, einschließlich Bild-Uploads. Diese Berechtigung wird auch serverseitig für direkte WebSocket-Anfragen geprüft. Admin-Rechte sind weiterhin erforderlich, um das Dashboard selbst zu bearbeiten und die Bibliothekskarte dort erstmalig hinzuzufügen.
 
 ## 📡 Toniebox über MQTT
 
