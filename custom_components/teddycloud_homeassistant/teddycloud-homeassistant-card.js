@@ -325,7 +325,11 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     // Automatically choose the sole detected Toniebox for new cards. Don't
     // replace a user's explicit choice or a temporarily offline entity.
     const current = this._config?.entity;
-    if (this._config && boxes.length === 1 &&
+    const oneToniebox = boxes.length === 1 && (
+      /tonie|teddy/i.test(boxes[0][0] + ' ' + (boxes[0][1].attributes?.friendly_name || '')) ||
+      boxes[0][1].attributes?.box_color !== undefined ||
+      boxes[0][1].attributes?.content_audio_id !== undefined);
+    if (this._config && oneToniebox &&
         (!current || (current === 'media_player.meine_toniebox_now_playing' &&
           !this._hass?.states?.[current]))) {
       if (current !== boxes[0][0]) {
