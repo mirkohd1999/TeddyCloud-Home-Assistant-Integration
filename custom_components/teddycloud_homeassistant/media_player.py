@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlsplit, urlunsplit
 from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerEntityFeature, MediaPlayerState
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from .library import SIGNAL_CHANGED
 from .online_catalog import RETRY
 from .artwork_archive import ArtworkArchive
 from .const import (DOMAIN, CONF_BOX_NAME, CONF_BOX_COLOR, CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_COLOR)
@@ -60,6 +62,7 @@ class BoxPlayer(MediaPlayerEntity):
         self._was_playing = False
         self._figure_present = None
         self._figure_removed_at = None
+        self._library = None
 
     @property
     def device_info(self):
@@ -114,10 +117,37 @@ class BoxPlayer(MediaPlayerEntity):
                     self._lookup_task.cancel()
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(text))
         if self.hass is not None:
+            library = self._library
+            audio_id = self._values.get('ContentAudioId')
+            if library and field == 'ContentAudioId':
+                if not text:
+                    library.box_cleared(self.entry.entry_id)
+                elif text != previous:
+                    # A genuinely new Audio-ID transition adds the figure to
+                    # the persistent library. Status refreshes never resurrect
+                    # items that a user intentionally deleted.
+                    self.hass.async_create_task(
+                        library.async_seen(self.entry.entry_id, text)
+                    )
+            elif library and field in ('ContentTitle', 'ContentPicture') and audio_id:
+                if field == 'ContentTitle':
+                    self.hass.async_create_task(library.async_metadata(audio_id, title=text))
+                elif field == 'ContentPicture':
+                    url = resolved_picture(text, self.entry.options.get('teddycloud_url', ''))
+                    self.hass.async_create_task(library.async_metadata(audio_id, image=url))
             self.async_write_ha_state()
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
+        self._library = self.hass.data.get(DOMAIN, {}).get('library')
+        if self._library:
+            @callback
+            def library_changed(audio_id):
+                if self._values.get('ContentAudioId') == audio_id:
+                    self.async_write_ha_state()
+
+            from homeassistant.core import callback
+            self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_CHANGED, library_changed))
         self._archive = self.hass.data.setdefault(DOMAIN, {}).setdefault('artwork_archive', ArtworkArchive(self.hass))
         audio_id = self._values.get('ContentAudioId')
         if audio_id:
@@ -161,6 +191,13 @@ class BoxPlayer(MediaPlayerEntity):
             if self._online_audio_id == audio_id and self.hass is not None:
                 self._online_result = result
                 self._local_artwork = cached
+                if self._library and result:
+                    await self._library.async_metadata(
+                        audio_id,
+                        title=result.get('catalog_title'),
+                        image=cached or result.get('figure'),
+                        duration=result.get('duration_seconds'),
+                    )
                 self.async_write_ha_state()
             return
 
@@ -181,10 +218,15 @@ class BoxPlayer(MediaPlayerEntity):
     def media_title(self):
         if self._figure_present is False:
             return 'Keine Figur aufgestellt'
-        return self._metadata().get('title') or self._values.get('ContentTitle') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None) or 'Unbekannter Tonie'
+        library_title = self._library.custom_metadata(self._values.get('ContentAudioId')) if self._library else {}
+        return library_title.get('title') or self._metadata().get('title') or self._values.get('ContentTitle') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None) or 'Unbekannter Tonie'
 
     @property
     def media_duration(self):
+        custom = self._library.custom_metadata(self._values.get('ContentAudioId')) if self._library else {}
+        duration = custom.get('duration_seconds')
+        if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 0 < duration <= 86400:
+            return int(duration)
         duration = self._metadata().get('duration_seconds')
         if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 0 < duration <= 86400:
             return int(duration)
@@ -198,6 +240,12 @@ class BoxPlayer(MediaPlayerEntity):
     def media_image_url(self):
         if self._figure_present is False:
             return None
+        manual = self._library.custom_metadata(self._values.get('ContentAudioId')) if self._library else {}
+        manual_url = manual.get('image')
+        if manual_url:
+            valid = resolved_picture(manual_url, self.entry.options.get('teddycloud_url', ''))
+            if valid:
+                return valid
         custom = self._metadata()
         # User-defined figurine photo overrides catalog; exact Audio-ID match
         # preferred over the book/episode cover reported by TeddyCloud.
