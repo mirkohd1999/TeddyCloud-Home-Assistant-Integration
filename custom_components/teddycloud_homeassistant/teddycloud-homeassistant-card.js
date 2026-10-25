@@ -560,9 +560,13 @@ if (!customElements.get('teddycloud-homeassistant-card-editor')) {
   customElements.define('teddycloud-homeassistant-card-editor',TeddyCloudHomeAssistantCardEditor);
 }
 
-customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
+if (!customElements.get('teddycloud-homeassistant-card')) {
+  customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
+}
 window.customCards = window.customCards || [];
-window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
+if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-card')) {
+  window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
+}
 
 
 /* Separate Tonie library card. Editing happens here, not in dashboard edit mode. */
@@ -869,9 +873,10 @@ if (!customElements.get('teddycloud-tonie-library-editor')) {
 if (!customElements.get('teddycloud-tonie-library-card')) {
   customElements.define('teddycloud-tonie-library-card', TeddyCloudTonieLibraryCard);
 }
-window.customCards.push({
+if (!window.customCards.some(item => item.type === 'teddycloud-tonie-library-card')) {
+  window.customCards.push({
   type:'teddycloud-tonie-library-card',
   name:'TeddyCloud Tonie-Bibliothek',
   description:'Deine Tonie-Sammlung ansehen, bearbeiten, Bilder ändern und Tonies hinzufügen – direkt im Dashboard',
-  preview:true
-});
+  preview:true});
+}
