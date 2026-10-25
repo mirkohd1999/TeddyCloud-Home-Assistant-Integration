@@ -59,7 +59,7 @@ Für Endnutzer reicht jetzt **Dashboard bearbeiten → Karte hinzufügen → Ted
 - **Kein YAML und keine manuelle Ressourcenpflege** erforderlich, wenn die Integration in Home Assistant eingerichtet und die Ressource im Storage-Dashboard automatisch registriert ist.
 - Die mit v0.3.4 gelieferte Karte wird über eine neue, versionierte Ressourcenadresse `/teddycloud-homeassistant/card-v034.js?v=0.3.4` geladen, damit vorher zwischengespeicherte JavaScript-Versionen nicht versehentlich weiterverwendet werden. Ältere Kartenkonfigurationen und die bisherige Ressourcenadresse bleiben kompatibel.
 
-**Update:** Nach Veröffentlichung von v0.3.4 die Integration über HACS aktualisieren und Home Assistant einmal neu starten. Die Ressourcenadresse wird in normalen Storage-Dashboards automatisch angepasst. Bereits eingerichtete Karten müssen nicht neu erstellt werden.
+**Update:** Der Release `v0.3.4` wird nach erfolgreichen GitHub-Prüfungen auf `main` automatisch erstellt. Sobald HACS das Update anbietet, die Integration über HACS aktualisieren und Home Assistant einmal neu starten. Die Ressourcenadresse wird in normalen Storage-Dashboards automatisch angepasst. Bereits eingerichtete Karten müssen nicht neu erstellt werden.
 
 ## 🧩 Dashboard-Baukasten und Kartenvarianten (v0.3.3)
 
