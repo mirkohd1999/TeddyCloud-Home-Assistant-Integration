@@ -98,7 +98,7 @@ class TonieLibrary:
             # Keep deliberately deleted figures hidden after restarting HA,
             # until a *new* placement is observed after another figure/removal.
             if audio_id in self._hidden:
-                if prev is None:
+                if prev is None and retained:
                     return
                 self._hidden.discard(audio_id)
             old = self._entries.get(audio_id)
