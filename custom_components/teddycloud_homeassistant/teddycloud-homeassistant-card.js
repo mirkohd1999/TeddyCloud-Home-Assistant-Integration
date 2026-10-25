@@ -803,6 +803,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
               '<div class="tonie-body"><strong>' + e(title) + '</strong>' +
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
               '<span class="id">Audio-ID: ' + e(item.audio_id) + '</span>' +
+              (Number(item.times_seen) > 0 ? '<span class="id">Schon ' + e(item.times_seen) + '× erkannt</span>' : '') +
+              (item.last_seen ? '<span class="id">Zuletzt erkannt: ' + e(new Date(item.last_seen).toLocaleDateString('de-DE')) + '</span>' : '') +
               (removed ?
                 '<p class="warning">Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.</p>' +
                 '<div class="actions"><button data-action="cancel-delete">Abbrechen</button>' +
