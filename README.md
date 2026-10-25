@@ -85,9 +85,9 @@ Die Integration bindet ihre Kartenressource bei Storage-Dashboards nach Möglich
 
 ### Einblicke
 
-| Musik | Alles | Einstellungen |
+| Musik | Selbst gestalten | Einstellungen |
 | :---: | :---: | :---: |
-| <img src="docs/images/dashboard-player-original.webp" alt="Musikansicht mit Tonie-Bild" width="280"> | <img src="docs/images/dashboard-all-original.webp" alt="Gesamtansicht mit Player und Einstellungen" width="280"> | <img src="docs/images/dashboard-settings-original.webp" alt="Toniebox-Einstellungen" width="280"> |
+| <img src="docs/images/dashboard-player.png" alt="Musikansicht mit Toniebox und Wiedergabestatus" width="280"> | <img src="docs/images/dashboard-custom.png" alt="Eigene Zusammenstellung mit Bild, Titel und Laufzeit" width="280"> | <img src="docs/images/dashboard-settings.png" alt="Lautsprecherlimit, Kopfhörerlimit und LED-Helligkeit" width="280"> |
 
 Anzeigename, Boxfarbe, Bilddarstellung und eine manuelle Entitäts-ID findest du im Karteneditor unter **Weitere Einstellungen (optional)**.
 
