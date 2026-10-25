@@ -1,26 +1,23 @@
-# TeddyCloud Home Assistant Integration v0.3.6
+# TeddyCloud Home Assistant Integration v0.3.7
 
-## Neu: Eigene Tonie-Bibliothek im Home-Assistant-Dashboard
+## Fehlerbehebung: Tonie-Bibliothek wird im Dashboard nicht gefunden
 
-- **Neue Dashboard-Karte:** `custom:teddycloud-tonie-library-card`, im Kartenkatalog als **TeddyCloud Tonie-Bibliothek**.
-- **Gesehene Tonies automatisch merken:** Beim Erkennen einer neuen Audio-ID über TeddyCloud MQTT kommt die Figur in die dauerhaft gespeicherte gemeinsame Bibliothek. Die Sammlung funktioniert über mehrere Tonieboxen hinweg und bleibt auch nach einem Neustart erhalten.
-- **Einträge direkt im Dashboard bearbeiten**, ohne Dashboard-Konfiguration oder Admin-Rechte: Titel ändern, Hörspiellänge eingeben und Figurenbilder per Webadresse oder als Bilddatei vom Gerät hochladen (PNG/JPG/WebP, bis 2 MB).
-- **Suchen, manuell hinzufügen und löschen** mit Sicherheitsbestätigung.
-- **Gelöschte Tonies automatisch wieder aufnehmen**, wenn sie nach dem Entfernen durch eine spätere Erkennung erneut aufgestellt werden. Gelöschte Einträge werden nicht sofort durch alte MQTT-Zustände oder Katalogergebnisse wiederhergestellt.
-- **Gemeinsame, persistente Daten:** Home Assistant speichert die Sammlung intern über `Store`, lokal hochgeladene Bilder unter `/config/www/teddycloud_homeassistant/library/`.
-- **Nicht-Administratoren können Inhalte bearbeiten:** Die Aktionen verwenden ausschließlich authentifizierte Home-Assistant-WebSocket-Befehle. Die Karte muss von jemandem mit Dashboard-Bearbeitungsrechten einmalig hinzugefügt werden.
-- Manuell bearbeitete Metadaten werden außerdem beim aktuell aufgelegten Tonie im bestehenden Media-Player angezeigt.
-- Neue Tests für Speicherung, Mehrfachboxen, Löschung/Wiedererkennung, Upload-Validierung und sichere Kartenanzeige.
+- Behebt **„Custom element doesn't exist: teddycloud-tonie-library-card“** bei gleichzeitig geladenen älteren und neueren TeddyCloud-Dashboard-Ressourcen.
+- Beide Custom Elements werden jetzt nur registriert, falls sie noch nicht existieren. Eine vorhandene Toniebox-Karte blockiert die spätere Registrierung der Bibliothek damit nicht mehr.
+- Auch bei mehrfach eingebundenen Ressourcen entstehen keine doppelten Einträge im Kartenkatalog.
+- Neue cache-sichere Kartenressource: `/teddycloud-homeassistant/card-v037.js?v=0.3.7`.
+- Die Integration kann die automatische Lovelace-Ressourcenregistrierung erneut versuchen, wenn Home Assistant diese beim frühen Start noch nicht bereitgestellt hat.
+- Automatisierter Regressionstest lädt die Kartendatei wie auf einer Installation mit vorhandener älterer Player-Karte mehrfach, einschließlich Bibliotheksregistrierung.
+- **Keine Änderungen an gespeicherten Tonies, Bildern, Titeln und Laufzeiten.** Die Bibliothek aus v0.3.6 bleibt erhalten.
 
-## Installation
+## Aktualisierung
 
-1. Version `v0.3.6` über HACS aktualisieren.
-2. Home Assistant neu starten.
-3. Dashboard bearbeiten → Karte hinzufügen → **TeddyCloud Tonie-Bibliothek** → Speichern.
-4. Danach Tonies im normalen Dashboard hinzufügen, bearbeiten oder löschen – auch mit einem normalen Home-Assistant-Benutzerkonto.
+1. Über HACS auf **v0.3.7** aktualisieren.
+2. **Home Assistant vollständig neu starten.**
+3. Dashboard bearbeiten → **TeddyCloud Tonie-Bibliothek** als zusätzliche Karte hinzufügen; alternativ manuell:
 
-Die bestehende Toniebox-Karte behält ihren Namen und ihre Konfiguration. Die Ressourcenadresse wird in Storage-Dashboards automatisch auf `/teddycloud-homeassistant/card-v036.js?v=0.3.6` aktualisiert. Alte Pfade werden weiter unterstützt.
+```yaml
+type: custom:teddycloud-tonie-library-card
+```
 
-## Grenzen
-
-Die automatische Sammlung beginnt erst, wenn diese Version installiert ist. Bereits früher gehörte Figuren ohne erneute MQTT-Erkennung können nicht aus einer unbekannten Vergangenheit rekonstruiert werden; sie lassen sich erneut auflegen oder per Audio-ID hinzufügen. Auch ältere Figuren benötigen verfügbare Katalog- oder eigene Bilddaten. Play/Pause und die aktuelle Lautstärke bleiben nicht fernsteuerbar.
+In normalen Storage-Dashboards ist keine manuelle Ressourcenadresse erforderlich. Die Ressource wird automatisch aktualisiert. Bei weiterhin altem Dashboard zuerst den Browser-Tab einmal neu laden. Falls Home Assistant Ressourcen über YAML verwaltet, muss die neue URL dort manuell eingebunden werden.
