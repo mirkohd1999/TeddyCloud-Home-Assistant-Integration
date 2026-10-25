@@ -84,7 +84,7 @@ const editor = new Editor();
 editor.setConfig({entity:'media_player.test',mode:'custom',sections:['title','charger','ears']});
 editor.hass = hass;
 assert.ok(editor.shadowRoot.innerHTML.includes('3. Deine Bausteine'));
-assert.ok(editor.shadowRoot.innerHTML.includes('TeddyCloud Karteneditor v0.3.4'));
+assert.ok(editor.shadowRoot.innerHTML.includes('TeddyCloud Karteneditor v0.3.5'));
 assert.ok(editor.shadowRoot.innerHTML.includes('Selbst gestalten'));
 assert.ok(editor.shadowRoot.innerHTML.includes('Weitere Einstellungen (optional)'));
 editor.moveSection('ears',-1);
