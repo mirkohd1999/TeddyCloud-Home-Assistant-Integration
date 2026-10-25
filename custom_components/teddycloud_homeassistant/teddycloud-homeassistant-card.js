@@ -858,7 +858,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '</style><ha-card>',
       '<header class="header"><h2>🧸 Meine Tonie-Bibliothek</h2>',
       '<span class="hint">' + entries.length + ' Tonies</span></header>',
-      '<p class="subtitle">Deine Tonies – automatisch gesammelt und übersichtlich an einem Ort.</p>',
+      '<p class="subtitle">Deine Figuren – automatisch gesammelt' +
+      (this._isAdmin ? ' – Bearbeiten möglich' : '') + '</p>',
       this._error ? '<p class="error" role="alert">' + e(this._error) + '</p>' : '',
       view, '</ha-card>'
     ].join('');
