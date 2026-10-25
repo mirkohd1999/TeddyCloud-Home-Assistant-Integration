@@ -1,136 +1,115 @@
 # 🧸 TeddyCloud Home Assistant Integration
 
-**Tonieboxen mit TeddyCloud MQTT in Home Assistant anzeigen – inklusive Figurenbildern, Ohrtasten-Sensoren, Einstellungen und individuell gestaltbaren Dashboard-Karten.**
+**Deine Tonieboxen und deine Tonie-Sammlung direkt in Home Assistant.**
+
+Zeige Wiedergabestatus, Figurenbilder und Laufzeiten an, stelle Lautstärkelimits und LED-Helligkeit ein und gestalte dein Dashboard mit passenden Karten.
 
 [![Aktuelle Version](https://img.shields.io/github/v/release/mirkohd1999/TeddyCloud-Home-Assistant-Integration?label=Version)](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/releases/latest)
 [![Lizenz](https://img.shields.io/github/license/mirkohd1999/TeddyCloud-Home-Assistant-Integration)](LICENSE)
 
-> **Aktueller Stand: v0.4.0.** Inoffizielle Community-Integration; kein offizielles Produkt von tonies® oder TeddyCloud. Die Integration nutzt die **vorhandene MQTT-Integration in Home Assistant** und benötigt keine eigenen MQTT-Zugangsdaten.
-
 ## Inhalt
 
-- [Schnellstart](#-schnellstart)
-- [Funktionen und Einschränkungen](#-funktionen-und-einschränkungen)
-- [Dashboard-Karte hinzufügen](#-dashboard-karte-hinzufügen)
-- [Dashboard selbst gestalten](#-dashboard-selbst-gestalten)
-- [Tonie-Bibliothek](#-tonie-bibliothek)
-- [Toniebox über MQTT](#-toniebox-über-mqtt)
-- [Ohrtasten-Sensoren](#-ohrtasten-sensoren)
-- [Figurenbilder und Laufzeit](#-figurenbilder-und-laufzeit)
-- [Fehlerbehebung](#-fehlerbehebung)
-- [Update, Deinstallation und Kontakt](#-update-deinstallation-und-kontakt)
+- [Funktionen](#funktionen)
+- [Installation](#installation)
+- [Dashboard](#dashboard)
+- [Selbst gestalten](#selbst-gestalten)
+- [Tonie-Bibliothek](#tonie-bibliothek)
+- [MQTT und Ohrtasten](#mqtt-und-ohrtasten)
+- [Bilder und Laufzeit](#bilder-und-laufzeit)
+- [Fehlerbehebung](#fehlerbehebung)
+- [Updates und Support](#updates-und-support)
 
-## 🚀 Schnellstart
+## Funktionen
 
-### Das brauchst du
+| Bereich | Möglichkeiten |
+| --- | --- |
+| Tonieboxen | Automatisch über MQTT erkennen oder manuell hinzufügen; mehrere Boxen verwalten |
+| Wiedergabe | Gemeldeten Titel, Figurenbild und Wiedergabestatus anzeigen |
+| Laufzeit | Kataloglaufzeit und geschätzten Fortschritt anzeigen |
+| Lautstärke | Aktuelle Lautstärke ablesen; Lautsprecher- und Kopfhörerlimits einstellen |
+| LED | Aus, gedimmt oder an |
+| Status | Gemeldeten Ladestationsstatus und Ohrtasten-Ereignisse ansehen |
+| Dashboard | Acht Vorlagen, Live-Vorschau und frei gestaltbare Bausteine |
+| Bibliothek | Tonies automatisch sammeln, suchen und gemeinsam ansehen |
+
+**Grenzen:** Play/Pause und die aktuelle Lautstärke lassen sich nicht fernsteuern. Ein verlässlicher Akku-Prozentstand und eine echte Abspielposition stehen nicht zur Verfügung. Der Fortschritt ist geschätzt. Ein erkannter Ladestationsstatus bestätigt keinen aktiven Ladevorgang. Lautstärkelimits und LED-Einstellungen können erst beim nächsten *Freshness Check* der Toniebox wirksam werden.
+
+## Installation
+
+### Voraussetzungen
 
 - Home Assistant mit eingerichteter [MQTT-Integration](https://www.home-assistant.io/integrations/mqtt/).
-- Einen laufenden [TeddyCloud-Server](https://github.com/toniebox-reverse-engineering/teddycloud), der Toniebox-Status per MQTT meldet.
-- [HACS](https://www.hacs.xyz/) zum Installieren der Integration (alternativ manuelle Installation).
-- Optional: Internetzugriff für Bilder und Laufzeiten aus dem [Tonies-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json).
+- Ein [TeddyCloud-Server](https://github.com/toniebox-reverse-engineering/teddycloud), der Toniebox-Daten an den MQTT-Broker sendet.
+- [HACS](https://www.hacs.xyz/) für die Installation.
+- Internetzugriff, wenn Bilder und Laufzeiten aus dem Online-Katalog geladen werden sollen.
 
-**Wichtig:** Dies ist eine **HACS-Integration**, kein Home-Assistant-Add-on. Ein separater MQTT-Broker oder neue MQTT-Zugangsdaten werden durch diese Integration nicht eingerichtet.
+Die Integration verwendet die vorhandene MQTT-Anbindung von Home Assistant. Du musst hier keine weiteren MQTT-Zugangsdaten eingeben. Sie wird als **Integration** installiert, nicht als Add-on.
 
-### Installation über HACS
+### Über HACS installieren
 
 1. Öffne **HACS → ⋮ → Benutzerdefinierte Repositories**.
-2. Füge das Repository als Typ **Integration** hinzu:
+2. Trage diese Adresse ein und wähle den Typ **Integration**:
 
    ```text
    https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration
    ```
 
-3. Öffne **TeddyCloud Home Assistant Integration** in HACS und lade die aktuelle Version herunter.
+3. Lade **TeddyCloud Home Assistant Integration** herunter.
 4. **Starte Home Assistant neu.**
-5. Gehe zu **Einstellungen → Geräte & Dienste → Integration hinzufügen**, suche **TeddyCloud Home Assistant Integration** und folge dem Einrichtungsdialog.
-6. Wähle **Automatisch suchen** oder **Manuell hinzufügen**. Vergib einen Namen und wähle die Boxfarbe aus.
+5. Öffne **Einstellungen → Geräte & Dienste → Integration hinzufügen** und suche nach **TeddyCloud Home Assistant Integration**.
+6. Wähle **Automatisch suchen** oder **Manuell hinzufügen**. Lege Boxname und Boxfarbe fest.
 
-> **Tipp:** Schalte die Toniebox für die automatische Suche ein oder stelle eine Figur auf. Ohne MQTT-Statusmeldung kann eine ausgeschaltete/stille Box nicht zuverlässig gefunden werden. Die Suche endet nach spätestens etwa 25 Sekunden. Falls nötig, Box-ID manuell eingeben.
+Schalte die Toniebox für die Suche ein oder stelle eine Figur auf. Ohne MQTT-Meldung kann eine stille Box nicht zuverlässig erkannt werden. Alternativ kannst du ihre Box-ID manuell eintragen.
 
-**Manuelle Installation:** Den Ordner `custom_components/teddycloud_homeassistant` nach `/config/custom_components/` kopieren und Home Assistant neu starten.
+**Manuell installieren:** Kopiere `custom_components/teddycloud_homeassistant` nach `/config/custom_components/` und starte Home Assistant neu.
 
-## ✨ Funktionen und Einschränkungen
+## Dashboard
 
-| Funktion | Beschreibung |
+Die Integration bindet ihre Kartenressource bei Storage-Dashboards nach Möglichkeit automatisch ein.
+
+1. Dashboard öffnen und **Bearbeiten → Karte hinzufügen** wählen.
+2. **TeddyCloud Home Assistant Integration** auswählen.
+3. Toniebox und Vorlage wählen. Bei genau einer passenden Box wird diese normalerweise automatisch ausgewählt.
+4. Vorschau prüfen und **Speichern**.
+
+| Vorlage | Inhalt |
 | --- | --- |
-| 🔎 Box-Erkennung | Automatische MQTT-Suche oder manuelle Box-ID; mehrere Tonieboxen möglich |
-| 🎵 Titel/Wiedergabe | Gemeldeter Titel, Audio-ID und Wiedergabestatus |
-| 🧸 Tonie-Bilder | Online-Katalog, eigene Bildangaben oder TeddyCloud-Bild; bei Bedarf lokaler Cache |
-| ⏱️ Laufzeit | Wenn vorhanden aus dem Katalog; Wiedergabefortschritt **nur geschätzt** |
-| 🔊 Aktuelle Lautstärke | Lesender Prozent-Sensor |
-| 🎚️ Lautstärkelimits | Lautsprecher und Kopfhörer: **25 / 50 / 75 / 100 %** |
-| 💡 LED | Aus, gedimmt oder an |
-| 🔌 Ladestation | Von TeddyCloud gemeldeter Zustand |
-| 👂 Ohrtasten | Je ein Sensor für großes/kleines Ohr, einschließlich Mehrfachdruck und Ereigniszähler |
-| 🎨 Dashboard | **8 Vorlagen**, Live-Vorschau, frei wählbare Bausteine, Reihenfolge und Breite |
-| 📚 Tonie-Bibliothek | Einmal erkannte Tonies dauerhaft merken; Admins bearbeiten, alle angemeldeten Nutzer dürfen löschen |
+| **Alles** | Player und Toniebox-Einstellungen |
+| **Musik** | Tonie-Bild und Titel |
+| **Kompakt** | Platzsparende Leiste |
+| **Großes Bild** | Bild, Titel und Laufzeit |
+| **Kacheln** | Bild, Titel und Status als Kacheln |
+| **Status** | Wiedergabe, Ladestation, Lautstärke und Ohren |
+| **Einstellungen** | Lautsprecherlimit, Kopfhörerlimit und LED |
+| **Selbst gestalten** | Eigene Bausteine, Reihenfolge und Breiten |
 
-**Nicht möglich:** Die aktuelle Lautstärke fernsteuern, Play/Pause auslösen, eine echte Abspielposition oder einen zuverlässigen Akku-Prozentstand abfragen. Ein erkannter Ladestationsstatus bedeutet nicht zwingend, dass der Akku gerade lädt. Lautstärkelimits und LED-Einstellungen können erst bei einem späteren *Freshness Check* wirksam werden.
-
-## 🖥️ Dashboard-Karte hinzufügen
-
-**Kein YAML erforderlich:** Die Integration versucht, ihre Dashboard-Ressource bei gewöhnlichen Storage-Dashboards automatisch einzubinden.
-
-1. Öffne in Home Assistant dein Dashboard und klicke auf **Bearbeiten**.
-2. Wähle **Karte hinzufügen → TeddyCloud Home Assistant Integration**.
-3. Wähle die Toniebox – bei nur einer passenden erkannten Box geschieht dies normalerweise automatisch.
-4. Tippe eine der **acht großen Vorlagen** an. Rechts siehst du die Vorschau.
-5. Klicke auf **Speichern**.
-
-### Die acht Dashboard-Ansichten
-
-| Vorlage | Modus | Das wird gezeigt |
-| --- | --- | --- |
-| 🧸 **Alles** | `all` | Player und Toniebox-Einstellungen |
-| 🎵 **Musik** | `player` | Tonie-Bild und Titel |
-| ▬ **Kompakt** | `compact` | Platzsparende Leiste |
-| 🖼️ **Großes Bild** | `artwork` | Großes Bild, Titel und Laufzeit |
-| ▦ **Kacheln** | `tiles` | Bild, Titel und Status als Kacheln |
-| 📊 **Status** | `status` | Wiedergabe, Ladestation, Lautstärke und Ohren |
-| ⚙️ **Einstellungen** | `settings` | Lautsprecherlimit, Kopfhörerlimit und LED |
-| 🧩 **Selbst gestalten** | `custom` | Bausteine selbst wählen, sortieren und verbreitern |
-
-Die bisherigen Ansichten und gespeicherten Kartenkonfigurationen bleiben kompatibel. Anzeigename, Boxfarbe, Bilddarstellung und eine manuelle Entitäts-ID findest du unter **Weitere Einstellungen (optional)**.
-
-### Screenshots der klassischen Ansichten
-
-Die folgenden Originalbilder zeigen **Musik**, **Alles** und **Einstellungen**. Die neuen Kachel- und Baukastenansichten siehst du im visuellen Karteneditor.
+### Einblicke
 
 | Musik | Alles | Einstellungen |
 | :---: | :---: | :---: |
-| <img src="docs/images/dashboard-player-original.webp" alt="Klassische Musikansicht" width="280"> | <img src="docs/images/dashboard-all-original.webp" alt="Klassische Gesamtansicht" width="280"> | <img src="docs/images/dashboard-settings-original.webp" alt="Klassische Einstellungsansicht" width="280"> |
+| <img src="docs/images/dashboard-player-original.webp" alt="Musikansicht mit Tonie-Bild" width="280"> | <img src="docs/images/dashboard-all-original.webp" alt="Gesamtansicht mit Player und Einstellungen" width="280"> | <img src="docs/images/dashboard-settings-original.webp" alt="Toniebox-Einstellungen" width="280"> |
 
-## 🧩 Dashboard selbst gestalten
+Anzeigename, Boxfarbe, Bilddarstellung und eine manuelle Entitäts-ID findest du im Karteneditor unter **Weitere Einstellungen (optional)**.
 
-Im Editor die Vorlage **Selbst gestalten** auswählen. Fünf häufig genutzte Bausteine sind vorausgewählt; weitere kannst du per Häkchen aktivieren oder ausblenden. Mit **↑ / ↓** bestimmst du ihre Reihenfolge.
+## Selbst gestalten
 
-| Baustein | Kennung für YAML |
-| --- | --- |
-| Bild / Toniebox | `artwork` |
-| Titel und Boxname | `title` |
-| Wiedergabestatus | `playback` |
-| Ladestation | `charger` |
-| Laufzeit / Fortschritt | `progress` |
-| Aktuelle Lautstärke | `volume` |
-| Lautsprecher-Limit | `speaker` |
-| Kopfhörer-Limit | `headphone` |
-| LED-Helligkeit | `led` |
-| Ohrtasten | `ears` |
+Wähle im Karteneditor **Selbst gestalten**. Aktiviere die gewünschten Bausteine per Häkchen und sortiere sie mit **↑ / ↓**.
 
-### Eigene Breite je Baustein (ab v0.3.5)
+Verfügbar sind Bild/Toniebox, Titel und Boxname, Wiedergabestatus, Ladestation, Laufzeit/Fortschritt, aktuelle Lautstärke, Lautsprecherlimit, Kopfhörerlimit, LED-Helligkeit und Ohrtasten.
 
-1. **Anordnung → Kacheln** auswählen.
+Für unterschiedliche Breiten:
+
+1. Unter **Anordnung** die Option **Kacheln** wählen.
 2. Die Gesamtzahl der **Spalten** auf 1, 2 oder 3 einstellen.
-3. Für **jeden aktivierten Baustein einzeln** seine Breite wählen: **1 Spalte**, **2 Spalten** oder **Volle Breite**, je nach Gesamtspaltenzahl.
-4. Die Live-Vorschau prüfen und speichern.
+3. Bei jedem aktiven Baustein seine Breite wählen: **1 Spalte**, **2 Spalten** oder **Volle Breite**, abhängig von der Gesamtspaltenzahl.
+4. Vorschau prüfen und speichern.
 
-Beispielsweise kann das Tonie-Bild über **zwei Spalten**, der Titel über **eine Spalte** und der LED-Regler wieder über die **volle Breite** gehen. Auf schmalen Bildschirmen stehen die Kacheln automatisch untereinander.
+So kann beispielsweise das Bild über zwei Spalten gehen und die LED-Einstellung die volle Breite nutzen. Auf schmalen Bildschirmen stehen die Kacheln untereinander.
 
-Die störende Überschrift **„Tonie-Bild oder Toniebox“ über dem Bild** entfällt in **Großes Bild**, **Kacheln** und **Selbst gestalten**.
+<details>
+<summary>Optionales YAML-Beispiel</summary>
 
-### YAML-Beispiel (nur optional)
-
-Der visuelle Editor erzeugt diese Konfiguration automatisch. Falls du lieber YAML benutzt:
+Der visuelle Editor erstellt die Konfiguration automatisch. Für die manuelle Einrichtung:
 
 ```yaml
 type: custom:teddycloud-homeassistant-card
@@ -152,163 +131,118 @@ section_widths:
   led: 2
 ```
 
-**Die Entitäts-ID ist nur ein Beispiel.** Deine tatsächliche ID findest du unter **Einstellungen → Geräte & Dienste → Entitäten**. Auch bisherige IDs mit `_now_playing` bleiben gültig.
+Ersetze die Beispiel-Entität durch deine tatsächliche ID unter **Einstellungen → Geräte & Dienste → Entitäten**. Weitere Baustein-Kennungen sind `progress`, `volume`, `speaker`, `headphone` und `ears`.
 
-Weitere optionale Karteneinstellungen: `name`, `color`, `artwork_mode` (`auto`, `figure`, `cover`) und `composition`. Du kannst diese Einstellungen ohne YAML im Karteneditor vornehmen.
+</details>
 
-## 📚 Tonie-Bibliothek
+## Tonie-Bibliothek
 
-Ab **v0.3.6** gibt es eine **zweite Dashboard-Karte: „TeddyCloud Tonie-Bibliothek“**. Sie funktioniert unabhängig davon, welche Toniebox gerade eingeschaltet ist.
+**Deine Tonies – automatisch gesammelt und übersichtlich an einem Ort.**
 
-### Bibliothek einrichten – einmalig durch einen Dashboard-Administrator
+![Tonie-Bibliothek im Home-Assistant-Dashboard mit Suchfeld und noch leerer Sammlung](docs/images/tonie-bibliothek.png)
 
-1. Home Assistant nach dem HACS-Update auf v0.3.6 **neu starten**.
-2. Dashboard öffnen → **Bearbeiten → Karte hinzufügen**.
-3. **TeddyCloud Tonie-Bibliothek** auswählen und speichern.
+Die Bibliothek ist eine eigene Dashboard-Karte. Gespeicherte Tonies bleiben sichtbar, auch wenn keine Toniebox eingeschaltet ist.
 
-Danach können **alle angemeldeten Home-Assistant-Nutzer** die Tonies **direkt in dieser Karte ansehen und löschen**. **Hinzufügen und Bearbeiten** (Titel, Laufzeit und Bilder) sind ausschließlich Administratoren erlaubt. Sie benötigen **keine Berechtigung zum Bearbeiten des Dashboards**. Alle Änderungen gelten für die **gemeinsame Bibliothek** dieses Home-Assistant-Systems; Nutzer sehen deshalb dieselben Tonies.
+### Einrichten
 
-### Was kann die Bibliothek?
+Ein Dashboard-Administrator öffnet **Bearbeiten → Karte hinzufügen**, wählt **TeddyCloud Tonie-Bibliothek** und speichert die Karte. Weitere YAML-Einstellungen sind nicht nötig.
 
-- **Automatisch sammeln:** Sobald die Integration eine bislang unbekannte **Audio-ID** von einer Toniebox meldet, wird der Tonie zur Bibliothek hinzugefügt. Auch Tonies, die später nicht mehr aufgelegt sind, bleiben gespeichert.
-- **Suchen und stöbern:** Alle gesammelten Tonies als Bilderkacheln mit Titel und Hörspiellänge anzeigen. Die Audio-ID steht beim Bearbeiten unter den standardmäßig eingeklappten **Technischen Details**; beim manuellen Hinzufügen ist sie weiterhin ein sichtbares Pflichtfeld.
-- **Titel und Hörspiellänge bearbeiten (nur Admins):** Direkt mit **Bearbeiten** im Dashboard. Die Laufzeit wird in Minuten eingetragen.
-- **Figurenbild ändern (nur Admins):** Eine Bildadresse eingeben **oder eine JPG-/PNG-/WebP-Datei vom eigenen Gerät hochladen** (maximal 2 MB). Hochgeladene Bilder werden lokal unter `/config/www/teddycloud_homeassistant/library/` abgelegt; kein externer Bildhost notwendig.
-- **Tonie löschen:** Über den Löschknopf und eine zusätzliche Bestätigung aus der Bibliothek entfernen.
-- **Wieder hinzufügen:** Wird ein gelöschter Tonie nach dem Abnehmen **erneut aufgelegt**, nimmt die Integration ihn bei einem **neuen Erkennungsereignis** wieder auf. Ein alter zwischengespeicherter Status oder eine laufende Katalogsuche hebt das Löschen nicht sofort auf.
-- **Manuell hinzufügen (nur Admins):** Über **+ Tonie hinzufügen** mit Audio-ID, beispielsweise für Figuren, die derzeit nicht aufgestellt werden können.
+Für eine manuelle Karte genügt:
 
-**Wichtig:** Die automatische Sammlung beginnt mit der Installation dieser Funktion. Tonies, die **vorher** benutzt wurden und seitdem keine Erkennungsdaten mehr gesendet haben, lassen sich **nicht rückwirkend aus einer vollständigen Toniebox-Historie rekonstruieren**. Du kannst sie jederzeit wieder auflegen oder manuell hinzufügen.
-
-Die Bearbeitung von Titel, Bild und Laufzeit wirkt sich zusätzlich auf die **Anzeige der aktuell erkannten Figur** im vorhandenen Toniebox-Media-Player aus. Bereits gespeicherte eigene Angaben gehen dabei nicht verloren, wenn der Online-Katalog andere Werte liefert.
-
-**Datenschutz und Rollen:** Die Bibliothek nutzt Home Assistants **authentifizierte WebSocket-Verbindung**. Es wird **keine offene API** für anonyme Nutzer bereitgestellt. **Alle angemeldeten Home-Assistant-Nutzer können Einträge löschen. Nur Administratoren können Einträge hinzufügen oder bearbeiten**, einschließlich Bild-Uploads. Diese Berechtigung wird auch serverseitig für direkte WebSocket-Anfragen geprüft. Admin-Rechte sind weiterhin erforderlich, um das Dashboard selbst zu bearbeiten und die Bibliothekskarte dort erstmalig hinzuzufügen.
-
-## 📡 Toniebox über MQTT
-
-Die Daten kommen über die vorhandene MQTT-Anbindung:
-
-```text
-Toniebox → TeddyCloud → MQTT-Broker → Home Assistant → TeddyCloud-Karte
+```yaml
+type: custom:teddycloud-tonie-library-card
 ```
 
-Die Topics für eine Box folgen diesem Schema:
+### Sammeln und verwalten
+
+- **Automatisch sammeln:** Sobald die Integration eine neue Audio-ID von einer Toniebox empfängt, wird der Tonie gespeichert. Zum Start eine Figur auf die eingeschaltete Box stellen.
+- **Suchen:** Die Sammlung über das Suchfeld filtern. Die Kacheln zeigen Bild, Titel und Laufzeit.
+- **Bearbeiten:** Administratoren können Titel und Laufzeit in Minuten anpassen sowie eine Bildadresse hinterlegen oder ein JPG-, PNG- oder WebP-Bild bis 2 MB hochladen.
+- **Manuell hinzufügen:** Administratoren können über **+ Tonie hinzufügen** einen Eintrag mit Audio-ID anlegen.
+- **Löschen:** Angemeldete Nutzer können Einträge nach Bestätigung entfernen. Wird die Figur abgenommen und erneut erkannt, kann sie wieder zur Sammlung hinzugefügt werden.
+
+Die Audio-ID wird nicht in den Kacheln angezeigt. Beim Bearbeiten findest du sie unter den eingeklappten **Technischen Details**. Beim manuellen Hinzufügen ist sie ein Pflichtfeld.
+
+### Berechtigungen
+
+| Aktion | Administratoren | Normale angemeldete Nutzer |
+| --- | :---: | :---: |
+| Sammlung ansehen und durchsuchen | ✓ | ✓ |
+| Tonies löschen | ✓ | ✓ |
+| Tonies manuell hinzufügen | ✓ | — |
+| Titel, Laufzeit und Bilder bearbeiten | ✓ | — |
+
+Alle Nutzer sehen dieselbe gemeinsame Sammlung. Änderungen gelten für das gesamte Home-Assistant-System. Das Bearbeitungsrecht wird serverseitig geprüft; anonyme Nutzer haben keinen Zugriff.
+
+Die Sammlung entsteht aus den empfangenen Erkennungsdaten. Eine vollständige Nutzungshistorie der Toniebox kann nicht nachträglich eingelesen werden. Fehlende Figuren kannst du erneut aufstellen oder als Administrator manuell ergänzen. Eigene Angaben werden nicht durch abweichende Katalogdaten überschrieben.
+
+## MQTT und Ohrtasten
+
+Die Toniebox meldet ihre Daten über TeddyCloud und den MQTT-Broker an Home Assistant. Die Topics folgen diesem Schema:
 
 ```text
 <MQTT-Präfix>/box/<Box-ID>/<Feld>
 ```
 
-Beispiel: `teddyCloud/box/DEINE_BOX_ID/Playback`.
+Beispiel: `teddyCloud/box/DEINE_BOX_ID/Playback`. Das Präfix wird bei der Suche erkannt oder manuell eingestellt; Standard ist `teddyCloud`.
 
-Pro eingerichteter Toniebox werden ein **Media-Player (nur lesend)**, **drei einstellbare Number-Entitäten** für Lautsprecherlimit, Kopfhörerlimit und LED sowie **Sensoren** für aktuelle Lautstärke und beide Ohrtasten bereitgestellt.
+Pro Box stellt die Integration einen lesenden Media-Player, Einstellungen für Lautsprecherlimit, Kopfhörerlimit und LED sowie Sensoren für die aktuelle Lautstärke und beide Ohrtasten bereit. Name und Farbe lassen sich unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren** ändern.
 
-- Das Präfix wird bei der Suche erkannt oder bei der manuellen Einrichtung festgelegt (Standard: `teddyCloud`).
-- Name und Farbe der Box kannst du später unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren** ändern.
-- Befehle für Lautstärkelimits/LED werden auf den entsprechenden `CmdVolLimitSpk/set`-, `CmdVolLimitHdp/set`- bzw. `CmdLed/set`-Topics gesendet. Erst die MQTT-Statusmeldung bestätigt eine Änderung.
-
-## 👂 Ohrtasten-Sensoren
-
-Zwei **lesende Diagnose-Sensoren** zeigen die letzten Druckereignisse:
-
-| Sensor | MQTT-Topic |
+| Ohrtaste | MQTT-Feld |
 | --- | --- |
-| Großes Ohr (lauter) | `<Präfix>/box/<Box-ID>/VolUp` |
-| Kleines Ohr (leiser) | `<Präfix>/box/<Box-ID>/VolDown` |
+| Großes Ohr | `VolUp` |
+| Kleines Ohr | `VolDown` |
 
-Erkannte Zustände: `pressed` (einfach), `double-pressed` (doppelt), `triple-pressed` (dreifach).
+Die Sensoren erkennen einfachen, doppelten und dreifachen Tastendruck. Die Attribute `last_pressed` und `press_count` zeigen Zeitpunkt und Ereigniszähler seit dem Laden des Sensors. Wiederholte gleiche Tastendrücke zählen ebenfalls; gespeicherte Retained-Meldungen zählen nicht als neue Tastendrücke.
 
-Jeder Sensor bietet zusätzlich `last_pressed` (UTC-Zeitpunkt) und `press_count` (Anzahl seit dem letzten Laden des Sensors). Wiederholte gleiche Tastendrücke zählen ebenfalls. Retained-MQTT-Nachrichten werden nicht als neue Tastendrücke gewertet. Vor dem ersten Ereignis kann der Zustand `unknown` sein.
+Für Automationen kannst du auf Änderungen von `press_count` reagieren. Diese Sensoren melden die Bedienung an der Box; sie steuern nicht deren aktuelle Lautstärke.
 
-**Automationsbeispiel:** Auf Veränderungen des Attributs `press_count` reagieren:
+## Bilder und Laufzeit
 
-```yaml
-triggers:
-  - trigger: state
-    entity_id: sensor.DEIN_GROSSES_OHR
-    attribute: press_count
-actions:
-  - action: persistent_notification.create
-    data:
-      message: "Großes Ohr wurde gedrückt"
-```
+Die Integration sucht anhand der Audio-ID nach Bildern und Laufzeiten im [Tonies-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json). Fehlt ein Treffer, erscheint ein Ersatzbild oder **„Laufzeit unbekannt“**. Administratoren können die Angaben in der Bibliothek ergänzen.
 
-Die Sensor-Entitäts-ID bitte ersetzen. **Diese Meldungen steuern nicht die aktuelle Toniebox-Lautstärke.**
+Heruntergeladene Figurenbilder liegen bei Bedarf unter `/config/www/teddycloud_homeassistant/figures/`. Eigene Bibliotheks-Uploads werden unter `/config/www/teddycloud_homeassistant/library/` gespeichert.
 
-## 🧸 Figurenbilder und Laufzeit
+Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet, prüfe in den Integrationsoptionen die **TeddyCloud-Adresse für Coverbilder**.
 
-Meldet TeddyCloud eine Audio-ID, sucht die Integration nach passenden Bildern und Laufzeiten im öffentlichen [tonies-json-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json). Heruntergeladene Figurenbilder werden bei Bedarf hier gespeichert:
+## Fehlerbehebung
 
-```text
-/config/www/teddycloud_homeassistant/figures/
-```
+### Toniebox wird nicht gefunden
 
-Fehlen Daten, kann die Karte ein Ersatzbild oder **„Laufzeit unbekannt“** anzeigen. **Der Fortschrittsbalken ist immer eine Schätzung**, keine gemessene Abspielposition.
+Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem passenden Präfix und der richtigen Box-ID eintreffen. Bei Bedarf die Box manuell hinzufügen.
 
-### Eigene Daten ergänzen (optional)
+### Karte fehlt oder wird nicht geladen
 
-Unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren** können Tonie-Daten pro Audio-ID ergänzt werden:
-
-```json
-{
-  "1589539605": {
-    "title": "Beispiel-Tonie",
-    "duration_seconds": 2340
-  }
-}
-```
-
-Optional werden auch Bildadressen über `figure` oder `cover` unterstützt. Falls TeddyCloud `http://localhost/...` für Bilder meldet, kann die Option **TeddyCloud-Adresse für Coverbilder** helfen, die Adresse für den Home-Assistant-Browser erreichbar zu machen.
-
-## 🛠️ Fehlerbehebung
-
-### Die Toniebox wird nicht gefunden
-
-Toniebox einschalten oder eine Figur aufstellen. Prüfen, ob in MQTT ein Status-Topic wie `teddyCloud/box/DEINE_BOX_ID/Playback` ankommt. Falls sie still bleibt, die Box-ID **manuell** eingeben.
-
-### Die Karte fehlt oder sieht noch alt aus
-
-- In HACS prüfen, ob die aktuelle Integration installiert ist.
-- **Home Assistant neu starten** und danach das Dashboard neu laden.
-- Bei normalen Storage-Dashboards versucht die Integration, die Ressource selbst zu registrieren. Nur wenn das fehlschlägt oder Dashboard-Ressourcen per YAML verwaltet werden, ist eine manuelle Prüfung nötig.
-
-**Ressourcenadresse in v0.4.0:**
+Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
 /teddycloud-homeassistant/card-v040.js?v=0.4.0
 ```
 
-Unter **Einstellungen → Dashboards → Ressourcen** muss der Eintrag als **JavaScript-Modul** hinterlegt sein. Die älteren Pfade `card.js`, `card-v034.js` und `card-v035.js` bleiben kompatibel. **Keine doppelten Ressourcen anlegen**: Bestehende Einträge gegebenenfalls aktualisieren.
+Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.
 
-**Bibliothekskarte meldet „Custom element doesn't exist“?** Das YAML `type: custom:teddycloud-tonie-library-card` ist richtig. Ab **v0.4.0** ist die Registrierung auch dann geschützt, wenn gleichzeitig noch eine ältere TeddyCloud-Kartendatei geladen wurde. HACS-Update auf v0.4.0 installieren und Home Assistant vollständig neu starten. Die Ressource wird bei Storage-Dashboards automatisch auf die neue Adresse umgestellt; bestehende Karten und Bibliotheksdaten bleiben erhalten.
+Für die Bibliothek lautet der Kartentyp `custom:teddycloud-tonie-library-card`, für die Toniebox `custom:teddycloud-homeassistant-card`.
 
-### Tonie-Bild, Titel oder Laufzeit fehlen
+### Bibliothek bleibt leer
 
-Öffne **Entwicklerwerkzeuge → Zustände** und prüfe die Media-Player-Entität.
+Eine Figur auf eine eingeschaltete Toniebox stellen. Prüfe in **Entwicklerwerkzeuge → Zustände**, ob die Media-Player-Entität eine `content_audio_id` empfängt. Ohne Erkennungsdaten kann die Integration keinen Tonie automatisch aufnehmen.
 
-| Attribut | Bedeutung |
-| --- | --- |
-| `content_audio_id` | Von TeddyCloud gemeldete Audio-ID |
-| `catalog_status` | Katalogsuche, etwa `matched`, `unavailable` oder `audio_id_not_found` |
-| `catalog_match` | Passender Online-Eintrag vorhanden |
-| `cover_url` | Verwendete Bildadresse |
-| `media_duration` | Laufzeit in Sekunden, sofern bekannt |
-| `duration_source` | Herkunft der Laufzeit |
-| `charger` | Meldung zur Ladestation |
+### Bild, Titel oder Laufzeit fehlen
 
-Bei Problemen mit dem Katalog unter **Einstellungen → System → Protokolle** nachsehen. In den Entwicklerwerkzeugen **„Zustand setzen“** behebt keine MQTT- oder Katalogprobleme.
+Prüfe die Media-Player-Attribute `content_audio_id`, `catalog_status`, `catalog_match`, `cover_url`, `media_duration` und `duration_source`. Weitere Hinweise stehen unter **Einstellungen → System → Protokolle**. „Zustand setzen“ ersetzt keine empfangenen MQTT-Daten.
 
-### Lautstärke- oder LED-Regler haben keine Wirkung
+### Einstellungen werden nicht sofort übernommen
 
-Die Regler verändern **Limits und LED**, nicht die aktuelle Lautstärke. Je nach TeddyCloud- und Toniebox-Verhalten werden Befehle erst bei einem späteren *Freshness Check* wirksam. Prüfe die MQTT-Befehls- und Status-Topics.
+Die Regler ändern Lautstärkelimits und LED-Helligkeit. Befehle können erst beim nächsten *Freshness Check* wirksam werden. Prüfe die MQTT-Befehls- und Statusmeldungen; erst die Rückmeldung der Box bestätigt eine Änderung.
 
-## 🔄 Update, Deinstallation und Kontakt
+## Updates und Support
 
-**Update:** In HACS die aktuelle Version installieren und Home Assistant neu starten. Vor größeren Updates empfiehlt sich ein Backup.
+**Aktualisieren:** Die angebotene Version in HACS herunterladen, Home Assistant neu starten und das Dashboard auf allen verwendeten Geräten neu laden.
 
-**Deinstallation:** Integration unter **Einstellungen → Geräte & Dienste** entfernen. Wird die **letzte Box** entfernt, bereinigt die Integration lokal gespeicherte Figurenbilder und die eindeutig von ihr registrierten Ressourcen. **Selbst eingerichtete Dashboard-Karten und manuelle Ressourcen bleiben erhalten.**
+**Entfernen:** Die Integration unter **Einstellungen → Geräte & Dienste** entfernen. Beim Entfernen der letzten Box werden integrationsinterne Figurenbilder und eindeutig von der Integration angelegte Ressourcen bereinigt. Selbst angelegte Dashboard-Karten und manuelle Ressourcen bleiben bestehen.
 
-**Fehler oder Ideen:** [GitHub-Issue erstellen](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/issues). Nenne nach Möglichkeit Home-Assistant-, TeddyCloud- und Integrationsversion sowie relevante Protokolle. **Keine Passwörter, Tokens, Zertifikate oder privaten MQTT-Daten veröffentlichen.**
+**Fragen und Fehler:** [GitHub-Issue öffnen](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/issues). Bitte Home-Assistant-, TeddyCloud- und Integrationsversion sowie relevante Fehlermeldungen nennen. Keine Passwörter oder Tokens veröffentlichen.
 
-Die interne Domain `teddycloud_homeassistant` und der Karten-Typ `custom:teddycloud-homeassistant-card` bleiben für bestehende Installationen unverändert. Das Projekt ist **nicht offiziell von tonies® oder TeddyCloud**; die Rechte an Bildern und Katalogdaten liegen bei den jeweiligen Rechteinhabern.
+Inoffizielle Community-Integration, kein offizielles Produkt von tonies® oder TeddyCloud. Die Rechte an Bildern und Katalogdaten liegen bei den jeweiligen Rechteinhabern.
 
-**Lizenz:** [MIT](LICENSE) · **Releases:** [GitHub-Veröffentlichungen](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/releases)
+**Lizenz:** [MIT](LICENSE) · **Downloads:** [Aktueller Release](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/releases/latest)
