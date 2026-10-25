@@ -1,4 +1,5 @@
 """Local MQTT listener for TeddyCloud box status."""
+import asyncio
 from homeassistant.core import callback
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
@@ -17,10 +18,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
     await async_register_card(hass)
     data = hass.data.setdefault(DOMAIN, {})
-    if "library" not in data:
-        library = TonieLibrary(hass)
-        await library.async_load()
-        data["library"] = library
+    # Multiple boxes can be initialized concurrently. Load the shared
+    # library only once so no box can overwrite a different instance.
+    async with hass.data.setdefault(f"{DOMAIN}_library_init_lock", asyncio.Lock()):
+        if "library" not in data:
+            library = TonieLibrary(hass)
+            await library.async_load()
+            data["library"] = library
     register_library_websockets(hass)
     from .media_player import BoxPlayer
     catalog = data.setdefault("online_catalog", OnlineCatalog(hass))
