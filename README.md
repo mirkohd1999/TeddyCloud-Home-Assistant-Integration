@@ -49,6 +49,18 @@ Die folgenden Screenshots zeigen die drei Kartenansichten in Home Assistant. Der
 | <img src="docs/images/dashboard-player-original.webp" alt="Toniebox mit Titel und Bild" width="300"> | <img src="docs/images/dashboard-all-original.webp" alt="Toniebox mit Wiedergabe und Einstellungen" width="300"> | <img src="docs/images/dashboard-settings-original.webp" alt="Lautstärkelimits und LED-Helligkeit" width="300"> |
 | `mode: player` | `mode: all` | `mode: settings` |
 
+## ✨ Neu ab v0.3.4: Dashboard ohne Konfigurationsaufwand
+
+Für Endnutzer reicht jetzt **Dashboard bearbeiten → Karte hinzufügen → TeddyCloud Home Assistant Integration**. Die Karte sucht nach vorhandenen Tonieboxen und wählt bei nur einer erkannten Box diese automatisch aus. Im Karteneditor erscheinen **acht große Vorlagen** zum direkten Anklicken. Die Vorschau wird unmittelbar aktualisiert:
+
+- **Alles**, **Musik**, **Kompakt**, **Großes Bild**, **Kacheln**, **Status**, **Einstellungen** und **Selbst gestalten**.
+- Nur bei **Selbst gestalten** werden die Auswahl der Bausteine sowie die Anordnung eingeblendet. Standardmäßig sind fünf häufig genutzte Bausteine bereits ausgewählt.
+- Wer mehr einstellen möchte, öffnet **Weitere Einstellungen (optional)**. Dort sind Name, Toniebox-Farbe per Farbwähler, Bilddarstellung und manuelle Entitäts-ID untergebracht.
+- **Kein YAML und keine manuelle Ressourcenpflege** erforderlich, wenn die Integration in Home Assistant eingerichtet und die Ressource im Storage-Dashboard automatisch registriert ist.
+- Die mit v0.3.4 gelieferte Karte wird über eine neue, versionierte Ressourcenadresse `/teddycloud-homeassistant/card-v034.js?v=0.3.4` geladen, damit vorher zwischengespeicherte JavaScript-Versionen nicht versehentlich weiterverwendet werden. Ältere Kartenkonfigurationen und die bisherige Ressourcenadresse bleiben kompatibel.
+
+**Update:** Nach Veröffentlichung von v0.3.4 die Integration über HACS aktualisieren und Home Assistant einmal neu starten. Die Ressourcenadresse wird in normalen Storage-Dashboards automatisch angepasst. Bereits eingerichtete Karten müssen nicht neu erstellt werden.
+
 ## 🧩 Dashboard-Baukasten und Kartenvarianten (v0.3.3)
 
 Der visuelle Karteneditor bietet nun **acht Ansichten**. Bereits angelegte Karten mit `mode: all`, `mode: player` oder `mode: settings` bleiben unverändert:
@@ -153,7 +165,9 @@ Falls keine Toniebox auftaucht, kannst du die Einrichtung erneut starten oder di
 
 ## 🖥️ Dashboard-Karte hinzufügen
 
-Öffne dein Dashboard, klicke auf **Bearbeiten → Karte hinzufügen → Manuell** und füge den passenden YAML-Code ein.
+Öffne dein Dashboard, klicke auf **Bearbeiten → Karte hinzufügen → TeddyCloud Home Assistant Integration**. Wähle im Karteneditor eine Vorlage. Bei nur einer gefundenen Toniebox erfolgt die Auswahl automatisch. **YAML wird nicht benötigt.**
+
+Wer lieber manuell arbeiten möchte, kann weiterhin unter **Bearbeiten → Karte hinzufügen → Manuell** die folgenden Beispiele verwenden.
 
 ### Toniebox mit Titel und Bild
 
