@@ -6,6 +6,7 @@ from urllib.parse import urlsplit, urlunsplit
 from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerEntityFeature, MediaPlayerState
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.core import callback
 from .library import SIGNAL_CHANGED
 from .online_catalog import RETRY
 from .artwork_archive import ArtworkArchive
@@ -146,7 +147,6 @@ class BoxPlayer(MediaPlayerEntity):
                 if self._values.get('ContentAudioId') == audio_id:
                     self.async_write_ha_state()
 
-            from homeassistant.core import callback
             self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_CHANGED, library_changed))
         self._archive = self.hass.data.setdefault(DOMAIN, {}).setdefault('artwork_archive', ArtworkArchive(self.hass))
         audio_id = self._values.get('ContentAudioId')
