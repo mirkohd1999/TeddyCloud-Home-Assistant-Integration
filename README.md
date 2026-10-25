@@ -5,7 +5,7 @@
 [![Aktuelle Version](https://img.shields.io/github/v/release/mirkohd1999/TeddyCloud-Home-Assistant-Integration?label=Version)](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/releases/latest)
 [![Lizenz](https://img.shields.io/github/license/mirkohd1999/TeddyCloud-Home-Assistant-Integration)](LICENSE)
 
-> **Aktueller Stand: v0.3.7.** Inoffizielle Community-Integration; kein offizielles Produkt von tonies® oder TeddyCloud. Die Integration nutzt die **vorhandene MQTT-Integration in Home Assistant** und benötigt keine eigenen MQTT-Zugangsdaten.
+> **Aktueller Stand: v0.3.8.** Inoffizielle Community-Integration; kein offizielles Produkt von tonies® oder TeddyCloud. Die Integration nutzt die **vorhandene MQTT-Integration in Home Assistant** und benötigt keine eigenen MQTT-Zugangsdaten.
 
 ## Inhalt
 
@@ -271,15 +271,15 @@ Toniebox einschalten oder eine Figur aufstellen. Prüfen, ob in MQTT ein Status-
 - **Home Assistant neu starten** und danach das Dashboard neu laden.
 - Bei normalen Storage-Dashboards versucht die Integration, die Ressource selbst zu registrieren. Nur wenn das fehlschlägt oder Dashboard-Ressourcen per YAML verwaltet werden, ist eine manuelle Prüfung nötig.
 
-**Ressourcenadresse in v0.3.7:**
+**Ressourcenadresse in v0.3.8:**
 
 ```text
-/teddycloud-homeassistant/card-v037.js?v=0.3.7
+/teddycloud-homeassistant/card-v038.js?v=0.3.8
 ```
 
 Unter **Einstellungen → Dashboards → Ressourcen** muss der Eintrag als **JavaScript-Modul** hinterlegt sein. Die älteren Pfade `card.js`, `card-v034.js` und `card-v035.js` bleiben kompatibel. **Keine doppelten Ressourcen anlegen**: Bestehende Einträge gegebenenfalls aktualisieren.
 
-**Bibliothekskarte meldet „Custom element doesn't exist“?** Das YAML `type: custom:teddycloud-tonie-library-card` ist richtig. Ab **v0.3.7** ist die Registrierung auch dann geschützt, wenn gleichzeitig noch eine ältere TeddyCloud-Kartendatei geladen wurde. HACS-Update auf v0.3.7 installieren und Home Assistant vollständig neu starten. Die Ressource wird bei Storage-Dashboards automatisch auf die neue Adresse umgestellt; bestehende Karten und Bibliotheksdaten bleiben erhalten.
+**Bibliothekskarte meldet „Custom element doesn't exist“?** Das YAML `type: custom:teddycloud-tonie-library-card` ist richtig. Ab **v0.3.8** ist die Registrierung auch dann geschützt, wenn gleichzeitig noch eine ältere TeddyCloud-Kartendatei geladen wurde. HACS-Update auf v0.3.8 installieren und Home Assistant vollständig neu starten. Die Ressource wird bei Storage-Dashboards automatisch auf die neue Adresse umgestellt; bestehende Karten und Bibliotheksdaten bleiben erhalten.
 
 ### Tonie-Bild, Titel oder Laufzeit fehlen
 
