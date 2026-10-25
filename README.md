@@ -24,7 +24,7 @@ Die Einrichtung ist bewusst einfach gehalten: Toniebox automatisch suchen oder m
 | 🎚️ Lautstärkelimits | Lautsprecher- und Kopfhörerlimit auf 25, 50, 75 oder 100 % einstellen |
 | 💡 LED-Helligkeit | Aus, gedimmt oder an |
 | 🔌 Ladestation | Zeigt den von TeddyCloud gemeldeten Ladestationsstatus |
-| 🖥️ Dashboard | Eine gemeinsame Karte oder getrennte Karten für Wiedergabe und Einstellungen |
+| 🖥️ Dashboard | Acht Kartenansichten: Alles, Wiedergabe, Einstellungen, Kompakt, großes Bild, Status-Kacheln, Dashboard-Kacheln und frei zusammenstellbar |
 | 📦 Mehrere Tonieboxen | Jede Box kann als eigener Integrationseintrag eingerichtet werden |
 
 **Aktuelle Einschränkungen:** Play/Pause über diese Integration steuern, den tatsächlichen Akku-Prozentstand zuverlässig auslesen oder die echte Wiedergabeposition anzeigen. Ein gemeldeter Ladestationsstatus ist auch keine sichere Aussage darüber, ob der Akku gerade geladen wird.
@@ -48,6 +48,64 @@ Die folgenden Screenshots zeigen die drei Kartenansichten in Home Assistant. Der
 | :---: | :---: | :---: |
 | <img src="docs/images/dashboard-player-original.webp" alt="Toniebox mit Titel und Bild" width="300"> | <img src="docs/images/dashboard-all-original.webp" alt="Toniebox mit Wiedergabe und Einstellungen" width="300"> | <img src="docs/images/dashboard-settings-original.webp" alt="Lautstärkelimits und LED-Helligkeit" width="300"> |
 | `mode: player` | `mode: all` | `mode: settings` |
+
+## 🧩 Dashboard-Baukasten und Kartenvarianten (v0.3.3)
+
+Der visuelle Karteneditor bietet nun **acht Ansichten**. Bereits angelegte Karten mit `mode: all`, `mode: player` oder `mode: settings` bleiben unverändert:
+
+| Modus | Anzeige |
+| --- | --- |
+| `all` | Bisherige Gesamtansicht mit Player und Einstellungen |
+| `player` | Bisherige Wiedergabeansicht |
+| `settings` | Bisherige Lautstärke- und LED-Einstellungen |
+| `compact` | Platzsparende Leiste mit Bild, Titel, Wiedergabe und Lautstärke |
+| `artwork` | Großes Tonie-Bild mit Titel und geschätzter Laufzeit |
+| `status` | Status-Kacheln für Wiedergabe, Ladestation, Lautstärke und Ohrtasten |
+| `tiles` | Kachel-Dashboard mit Bild, Titel und Statusinformationen |
+| `custom` | **Eigener Baukasten:** Bausteine auswählen, sortieren und als Liste oder Kacheln anzeigen |
+
+### Per Karteneditor zusammenstellen
+
+1. Dashboard bearbeiten → **Karte hinzufügen** → **TeddyCloud Home Assistant Integration**.
+2. Toniebox auswählen; unter **Kartenansicht** „Eigene Zusammenstellung“ wählen.
+3. Die gewünschten Bausteine aktivieren (Bild, Titel, Wiedergabe, Ladestation, Fortschritt, Lautstärke, Lautsprecher-/Kopfhörerlimit, LED, Ohrtasten).
+4. Über die Pfeile **↑ / ↓** die Reihenfolge ändern.
+5. **Untereinander** oder **Als Kacheln** wählen, bei Kacheln optional 1–3 Spalten einstellen.
+6. Speichern. Der Editor übernimmt die neue Zusammenstellung direkt in die Karten-Vorschau.
+
+Die Ohrtasten-Ansicht zeigt die letzten von TeddyCloud gemeldeten Tasten-Ereignisse und den Zähler, falls die Sensoren vorhanden sind. Sie steuert nicht die Lautstärke der Toniebox. Die Regelungen für **Lautstärkelimits und LED** funktionieren nur, wenn die jeweiligen `number`-Entitäten verfügbar sind.
+
+### YAML-Beispiele
+
+Kompakte Karte:
+
+```yaml
+type: custom:teddycloud-homeassistant-card
+entity: media_player.meine_toniebox_now_playing
+mode: compact
+```
+
+Frei angeordnete Kacheln:
+
+```yaml
+type: custom:teddycloud-homeassistant-card
+entity: media_player.meine_toniebox_now_playing
+mode: custom
+layout: grid
+columns: 2
+sections:
+  - artwork
+  - title
+  - playback
+  - progress
+  - volume
+  - ears
+  - speaker
+  - headphone
+  - led
+```
+
+Mögliche Bausteine: `artwork`, `title`, `playback`, `charger`, `progress`, `volume`, `speaker`, `headphone`, `led`, `ears`. Ihre Reihenfolge in `sections` bestimmt die Anzeige. Die alte Kartenkonfiguration bleibt gültig.
 
 ## 📦 Voraussetzungen
 
