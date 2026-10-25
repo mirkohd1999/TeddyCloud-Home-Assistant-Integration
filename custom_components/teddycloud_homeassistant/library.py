@@ -59,12 +59,14 @@ class TonieLibrary:
         self._store = Store(hass, 1, STORE_KEY)
         self._lock = asyncio.Lock()
         self._entries = {}
+        self._hidden = set()
         # A box is considered active until ContentAudioId is cleared or changes.
         self._last_ids = {}
 
     async def async_load(self):
         data = await self._store.async_load() or {}
         entries = data.get("entries", {})
+        self._hidden = {key for key in data.get("hidden", []) if valid_audio_id(key)}
         if isinstance(entries, dict):
             self._entries = {
                 key: value for key, value in entries.items()
@@ -93,6 +95,12 @@ class TonieLibrary:
             self._last_ids[box_id] = audio_id
             if prev == audio_id:
                 return
+            # Keep deliberately deleted figures hidden after restarting HA,
+            # until a *new* placement is observed after another figure/removal.
+            if audio_id in self._hidden:
+                if prev is None:
+                    return
+                self._hidden.discard(audio_id)
             old = self._entries.get(audio_id)
             if old is None:
                 old = {"title": title or "", "image": image or "", "duration_seconds": duration,
@@ -107,12 +115,12 @@ class TonieLibrary:
                     old["duration_seconds"] = duration
             old["last_seen"] = datetime.now(timezone.utc).isoformat()
             old["times_seen"] = int(old.get("times_seen") or 0) + 1
-            await self._store.async_save({"entries": self._entries})
+            await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
 
     def box_cleared(self, box_id):
         """Allow the same figurine to return after removing it from this box."""
-        self._last_ids.pop(box_id, None)
+        self._last_ids[box_id] = ""
 
     async def async_metadata(self, audio_id, title=None, image=None, duration=None):
         """Refresh detected metadata only for items still in the collection."""
@@ -127,7 +135,7 @@ class TonieLibrary:
                     dirty = True
             if not dirty:
                 return
-            await self._store.async_save({"entries": self._entries})
+            await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
 
     async def async_edit(self, audio_id, title=None, image=None, duration_seconds=None, image_data=None):
@@ -157,6 +165,7 @@ class TonieLibrary:
                     "last_seen": None, "times_seen": 0, "custom": {},
                 }
                 self._entries[audio_id] = item
+            self._hidden.discard(audio_id)
             custom = item.setdefault("custom", {})
             if title is not None:
                 custom["title"] = title.strip()
@@ -171,7 +180,7 @@ class TonieLibrary:
                 dest = directory / f"{audio_id}{suffix}"
                 await asyncio.to_thread(dest.write_bytes, body)
                 custom["image"] = f"/local/{DOMAIN}/library/{dest.name}?v={int(datetime.now(timezone.utc).timestamp())}"
-            await self._store.async_save({"entries": self._entries})
+            await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
         return self._public_entry(audio_id)
 
@@ -200,6 +209,7 @@ class TonieLibrary:
             if audio_id not in self._entries:
                 return
             old = self._entries.pop(audio_id)
+            self._hidden.add(audio_id)
             # Own uploaded file only, never delete user-supplied /local/ files.
             image = old.get("custom", {}).get("image", "")
             local_prefix = f"/local/{DOMAIN}/library/"
@@ -209,5 +219,5 @@ class TonieLibrary:
                     path = Path(self.hass.config.path("www", DOMAIN, "library", filename))
                     if path.is_file() and not path.is_symlink():
                         await asyncio.to_thread(path.unlink)
-            await self._store.async_save({"entries": self._entries})
+            await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
