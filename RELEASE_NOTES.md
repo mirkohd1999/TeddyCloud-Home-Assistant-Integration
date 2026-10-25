@@ -1,25 +1,26 @@
-# TeddyCloud Home Assistant Integration v0.3.5
+# TeddyCloud Home Assistant Integration v0.3.6
 
-## Neu: Jede Dashboard-Kachel einzeln in der Breite anpassen
+## Neu: Eigene Tonie-Bibliothek im Home-Assistant-Dashboard
 
-- **Bildüberschrift entfernt:** Der Text „Tonie-Bild oder Toniebox“ steht nicht mehr störend neben dem Tonie-Bild. Das betrifft die Ansichten „Großes Bild“, „Kacheln“ und „Selbst gestalten“.
-- **Einstellbare Breite pro Baustein:** Im visuellen Editor unter **Selbst gestalten → Anordnung: Kacheln** kann jeder aktivierte Baustein seine eigene Breite erhalten, unabhängig von den anderen.
-- Wähle die gewünschte Breite als **1 Spalte**, **2 Spalten** oder **Volle Breite**, passend zur Zahl der Spalten (1–3).
-- **Individuelle Layouts:** Das Tonie-Bild kann z. B. zwei Spalten belegen, während Titel, Status und Steuerungen daneben oder darunter angeordnet sind.
-- **Bestehende Karten bleiben kompatibel:** Ohne individuelle Breitenangaben verhalten sich Bausteine wie bisher. Gespeicherte Breiten bleiben bei Änderungen der Anordnung erhalten.
-- **Responsive Darstellung:** Auf kleinen Displays erscheinen Kacheln lesbar untereinander.
-- **Fehlerbehebung:** Der Bildbaustein und sein inneres Bild verwenden nun unterschiedliche CSS-Klassen. So schiebt die Überschrift das Bild nicht mehr an den Rand.
-- **Neue Kartendatei:** `/teddycloud-homeassistant/card-v035.js?v=0.3.5` für eine zuverlässige Browser-Aktualisierung.
+- **Neue Dashboard-Karte:** `custom:teddycloud-tonie-library-card`, im Kartenkatalog als **TeddyCloud Tonie-Bibliothek**.
+- **Gesehene Tonies automatisch merken:** Beim Erkennen einer neuen Audio-ID über TeddyCloud MQTT kommt die Figur in die dauerhaft gespeicherte gemeinsame Bibliothek. Die Sammlung funktioniert über mehrere Tonieboxen hinweg und bleibt auch nach einem Neustart erhalten.
+- **Einträge direkt im Dashboard bearbeiten**, ohne Dashboard-Konfiguration oder Admin-Rechte: Titel ändern, Hörspiellänge eingeben und Figurenbilder per Webadresse oder als Bilddatei vom Gerät hochladen (PNG/JPG/WebP, bis 2 MB).
+- **Suchen, manuell hinzufügen und löschen** mit Sicherheitsbestätigung.
+- **Gelöschte Tonies automatisch wieder aufnehmen**, wenn sie nach dem Entfernen durch eine spätere Erkennung erneut aufgestellt werden. Gelöschte Einträge werden nicht sofort durch alte MQTT-Zustände oder Katalogergebnisse wiederhergestellt.
+- **Gemeinsame, persistente Daten:** Home Assistant speichert die Sammlung intern über `Store`, lokal hochgeladene Bilder unter `/config/www/teddycloud_homeassistant/library/`.
+- **Nicht-Administratoren können Inhalte bearbeiten:** Die Aktionen verwenden ausschließlich authentifizierte Home-Assistant-WebSocket-Befehle. Die Karte muss von jemandem mit Dashboard-Bearbeitungsrechten einmalig hinzugefügt werden.
+- Manuell bearbeitete Metadaten werden außerdem beim aktuell aufgelegten Tonie im bestehenden Media-Player angezeigt.
+- Neue Tests für Speicherung, Mehrfachboxen, Löschung/Wiedererkennung, Upload-Validierung und sichere Kartenanzeige.
 
-## Aktualisierung
+## Installation
 
-1. In HACS **TeddyCloud Home Assistant Integration v0.3.5** aktualisieren.
+1. Version `v0.3.6` über HACS aktualisieren.
 2. Home Assistant neu starten.
-3. Dashboard bearbeiten → TeddyCloud-Karte → **Selbst gestalten** → **Kacheln**.
-4. Spaltenzahl wählen und die **Breite direkt neben jedem Baustein** ändern, dann speichern.
+3. Dashboard bearbeiten → Karte hinzufügen → **TeddyCloud Tonie-Bibliothek** → Speichern.
+4. Danach Tonies im normalen Dashboard hinzufügen, bearbeiten oder löschen – auch mit einem normalen Home-Assistant-Benutzerkonto.
 
-Für automatisch verwaltete Dashboard-Ressourcen wird die neue Kartendatei selbst registriert. Es ist kein YAML und keine manuelle Ressourcen-URL notwendig.
+Die bestehende Toniebox-Karte behält ihren Namen und ihre Konfiguration. Die Ressourcenadresse wird in Storage-Dashboards automatisch auf `/teddycloud-homeassistant/card-v036.js?v=0.3.6` aktualisiert. Alte Pfade werden weiter unterstützt.
 
-## Unverändert
+## Grenzen
 
-Die bisherigen acht Kartenansichten, Tonie-Bilder, Lautstärkelimits, LED-Steuerung und Ohrtasten-Sensoren bleiben erhalten. Die aktuelle Lautstärke und Play/Pause sind weiterhin nicht fernsteuerbar.
+Die automatische Sammlung beginnt erst, wenn diese Version installiert ist. Bereits früher gehörte Figuren ohne erneute MQTT-Erkennung können nicht aus einer unbekannten Vergangenheit rekonstruiert werden; sie lassen sich erneut auflegen oder per Audio-ID hinzufügen. Auch ältere Figuren benötigen verfügbare Katalog- oder eigene Bilddaten. Play/Pause und die aktuelle Lautstärke bleiben nicht fernsteuerbar.

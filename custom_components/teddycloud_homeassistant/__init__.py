@@ -1,4 +1,5 @@
 """Local MQTT listener for TeddyCloud box status."""
+import asyncio
 from homeassistant.core import callback
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
@@ -7,6 +8,8 @@ from .const import DOMAIN, CONF_PREFIX, CONF_BOX_ID
 from .online_catalog import OnlineCatalog
 from .card_registration import async_register_card
 from .cleanup import async_remove_owned_data
+from .library import TonieLibrary
+from .library_websocket import register_library_websockets
 
 FIELDS = {"Playback", "ContentTitle", "ContentAudioId", "VolumeLevel", "VolumedB", "Charger", "TagValid", "LastSeen", "ContentPicture"}
 
@@ -14,8 +17,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not await mqtt.async_wait_for_mqtt_client(hass):
         return False
     await async_register_card(hass)
+    data = hass.data.setdefault(DOMAIN, {})
+    # Multiple boxes can be initialized concurrently. Load the shared
+    # library only once so no box can overwrite a different instance.
+    async with hass.data.setdefault(f"{DOMAIN}_library_init_lock", asyncio.Lock()):
+        if "library" not in data:
+            library = TonieLibrary(hass)
+            await library.async_load()
+            data["library"] = library
+    register_library_websockets(hass)
     from .media_player import BoxPlayer
-    catalog = hass.data.setdefault(DOMAIN, {}).setdefault("online_catalog", OnlineCatalog(hass))
+    catalog = data.setdefault("online_catalog", OnlineCatalog(hass))
     player = BoxPlayer(entry, catalog)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = player
     prefix = entry.data[CONF_PREFIX].strip('/')
@@ -26,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def incoming(message):
         field = message.topic.rsplit('/', 1)[-1]
         if field in FIELDS:
-            player.receive(field, message.payload)
+            player.receive(field, message.payload, retained=getattr(message, "retain", False))
 
     await hass.config_entries.async_forward_entry_setups(entry, ["media_player", "number", "sensor"])
     try:

@@ -563,3 +563,315 @@ if (!customElements.get('teddycloud-homeassistant-card-editor')) {
 customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
 window.customCards = window.customCards || [];
 window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
+
+
+/* Separate Tonie library card. Editing happens here, not in dashboard edit mode. */
+class TeddyCloudTonieLibraryCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({mode:'open'});
+    this._entries = null;
+    this._edit = null;
+    this._saving = false;
+    this._error = '';
+    this._upload = null;
+    this._query = '';
+    this._connected = false;
+    this._subscribePromise = null;
+    this._listen();
+  }
+  static getStubConfig() { return {}; }
+  static getConfigElement() {
+    return document.createElement('teddycloud-tonie-library-editor');
+  }
+  getCardSize() { return 7; }
+  setConfig(config) {
+    this._config = {...config};
+    this.render();
+  }
+  set hass(hass) {
+    this._hass = hass;
+    this._subscribe();
+  }
+  connectedCallback() {
+    this._connected = true;
+    this._subscribe();
+    this.render();
+  }
+  disconnectedCallback() {
+    this._connected = false;
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
+    // A subscription pending during removal is cleaned up when resolved.
+  }
+  _listen() {
+    this.shadowRoot.addEventListener('click', event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      const id = button.dataset.id || '';
+      if (action === 'edit') this._openEdit(id);
+      else if (action === 'add') this._openEdit('');
+      else if (action === 'cancel') { this._edit = null; this._error = ''; this._upload = null; this.render(); }
+      else if (action === 'save') this._save();
+      else if (action === 'delete') { this._deleteId = id; this.render(); }
+      else if (action === 'cancel-delete') { this._deleteId = null; this.render(); }
+      else if (action === 'confirm-delete') this._delete(id);
+    });
+    this.shadowRoot.addEventListener('input', event => {
+      if (event.target.id !== 'library-search') return;
+      this._query = event.target.value.toLocaleLowerCase();
+      this._applySearch();
+    });
+    this.shadowRoot.addEventListener('change', event => {
+      if (event.target.id !== 'library-upload') return;
+      const file = event.target.files?.[0];
+      if (!file) { this._upload = null; return; }
+      if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 2097152) {
+        this._error = 'Bitte ein JPG-, PNG- oder WebP-Bild unter 2 MB auswählen.';
+        this._upload = null;
+        this.render();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        this._upload = reader.result;
+        const label = this.shadowRoot.getElementById('library-upload-label');
+        if (label) label.textContent = 'Bild ausgewählt: ' + file.name;
+      };
+      reader.onerror = () => { this._error = 'Bild konnte nicht geladen werden'; this.render(); };
+      reader.readAsDataURL(file);
+    });
+  }
+  _subscribe() {
+    if (!this._hass || this._subscribePromise || this._unsubscribe) return;
+    const connection = this._hass.connection;
+    // A single authenticated WebSocket subscription shares updates between
+    // family members, even if they cannot edit the Home Assistant dashboard.
+    this._subscribePromise = connection.subscribeMessage(
+      data => {
+        if (!Array.isArray(data?.entries)) return;
+        this._entries = data.entries;
+        if (!this._edit) this.render();
+      },
+      {type:'teddycloud_homeassistant/library/subscribe'}
+    ).then(unsubscribe => {
+      this._subscribePromise = null;
+      if (this._connected) this._unsubscribe = unsubscribe;
+      else unsubscribe();
+    }).catch(error => {
+      this._subscribePromise = null;
+      this._error = 'Bibliothek nicht erreichbar. Ist die Integration aktualisiert und Home Assistant neu gestartet? ' +
+        String(error?.message || error);
+      this.render();
+    });
+  }
+  _escape(value) {
+    return String(value ?? '').replace(/[&<>"']/g,
+      char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+  _safeImage(url) {
+    if (typeof url !== 'string') return '';
+    const value = url.trim();
+    return value.startsWith('/local/') || /^https?:\/\/[^/\s]+/i.test(value) ? value : '';
+  }
+  _image(url, className='cover') {
+    const safeURL = this._safeImage(url);
+    return safeURL
+      ? '<img class="' + className + '" src="' + this._escape(safeURL) + '" alt="Tonie-Bild" loading="lazy">'
+      : '<div class="' + className + ' empty">🧸</div>';
+  }
+  _mins(seconds) {
+    const number = Number(seconds);
+    return Number.isFinite(number) && number > 0
+      ? (number / 60).toLocaleString('de-DE',{maximumFractionDigits:1}) + ' Min.'
+      : 'Laufzeit unbekannt';
+  }
+  _openEdit(id) {
+    const found = (this._entries || []).find(item => item.audio_id === id);
+    this._edit = {
+      audio_id: found?.audio_id || '',
+      title: found?.custom?.title ?? found?.title ?? '',
+      image: found?.custom?.image ?? found?.image ?? '',
+      duration_seconds: found?.custom?.duration_seconds ?? found?.duration_seconds ?? null,
+    };
+    this._upload = null;
+    this._error = '';
+    this._deleteId = null;
+    this.render();
+  }
+  async _save() {
+    if (this._saving || !this._hass) return;
+    const get = id => this.shadowRoot.getElementById(id)?.value ?? '';
+    const audioId = get('library-audio').trim();
+    const duration = get('library-duration').trim();
+    if (!/^[a-z0-9_-]{1,80}$/i.test(audioId)) {
+      this._error = 'Bitte eine gültige Audio-ID eingeben.';
+      this.render();
+      return;
+    }
+    const minutes = duration ? Number(duration.replace(',','.')) : 0;
+    const seconds = Math.round(minutes * 60);
+    if (!Number.isFinite(seconds) || seconds < 0 || seconds > 86400) {
+      this._error = 'Bitte eine Laufzeit zwischen 0 und 1440 Minuten eingeben.';
+      this.render();
+      return;
+    }
+    this._saving = true;
+    const data = {
+      type:'teddycloud_homeassistant/library/save',
+      audio_id:audioId,
+      title:get('library-title').trim(),
+      image:get('library-image').trim(),
+      duration_seconds: seconds,
+    };
+    if (this._upload) data.image_data = this._upload;
+    try {
+      await this._hass.callWS(data);
+      this._error = '';
+      this._edit = null;
+      this._upload = null;
+    } catch (error) {
+      this._error = String(error?.message || error);
+    } finally {
+      this._saving = false;
+      this.render();
+    }
+  }
+  async _delete(audioId) {
+    if (!this._hass || this._saving) return;
+    this._saving = true;
+    try {
+      await this._hass.callWS({
+        type:'teddycloud_homeassistant/library/delete',audio_id:audioId
+      });
+      this._deleteId = null;
+      this._error = '';
+    } catch (error) {
+      this._error = String(error?.message || error);
+    } finally {
+      this._saving = false;
+      this.render();
+    }
+  }
+  _applySearch() {
+    const q = this._query;
+    this.shadowRoot.querySelectorAll('[data-library-entry]').forEach(item => {
+      item.hidden = !item.dataset.search.includes(q);
+    });
+  }
+  render() {
+    if (!this.shadowRoot || !this._config) return;
+    const e = value => this._escape(value);
+    const entries = this._entries || [];
+    const view = this._edit ? (() => {
+      const item = this._edit;
+      const editing = Boolean(item.audio_id);
+      const minutes = item.duration_seconds ? Math.round(Number(item.duration_seconds) / 6) / 10 : '';
+      return '<section class="form-panel"><h3>' +
+        (editing ? 'Tonie bearbeiten' : 'Tonie hinzufügen') +
+        '</h3><div class="field"><label for="library-audio">Audio-ID</label><input id="library-audio" maxlength="80"' +
+        (editing ? ' readonly' : '') + ' value="' + e(item.audio_id) +
+        '" placeholder="Audio-ID des Tonies"></div>' +
+        '<div class="field"><label for="library-title">Titel</label><input id="library-title" maxlength="200" value="' +
+        e(item.title) + '" placeholder="Titel des Hörspiels"></div>' +
+        '<div class="field"><label for="library-duration">Hörspiellänge in Minuten</label>' +
+        '<input type="number" id="library-duration" min="0" max="1440" step="0.1" value="' +
+        e(minutes) + '" placeholder="z. B. 45"></div>' +
+        '<div class="field"><label for="library-image">Figurenbild (Bildadresse, optional)</label>' +
+        '<input id="library-image" maxlength="2048" value="' + e(item.image) +
+        '" placeholder="https://… oder /local/…"></div>' +
+        '<div class="field"><label for="library-upload">Oder Bild direkt vom Gerät auswählen</label>' +
+        '<input type="file" id="library-upload" accept="image/png,image/jpeg,image/webp">' +
+        '<p class="hint" id="library-upload-label">JPG, PNG oder WebP · maximal 2 MB</p></div>' +
+        '<div class="edit-actions"><button data-action="cancel" type="button">Abbrechen</button>' +
+        '<button class="primary" data-action="save" type="button"' +
+        (this._saving ? ' disabled' : '') + '>Änderungen speichern</button></div></section>';
+    })() : (
+      '<div class="toolbar"><input id="library-search" aria-label="Tonie suchen" placeholder="🔎 Tonies suchen …" value="' +
+      e(this._query) + '"><button class="primary" type="button" data-action="add">+ Tonie hinzufügen</button></div>' +
+      (!this._entries ? '<p class="hint">Bibliothek wird geladen …</p>' :
+        !entries.length ? '<p class="empty-library">Noch keine Tonies gespeichert. Stelle eine Figur auf die Toniebox, damit sie automatisch hier erscheint.</p>' :
+          '<div class="library-grid">' + entries.map(item => {
+            const title = item.title || 'Unbekannter Tonie';
+            const removed = this._deleteId === item.audio_id;
+            return '<article class="tonie" data-library-entry data-search="' +
+              e((title + ' ' + item.audio_id).toLocaleLowerCase()) + '">' +
+              this._image(item.image) +
+              '<div class="tonie-body"><strong>' + e(title) + '</strong>' +
+              '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
+              '<span class="id">Audio-ID: ' + e(item.audio_id) + '</span>' +
+              (Number(item.times_seen) > 0 ? '<span class="id">Schon ' + e(item.times_seen) + '× erkannt</span>' : '') +
+              (item.last_seen ? '<span class="id">Zuletzt erkannt: ' + e(new Date(item.last_seen).toLocaleDateString('de-DE')) + '</span>' : '') +
+              (removed ?
+                '<p class="warning">Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.</p>' +
+                '<div class="actions"><button data-action="cancel-delete">Abbrechen</button>' +
+                '<button class="danger" data-action="confirm-delete" data-id="' + e(item.audio_id) + '">Ja, löschen</button></div>' :
+                '<div class="actions"><button data-action="edit" data-id="' + e(item.audio_id) +
+                '">✏️ Bearbeiten</button><button data-action="delete" data-id="' +
+                e(item.audio_id) + '">Löschen</button></div>') +
+              '</div></article>';
+          }).join('') + '</div>')
+    );
+    this.shadowRoot.innerHTML = [
+      '<style>',
+      ':host{display:block}',
+      'ha-card{padding:18px;border-radius:18px}',
+      '.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap}',
+      'h2{font-size:20px;margin:0}h3{font-size:18px;margin:0 0 16px}',
+      '.subtitle{font-size:12px;color:var(--secondary-text-color);margin:0 0 16px}',
+      '.toolbar{display:flex;gap:9px;margin-bottom:16px;flex-wrap:wrap}',
+      '.toolbar input{flex:1;min-width:130px}',
+      '.library-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}',
+      '.tonie{min-width:0;border:1px solid var(--divider-color,#777);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}',
+      '.tonie[hidden]{display:none}',
+      '.cover{width:100%;height:165px;object-fit:contain;background:var(--secondary-background-color,#282828)}',
+      '.cover.empty{display:grid;place-items:center;font-size:52px}',
+      '.tonie-body{padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}',
+      '.tonie-body strong{font-size:14px;overflow-wrap:anywhere;line-height:1.3}',
+      '.duration,.id,.hint{font-size:12px;color:var(--secondary-text-color)}',
+      '.id{overflow-wrap:anywhere}',
+      '.actions,.edit-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:auto}',
+      'button{border:1px solid var(--divider-color,#777);border-radius:9px;padding:9px 12px;background:transparent;color:var(--primary-text-color);font:inherit;font-size:12px;cursor:pointer}',
+      'button.primary{background:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff);border-color:transparent;font-weight:600}',
+      'button.danger{border-color:var(--error-color,#e53935);color:var(--error-color,#e53935)}',
+      'button:disabled{opacity:.5;cursor:not-allowed}',
+      'input{box-sizing:border-box;border:1px solid var(--divider-color,#777);border-radius:9px;padding:10px;background:var(--card-background-color,#222);color:var(--primary-text-color);font:inherit;width:100%}',
+      'input[readonly]{opacity:.65}',
+      '.form-panel{max-width:560px}.field{margin:0 0 15px}',
+      '.field label{display:block;margin-bottom:6px;font-size:13px;font-weight:600}',
+      '.warning,.error{font-size:12px;color:var(--error-color,#e53935)}',
+      '.empty-library{font-size:14px;opacity:.8;text-align:center;padding:26px 10px}',
+      '.edit-actions{justify-content:flex-end;padding-top:12px}',
+      '</style><ha-card>',
+      '<header class="header"><h2>🧸 Meine Tonie-Bibliothek</h2>',
+      '<span class="hint">' + entries.length + ' Tonies</span></header>',
+      '<p class="subtitle">Deine Figuren – automatisch gemerkt und direkt hier bearbeitbar, auch ohne Administratorrechte.</p>',
+      this._error ? '<p class="error" role="alert">' + e(this._error) + '</p>' : '',
+      view, '</ha-card>'
+    ].join('');
+    if (!this._edit) this._applySearch();
+  }
+}
+class TeddyCloudLibraryEditor extends HTMLElement {
+  setConfig() {
+    this.textContent = 'Die Tonie-Bibliothek wird direkt in der Dashboard-Karte verwaltet. Hier musst du nichts einstellen.';
+    this.style.display = 'block';
+    this.style.padding = '12px';
+  }
+  set hass(_hass) {}
+}
+if (!customElements.get('teddycloud-tonie-library-editor')) {
+  customElements.define('teddycloud-tonie-library-editor', TeddyCloudLibraryEditor);
+}
+if (!customElements.get('teddycloud-tonie-library-card')) {
+  customElements.define('teddycloud-tonie-library-card', TeddyCloudTonieLibraryCard);
+}
+window.customCards.push({
+  type:'teddycloud-tonie-library-card',
+  name:'TeddyCloud Tonie-Bibliothek',
+  description:'Deine Tonie-Sammlung ansehen, bearbeiten, Bilder ändern und Tonies hinzufügen – direkt im Dashboard',
+  preview:true
+});

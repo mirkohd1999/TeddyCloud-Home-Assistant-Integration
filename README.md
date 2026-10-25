@@ -5,7 +5,7 @@
 [![Aktuelle Version](https://img.shields.io/github/v/release/mirkohd1999/TeddyCloud-Home-Assistant-Integration?label=Version)](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/releases/latest)
 [![Lizenz](https://img.shields.io/github/license/mirkohd1999/TeddyCloud-Home-Assistant-Integration)](LICENSE)
 
-> **Aktueller Stand: v0.3.5.** Inoffizielle Community-Integration; kein offizielles Produkt von tonies® oder TeddyCloud. Die Integration nutzt die **vorhandene MQTT-Integration in Home Assistant** und benötigt keine eigenen MQTT-Zugangsdaten.
+> **Aktueller Stand: v0.3.6.** Inoffizielle Community-Integration; kein offizielles Produkt von tonies® oder TeddyCloud. Die Integration nutzt die **vorhandene MQTT-Integration in Home Assistant** und benötigt keine eigenen MQTT-Zugangsdaten.
 
 ## Inhalt
 
@@ -13,6 +13,7 @@
 - [Funktionen und Einschränkungen](#-funktionen-und-einschränkungen)
 - [Dashboard-Karte hinzufügen](#-dashboard-karte-hinzufügen)
 - [Dashboard selbst gestalten](#-dashboard-selbst-gestalten)
+- [Tonie-Bibliothek](#-tonie-bibliothek)
 - [Toniebox über MQTT](#-toniebox-über-mqtt)
 - [Ohrtasten-Sensoren](#-ohrtasten-sensoren)
 - [Figurenbilder und Laufzeit](#-figurenbilder-und-laufzeit)
@@ -62,6 +63,7 @@
 | 🔌 Ladestation | Von TeddyCloud gemeldeter Zustand |
 | 👂 Ohrtasten | Je ein Sensor für großes/kleines Ohr, einschließlich Mehrfachdruck und Ereigniszähler |
 | 🎨 Dashboard | **8 Vorlagen**, Live-Vorschau, frei wählbare Bausteine, Reihenfolge und Breite |
+| 📚 Tonie-Bibliothek | Einmal erkannte Tonies dauerhaft merken und direkt im Dashboard verwalten, auch ohne Admin-Rechte |
 
 **Nicht möglich:** Die aktuelle Lautstärke fernsteuern, Play/Pause auslösen, eine echte Abspielposition oder einen zuverlässigen Akku-Prozentstand abfragen. Ein erkannter Ladestationsstatus bedeutet nicht zwingend, dass der Akku gerade lädt. Lautstärkelimits und LED-Einstellungen können erst bei einem späteren *Freshness Check* wirksam werden.
 
@@ -154,6 +156,34 @@ section_widths:
 
 Weitere optionale Karteneinstellungen: `name`, `color`, `artwork_mode` (`auto`, `figure`, `cover`) und `composition`. Du kannst diese Einstellungen ohne YAML im Karteneditor vornehmen.
 
+## 📚 Tonie-Bibliothek
+
+Ab **v0.3.6** gibt es eine **zweite Dashboard-Karte: „TeddyCloud Tonie-Bibliothek“**. Sie funktioniert unabhängig davon, welche Toniebox gerade eingeschaltet ist.
+
+### Bibliothek einrichten – einmalig durch einen Dashboard-Administrator
+
+1. Home Assistant nach dem HACS-Update auf v0.3.6 **neu starten**.
+2. Dashboard öffnen → **Bearbeiten → Karte hinzufügen**.
+3. **TeddyCloud Tonie-Bibliothek** auswählen und speichern.
+
+Danach können **alle angemeldeten Home-Assistant-Nutzer, auch ohne Admin-Rechte**, die Tonies **direkt in dieser Karte** verwalten. Sie benötigen **keine Berechtigung zum Bearbeiten des Dashboards**. Alle Änderungen gelten für die **gemeinsame Bibliothek** dieses Home-Assistant-Systems; Nutzer sehen deshalb dieselben Tonies.
+
+### Was kann die Bibliothek?
+
+- **Automatisch sammeln:** Sobald die Integration eine bislang unbekannte **Audio-ID** von einer Toniebox meldet, wird der Tonie zur Bibliothek hinzugefügt. Auch Tonies, die später nicht mehr aufgelegt sind, bleiben gespeichert.
+- **Suchen und stöbern:** Alle gesammelten Tonies als Bilderkacheln mit Titel, Hörspiellänge und Audio-ID anzeigen.
+- **Titel und Hörspiellänge bearbeiten:** Direkt mit **Bearbeiten** im Dashboard. Die Laufzeit wird in Minuten eingetragen.
+- **Figurenbild ändern:** Eine Bildadresse eingeben **oder eine JPG-/PNG-/WebP-Datei vom eigenen Gerät hochladen** (maximal 2 MB). Hochgeladene Bilder werden lokal unter `/config/www/teddycloud_homeassistant/library/` abgelegt; kein externer Bildhost notwendig.
+- **Tonie löschen:** Über den Löschknopf und eine zusätzliche Bestätigung aus der Bibliothek entfernen.
+- **Wieder hinzufügen:** Wird ein gelöschter Tonie nach dem Abnehmen **erneut aufgelegt**, nimmt die Integration ihn bei einem **neuen Erkennungsereignis** wieder auf. Ein alter zwischengespeicherter Status oder eine laufende Katalogsuche hebt das Löschen nicht sofort auf.
+- **Manuell hinzufügen:** Über **+ Tonie hinzufügen** mit Audio-ID, beispielsweise für Figuren, die derzeit nicht aufgestellt werden können.
+
+**Wichtig:** Die automatische Sammlung beginnt mit der Installation dieser Funktion. Tonies, die **vorher** benutzt wurden und seitdem keine Erkennungsdaten mehr gesendet haben, lassen sich **nicht rückwirkend aus einer vollständigen Toniebox-Historie rekonstruieren**. Du kannst sie jederzeit wieder auflegen oder manuell hinzufügen.
+
+Die Bearbeitung von Titel, Bild und Laufzeit wirkt sich zusätzlich auf die **Anzeige der aktuell erkannten Figur** im vorhandenen Toniebox-Media-Player aus. Bereits gespeicherte eigene Angaben gehen dabei nicht verloren, wenn der Online-Katalog andere Werte liefert.
+
+**Datenschutz und Rollen:** Die Bibliothek nutzt Home Assistants **authentifizierte WebSocket-Verbindung**. Es wird **keine offene API** für anonyme Nutzer bereitgestellt. Weil die Bibliothek bewusst auch ohne Admin-Rechte bearbeitbar ist, können **alle angemeldeten Home-Assistant-Nutzer gemeinsam Einträge ändern oder löschen**. Admin-Rechte sind weiterhin erforderlich, um das Dashboard selbst zu bearbeiten und die Bibliothekskarte dort erstmalig hinzuzufügen.
+
 ## 📡 Toniebox über MQTT
 
 Die Daten kommen über die vorhandene MQTT-Anbindung:
@@ -241,13 +271,13 @@ Toniebox einschalten oder eine Figur aufstellen. Prüfen, ob in MQTT ein Status-
 - **Home Assistant neu starten** und danach das Dashboard neu laden.
 - Bei normalen Storage-Dashboards versucht die Integration, die Ressource selbst zu registrieren. Nur wenn das fehlschlägt oder Dashboard-Ressourcen per YAML verwaltet werden, ist eine manuelle Prüfung nötig.
 
-**Ressourcenadresse in v0.3.5:**
+**Ressourcenadresse in v0.3.6:**
 
 ```text
-/teddycloud-homeassistant/card-v035.js?v=0.3.5
+/teddycloud-homeassistant/card-v036.js?v=0.3.6
 ```
 
-Unter **Einstellungen → Dashboards → Ressourcen** muss der Eintrag als **JavaScript-Modul** hinterlegt sein. Die älteren Pfade `card.js` und `card-v034.js` bleiben kompatibel. **Keine doppelten Ressourcen anlegen**: Bestehende Einträge gegebenenfalls aktualisieren.
+Unter **Einstellungen → Dashboards → Ressourcen** muss der Eintrag als **JavaScript-Modul** hinterlegt sein. Die älteren Pfade `card.js`, `card-v034.js` und `card-v035.js` bleiben kompatibel. **Keine doppelten Ressourcen anlegen**: Bestehende Einträge gegebenenfalls aktualisieren.
 
 ### Tonie-Bild, Titel oder Laufzeit fehlen
 

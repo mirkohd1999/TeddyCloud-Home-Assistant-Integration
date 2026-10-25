@@ -56,7 +56,7 @@ jobs:
           manifest = json.loads((root / "manifest.json").read_text())
           assert manifest["domain"] == root.name
           assert manifest["name"] == "TeddyCloud Home Assistant Integration"
-          assert manifest["version"] == "0.3.5"
+          assert manifest["version"] == "0.3.6"
           assert manifest["codeowners"] == ["@mirkohd1999"]
           assert (root / "brand" / "icon.png").is_file()
 

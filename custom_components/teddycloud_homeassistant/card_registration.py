@@ -8,9 +8,10 @@ from homeassistant.helpers.storage import Store
 
 _LOGGER = logging.getLogger(__name__)
 LEGACY_CARD_PATH = "/teddycloud-homeassistant/card.js"
-PREVIOUS_CARD_PATH = "/teddycloud-homeassistant/card-v034.js"
-CARD_PATH = "/teddycloud-homeassistant/card-v035.js"
-CARD_VERSION = "0.3.5"
+OLDER_CARD_PATH = "/teddycloud-homeassistant/card-v034.js"
+PREVIOUS_CARD_PATH = "/teddycloud-homeassistant/card-v035.js"
+CARD_PATH = "/teddycloud-homeassistant/card-v036.js"
+CARD_VERSION = "0.3.6"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
 
@@ -28,7 +29,7 @@ async def async_register_card(hass):
     # Versioned *path*, not only a query parameter: forces Home Assistant to
     # load the new visual editor instead of an older browser-cached module.
     # Keep the legacy URL available for hand-written dashboard resources.
-    for path in (LEGACY_CARD_PATH, PREVIOUS_CARD_PATH, CARD_PATH):
+    for path in (LEGACY_CARD_PATH, OLDER_CARD_PATH, PREVIOUS_CARD_PATH, CARD_PATH):
         try:
             await hass.http.async_register_static_paths(
                 [StaticPathConfig(path, str(card_file), False)]
@@ -50,7 +51,7 @@ async def async_register_card(hass):
             await resources.async_load()
         existing = [
             item for item in resources.async_items()
-            if item.get("url", "").split("?")[0] in (CARD_PATH, PREVIOUS_CARD_PATH, LEGACY_CARD_PATH)
+            if item.get("url", "").split("?")[0] in (CARD_PATH, PREVIOUS_CARD_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH)
         ]
         if existing:
             for item in existing:
