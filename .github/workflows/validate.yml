@@ -45,6 +45,7 @@ jobs:
           node --check custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js
           node --check www/teddycloud-homeassistant-card.js
           cmp custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js www/teddycloud-homeassistant-card.js
+          node tests/test_card_layouts.cjs
       - name: Validate package metadata and translations
         run: |
           python3 - <<'PY'
