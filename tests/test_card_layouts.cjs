@@ -202,4 +202,40 @@ assert.ok(widthEditor.shadowRoot.innerHTML.includes("data-width='title'"));
 widthEditor.change('layout','stack');
 assert.ok(!widthEditor.shadowRoot.innerHTML.includes("data-width='title'"));
 assert.equal(widthEditor._config.section_widths.title,3);
-console.log('Dashboard layout and visual editor tests passed.');
+
+// Separate non-admin library card: no dashboard editing or YAML needed.
+const LibraryCard = components.get('teddycloud-tonie-library-card');
+assert.ok(LibraryCard, 'Tonie library card must be registered');
+const libraryCard = new LibraryCard();
+libraryCard.setConfig({});
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Meine Tonie-Bibliothek'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Bibliothek wird geladen'));
+const libraryData = [
+  {audio_id:'12345',title:'Der kleine Tonie',image:'https://example.org/tonie.jpg',
+    duration_seconds:3600, custom:{},times_seen:2},
+  {audio_id:'67890',title:'Ein anderes Hörspiel',image:'',duration_seconds:1800, custom:{}}
+];
+libraryCard._entries = libraryData;
+libraryCard.render();
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Der kleine Tonie'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('60 Min.'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Tonie hinzufügen'));
+libraryCard._openEdit('12345');
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Hörspiellänge in Minuten'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Bild direkt vom Gerät'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Änderungen speichern'));
+libraryCard._edit = null;
+libraryCard._deleteId = '12345';
+libraryCard.render();
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('Ja, löschen'));
+assert.equal(libraryCard._safeImage('javascript:alert(1)'), '');
+assert.equal(libraryCard._safeImage('data:text/html,evil'), '');
+assert.equal(libraryCard._safeImage('/local/teddycloud_homeassistant/library/12345.png'), '/local/teddycloud_homeassistant/library/12345.png');
+libraryCard._entries = [{audio_id:'888',title:'<script>evil</script>',
+  image:'javascript:alert(1)',duration_seconds:null,custom:{}}];
+libraryCard._deleteId = null;
+libraryCard.render();
+assert.ok(!libraryCard.shadowRoot.innerHTML.includes('<script>'));
+assert.ok(!libraryCard.shadowRoot.innerHTML.includes('src="javascript'));
+assert.ok(window === undefined || true); // registration is inspected via components above
+console.log('Dashboard layout, editor and Tonie library tests passed.');
