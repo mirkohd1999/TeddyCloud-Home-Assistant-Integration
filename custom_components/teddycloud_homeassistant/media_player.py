@@ -135,6 +135,7 @@ class BoxPlayer(MediaPlayerEntity):
                         self.entry.entry_id, text,
                         title=self._values.get('ContentTitle'),
                         image=current_image,
+                        retained=retained,
                     ))
             elif library and field == 'TagValid' and text.startswith('-'):
                 # Removing the tag unlocks the next placement, including the
