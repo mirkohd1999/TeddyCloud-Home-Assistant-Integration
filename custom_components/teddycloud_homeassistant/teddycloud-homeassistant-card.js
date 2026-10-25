@@ -285,92 +285,192 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
 }
 
 /* Visual editor: includes unavailable entities so the box need not be running. */
+/* Simple visual editor for people who don't want to edit YAML. */
 class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode:'open'});
+    this._advancedOpen = false;
+    this._fingerprint = null;
   }
   setConfig(config) {
     this._config = {...config};
     this.render();
   }
+  _availableBoxes() {
+    const all = Object.entries(this._hass?.states || {})
+      .filter(([id]) => id.startsWith('media_player.'))
+      .sort(([a], [b]) => a.localeCompare(b, 'de'));
+    const matches = all.filter(([id, state]) =>
+      /tonie|teddy/i.test(id + ' ' + (state.attributes?.friendly_name || '')) ||
+      state.attributes?.box_color !== undefined ||
+      state.attributes?.content_audio_id !== undefined);
+    const boxes = matches.length ? matches : all;
+    // An existing, customized entity must stay selectable even when offline.
+    const selected = this._config?.entity;
+    if (selected && !boxes.some(([id]) => id === selected)) {
+      const old = all.find(([id]) => id === selected);
+      if (old) boxes.unshift(old);
+    }
+    return boxes;
+  }
   set hass(value) {
     this._hass = value;
+    const boxes = this._availableBoxes();
+    const fingerprint = boxes.map(([id, state]) =>
+      id + ':' + (state.attributes?.friendly_name || '')).join('|');
+    if (fingerprint === this._fingerprint) return;
+    this._fingerprint = fingerprint;
+    // Automatically choose the sole detected Toniebox for new cards. Don't
+    // replace a user's explicit choice or a temporarily offline entity.
+    const current = this._config?.entity;
+    if (this._config && boxes.length === 1 &&
+        (!current || (current === 'media_player.meine_toniebox_now_playing' &&
+          !this._hass?.states?.[current]))) {
+      if (current !== boxes[0][0]) {
+        this._config = {...this._config, entity: boxes[0][0]};
+        this._notify();
+      }
+    }
     this.render();
+  }
+  _notify() {
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail:{config:this._config}, bubbles:true, composed:true
+    }));
   }
   render() {
     if (!this.shadowRoot || !this._config) return;
     const escape = value => String(value ?? '').replace(/[&<>"']/g,
       char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-    const entity = this._config.entity || '';
-    const entities = Object.entries(this._hass?.states || {})
-      .filter(([id]) => id.startsWith('media_player.'))
-      .sort(([a], [b]) => a.localeCompare(b, 'de'));
-    const choices = entities.map(([id, state]) => `<option value="${escape(id)}" ${entity===id?'selected':''}>
-      ${escape(state.attributes?.friendly_name || id)} (${escape(id)})${state.state === 'unavailable' ? ' – Nicht verfügbar' : ''}
-    </option>`).join('');
-    this.shadowRoot.innerHTML = `<style>
-      :host{display:block;color:var(--primary-text-color)}
-      .field{display:block;margin:12px 0}
-      label{display:block;margin-bottom:6px;font-weight:500}
-      select,input{box-sizing:border-box;width:100%;padding:10px;border:1px solid var(--divider-color,#777);
-        border-radius:8px;background:var(--card-background-color,#222);color:var(--primary-text-color)}
-      .help{font-size:12px;color:var(--secondary-text-color);margin-top:6px}
-      .section-editor{display:grid;gap:6px}.section-row{display:flex;align-items:center;gap:7px;padding:6px 4px;border:1px solid var(--divider-color,#777);border-radius:8px}
-      .section-row label{display:flex;align-items:center;gap:7px;flex:1;min-width:0;margin:0;font-weight:400;font-size:13px}
-      .section-row input{width:auto;flex-shrink:0}.section-row button{border:1px solid var(--divider-color,#777);border-radius:6px;padding:5px 8px;background:transparent;color:inherit;cursor:pointer}
-      .section-row button:disabled{opacity:.3;cursor:default}
-    </style>
-    <div class="field"><label for="entity">Toniebox auswählen</label>
-      <select id="entity"><option value="">– Toniebox auswählen –</option>${choices}</select>
-      <div class="help">Die Toniebox kann ausgeschaltet sein. Falls sie nicht in der Liste steht,
-      die Media-Player-Entitäts-ID unten manuell eingeben.</div>
-    </div>
-    <div class="field"><label for="manual">Media-Player-Entitäts-ID (optional)</label>
-      <input id="manual" placeholder="media_player.meine_toniebox_now_playing" value="${escape(entity)}"></div>
-    <div class="field"><label for="artwork_mode">Bilddarstellung</label><select id="artwork_mode"><option value="auto" ${(!this._config.artwork_mode || this._config.artwork_mode==='auto')?'selected':''}>Automatisch (Katalogbild als Cover)</option><option value="figure" ${this._config.artwork_mode==='figure'?'selected':''}>Figur auf Toniebox</option><option value="cover" ${this._config.artwork_mode==='cover'?'selected':''}>Nur Coverbild</option></select></div>
-    <div class="field"><label for="mode">Kartenansicht</label><select id="mode"><option value="all" ${(!this._config.mode || this._config.mode==='all')?'selected':''}>Alles zusammen</option><option value="player" ${this._config.mode==='player'?'selected':''}>Nur Toniebox und Titel</option><option value="settings" ${this._config.mode==='settings'?'selected':''}>Nur Einstellungen</option><option value="compact" ${this._config.mode==='compact'?'selected':''}>Kompakt (schmale Leiste)</option><option value="artwork" ${this._config.mode==='artwork'?'selected':''}>Großes Tonie-Bild</option><option value="status" ${this._config.mode==='status'?'selected':''}>Status-Kacheln</option><option value="tiles" ${this._config.mode==='tiles'?'selected':''}>Dashboard-Kacheln</option><option value="custom" ${this._config.mode==='custom'?'selected':''}>Eigene Zusammenstellung</option></select></div>
-    ${this._config.mode === 'custom' ? `
-      <div class="field"><label for="layout">Anordnung der Bausteine</label>
-        <select id="layout"><option value="stack" ${this._config.layout!=='grid'?'selected':''}>Untereinander</option><option value="grid" ${this._config.layout==='grid'?'selected':''}>Als Kacheln</option></select>
-      </div>
-      ${this._config.layout === 'grid' ? `<div class="field"><label for="columns">Kachelspalten</label><select id="columns">
-        <option value="1" ${Number(this._config.columns)===1?'selected':''}>1 Spalte</option>
-        <option value="2" ${(!this._config.columns || Number(this._config.columns)===2)?'selected':''}>2 Spalten</option>
-        <option value="3" ${Number(this._config.columns)===3?'selected':''}>3 Spalten</option>
-      </select></div>` : ''}
-      <div class="field"><label>Bausteine auswählen und sortieren</label>
-        <div class="section-editor">
-          ${this.sectionEditorRows(escape)}
-        </div>
-        <div class="help">Bausteine an- oder abwählen und mit ↑ ↓ in der gewünschten Reihenfolge anordnen.</div>
-      </div>
-    ` : ''}
-    <div class="field"><label for="name">Anzeigename (optional)</label>
-      <input id="name" placeholder="Kinderzimmer" value="${escape(this._config.name || '')}"></div>
-    <div class="field"><label for="color">Boxfarbe (Hex)</label>
-      <input id="color" placeholder="#c991c5" value="${escape(this._config.color || '#c991c5')}"></div>
-    <div class="field"><label><input id="composition" type="checkbox" style="width:auto"
-      ${this._config.composition!==false?'checked':''}> Toniebox mit Figur anzeigen</label></div>`;
-    this.shadowRoot.getElementById('artwork_mode').addEventListener('change', e => this.change('artwork_mode',e.target.value));
-    this.shadowRoot.getElementById('mode').addEventListener('change', e => this.change('mode',e.target.value));
-    this.shadowRoot.getElementById('layout')?.addEventListener('change', e => this.change('layout',e.target.value));
-    this.shadowRoot.getElementById('columns')?.addEventListener('change', e => this.change('columns',Number(e.target.value)));
-    this.shadowRoot.querySelectorAll('input[data-section]').forEach(input => input.addEventListener('change', e =>
-      this.changeSections(e.target.dataset.section, e.target.checked)));
-    this.shadowRoot.querySelectorAll('button[data-move]').forEach(button => button.addEventListener('click', e =>
-      this.moveSection(e.currentTarget.dataset.move, Number(e.currentTarget.dataset.step))));
-    this.shadowRoot.getElementById('entity').addEventListener('change', e => {
-      this.change('entity',e.target.value);
-    });
-    this.shadowRoot.getElementById('manual').addEventListener('change', e => {
-      this.change('entity',e.target.value.trim());
-    });
-    for (const field of ['name','color']) {
-      this.shadowRoot.getElementById(field).addEventListener('change',e => this.change(field,e.target.value));
+    const mode = this._config.mode || 'all';
+    const box = this._config.entity || '';
+    const choices = this._availableBoxes();
+    const options = choices.map(([id, state]) =>
+      "<option value='" + escape(id) + "'" + (id === box ? " selected" : "") + ">" +
+      escape(state.attributes?.friendly_name || id) + "</option>").join('');
+    const presets = [
+      ['all','🧸','Alles','Toniebox und Einstellungen'],
+      ['player','🎵','Musik','Bild und Titel'],
+      ['compact','▬','Kompakt','Schmale Leiste'],
+      ['artwork','🖼️','Großes Bild','Tonie im Mittelpunkt'],
+      ['tiles','▦','Kacheln','Übersichtliche Kacheln'],
+      ['status','📊','Status','Alle wichtigen Infos'],
+      ['settings','⚙️','Einstellungen','Lautstärkelimits und LED'],
+      ['custom','🧩','Selbst gestalten','Eigene Bausteine wählen']
+    ];
+    const presetHtml = presets.map(([id, icon, name, description]) =>
+      "<button type='button' class='preset" + (mode === id ? " selected" : "") +
+      "' data-preset='" + escape(id) + "' aria-pressed='" + (mode === id) + "'>" +
+      "<span class='preset-icon'>" + escape(icon) + "</span>" +
+      "<span class='preset-body'><strong>" + escape(name) + "</strong>" +
+      "<small>" + escape(description) + "</small></span>" +
+      "<span class='preset-check'>" + (mode === id ? "✓" : "") + "</span></button>"
+    ).join('');
+    const custom = mode === 'custom';
+    const layout = this._config.layout === 'stack' ? 'stack' : 'grid';
+    const columns = Math.min(3, Math.max(1, Number(this._config.columns) || 2));
+    const color = /^#[0-9a-f]{6}$/i.test(this._config.color || '') ?
+      this._config.color : '#8f77c7';
+    const selected = teddySelectedSections(this._config).length;
+    const showDetails = this._advancedOpen ||
+      Boolean(this.shadowRoot.querySelector?.('details')?.open);
+    this.shadowRoot.innerHTML = [
+      "<style>",
+      ":host{display:block;color:var(--primary-text-color)}",
+      ".step{margin:0 0 22px}.step h3{font-size:16px;font-weight:650;margin:0 0 5px}",
+      ".help{font-size:12px;line-height:1.4;color:var(--secondary-text-color);margin:5px 0 10px}",
+      "select,input[type=text],input[type=color]{box-sizing:border-box;width:100%;padding:10px;border:1px solid var(--divider-color,#777);border-radius:10px;background:var(--card-background-color,#222);color:var(--primary-text-color);font:inherit}",
+      ".preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}",
+      ".preset{display:flex;text-align:left;align-items:center;gap:8px;min-width:0;min-height:70px;padding:10px;border:2px solid var(--divider-color,#777);border-radius:12px;background:var(--card-background-color,#222);color:inherit;cursor:pointer;font:inherit}",
+      ".preset.selected{border-color:var(--primary-color,#03a9f4);background:color-mix(in srgb,var(--primary-color,#03a9f4) 12%,var(--card-background-color,#222))}",
+      ".preset:focus-visible,.actions button:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}",
+      ".preset-icon{font-size:23px;flex:none}.preset-body{display:grid;gap:3px;flex:1;min-width:0}",
+      ".preset-body strong{font-size:13px}.preset-body small{font-size:11px;color:var(--secondary-text-color);line-height:1.3}",
+      ".preset-check{color:var(--primary-color,#03a9f4);font-weight:bold;font-size:18px;flex:none}",
+      ".section-editor{display:grid;gap:7px;margin-top:10px}.section-row{display:flex;align-items:center;gap:5px;padding:7px;border:1px solid var(--divider-color,#777);border-radius:9px}",
+      ".section-row label{display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-size:13px;cursor:pointer}",
+      ".section-row input{width:17px;height:17px;accent-color:var(--primary-color,#03a9f4);flex:none}",
+      ".section-row button,.actions button{border:1px solid var(--divider-color,#777);border-radius:7px;padding:7px 10px;background:transparent;color:inherit;cursor:pointer;font:inherit}",
+      ".section-row button:disabled{opacity:.35;cursor:default}",
+      ".field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}",
+      ".custom-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
+      "details{border-top:1px solid var(--divider-color,#777);padding:14px 0 4px}",
+      "summary{font-weight:550;cursor:pointer;user-select:none}",
+      ".version{opacity:.55;font-size:10px;margin-top:12px}",
+      ".missing{font-size:12px;color:var(--warning-color,#d18b2f)}",
+      "@media(max-width:380px){.preset-grid{grid-template-columns:1fr}.custom-tools{grid-template-columns:1fr}}",
+      "</style>",
+      "<section class='step'><h3>1. Deine Toniebox</h3>",
+      "<div class='help'>Wähle die Toniebox aus. Mehr musst du dafür nicht einstellen.</div>",
+      "<select id='entity' aria-label='Toniebox auswählen'><option value=''>– Toniebox auswählen –</option>",
+      options,"</select>",
+      choices.length === 0 ? "<div class='missing'>Keine Toniebox erkannt? Unten unter „Weitere Einstellungen“ kannst du die Entitäts-ID eingeben.</div>" : "",
+      "</section>",
+      "<section class='step'><h3>2. So soll deine Karte aussehen</h3>",
+      "<div class='help'>Einfach eine Ansicht antippen – rechts siehst du sofort die Vorschau.</div>",
+      "<div class='preset-grid' role='group' aria-label='Dashboard-Ansicht wählen'>",
+      presetHtml,"</div></section>",
+      custom ? [
+        "<section class='step'><h3>3. Deine Bausteine</h3>",
+        "<div class='help'>Wähle nur das aus, was du sehen möchtest. ",
+        selected, " Bausteine aktiv.</div>",
+        "<div class='custom-tools'><div class='field'><label for='layout'>Anordnung</label>",
+        "<select id='layout'><option value='grid'", layout === 'grid' ? " selected" : "",
+        ">Kacheln</option><option value='stack'",layout === 'stack' ? " selected" : "",
+        ">Untereinander</option></select></div>",
+        layout === 'grid' ? [
+          "<div class='field'><label for='columns'>Spalten</label><select id='columns'>",
+          [1,2,3].map(n => "<option value='" + n + "'" +
+            (columns === n ? " selected" : "") + ">" + n + "</option>").join(''),
+          "</select></div>"
+        ].join('') : "",
+        "</div><div class='section-editor'>", this.sectionEditorRows(escape), "</div></section>"
+      ].join('') : "",
+      "<details id='advanced'",showDetails ? " open" : "","><summary>⚙️ Weitere Einstellungen (optional)</summary>",
+      "<div class='field'><label for='name'>Eigener Anzeigename</label>",
+      "<input type='text' id='name' placeholder='z. B. Kinderzimmer' value='",escape(this._config.name || ''),"'></div>",
+      "<div class='field'><label for='color'>Toniebox-Farbe</label>",
+      "<input type='color' id='color' value='",escape(color),"'></div>",
+      "<div class='field'><label for='artwork_mode'>Bild anzeigen als</label>",
+      "<select id='artwork_mode'>",
+      [['auto','Automatisch'],['figure','Figur auf Toniebox'],['cover','Nur Coverbild']].map(([id,name]) =>
+        "<option value='" + id + "'" + ((this._config.artwork_mode || 'auto') === id ? " selected" : "") + ">" +
+        name + "</option>").join(''),
+      "</select></div>",
+      "<div class='field'><label><input type='checkbox' id='composition' ",
+      this._config.composition !== false ? "checked" : "",
+      "> Toniebox mit Figur anzeigen</label></div>",
+      "<div class='field'><label for='manual'>Entitäts-ID manuell eingeben (nur bei Bedarf)</label>",
+      "<input type='text' id='manual' placeholder='media_player.meine_toniebox' value='",escape(box),"'></div>",
+      "</details>",
+      "<div class='version'>TeddyCloud Karteneditor v0.3.4 · Auswahl wird automatisch in die Kartenvorschau übernommen</div>"
+    ].join('');
+    const element = id => this.shadowRoot.getElementById(id);
+    element('entity').addEventListener('change', e => this.change('entity', e.target.value));
+    this.shadowRoot.querySelectorAll('button[data-preset]').forEach(button =>
+      button.addEventListener('click', e => this.choosePreset(e.currentTarget.dataset.preset)));
+    element('layout')?.addEventListener('change', e => this.change('layout', e.target.value));
+    element('columns')?.addEventListener('change', e => this.change('columns', Number(e.target.value)));
+    this.shadowRoot.querySelectorAll('input[data-section]').forEach(input =>
+      input.addEventListener('change', e => this.changeSections(e.target.dataset.section, e.target.checked)));
+    this.shadowRoot.querySelectorAll('button[data-move]').forEach(button =>
+      button.addEventListener('click', e => this.moveSection(e.currentTarget.dataset.move, Number(e.currentTarget.dataset.step))));
+    for (const field of ['name','color','artwork_mode']) {
+      element(field)?.addEventListener('change', e => this.change(field, e.target.value));
     }
-    this.shadowRoot.getElementById('composition').addEventListener('change',
-      e => this.change('composition',e.target.checked));
+    element('composition')?.addEventListener('change', e => this.change('composition', e.target.checked));
+    element('manual')?.addEventListener('change', e => this.change('entity',e.target.value.trim()));
+    element('advanced')?.addEventListener('toggle', e => {this._advancedOpen = e.target.open;});
+  }
+  choosePreset(mode) {
+    if (!['all','player','compact','artwork','tiles','status','settings','custom'].includes(mode)) return;
+    // New self-built cards start with a useful selection, not 10 busy boxes.
+    const extra = mode === 'custom' && !Array.isArray(this._config.sections) ?
+      {layout:'grid',columns:2,sections:['artwork','title','playback','charger','volume']} : {};
+    this._config = {...this._config,mode,...extra};
+    this._notify();
+    this.render();
   }
   sectionEditorRows(escape) {
     const selected = teddySelectedSections(this._config);
@@ -378,10 +478,13 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     return ordered.map(id => {
       const label = TEDDY_SECTIONS.find(([key]) => key === id)?.[1] || id;
       const index = selected.indexOf(id);
-      return `<div class="section-row"><label><input type="checkbox" data-section="${escape(id)}" ${index>=0?'checked':''}>
-        ${escape(label)}</label>
-        <button type="button" data-move="${escape(id)}" data-step="-1" title="Nach oben" ${index<1?'disabled':''}>↑</button>
-        <button type="button" data-move="${escape(id)}" data-step="1" title="Nach unten" ${index<0 || index>=selected.length-1?'disabled':''}>↓</button></div>`;
+      return "<div class='section-row'><label><input type='checkbox' data-section='" +
+        escape(id) + "'" + (index>=0 ? " checked" : "") + "> " + escape(label) +
+        "</label><button type='button' data-move='" + escape(id) +
+        "' data-step='-1' aria-label='" + escape(label) + " nach oben'" +
+        (index<1 ? " disabled" : "") + ">↑</button><button type='button' data-move='" +
+        escape(id) + "' data-step='1' aria-label='" + escape(label) + " nach unten'" +
+        (index<0 || index>=selected.length-1 ? " disabled" : "") + ">↓</button></div>";
     }).join('');
   }
   changeSections(id, enabled) {
@@ -397,14 +500,13 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     [sections[from], sections[to]] = [sections[to], sections[from]];
     this.change('sections',sections);
   }
-  change(field,value) {
+  change(field, value) {
     this._config = {...this._config,[field]:value};
-    this.dispatchEvent(new CustomEvent('config-changed', {
-      detail:{config:this._config}, bubbles:true, composed:true
-    }));
+    this._notify();
     this.render();
   }
 }
+
 if (!customElements.get('teddycloud-homeassistant-card-editor')) {
   customElements.define('teddycloud-homeassistant-card-editor',TeddyCloudHomeAssistantCardEditor);
 }
