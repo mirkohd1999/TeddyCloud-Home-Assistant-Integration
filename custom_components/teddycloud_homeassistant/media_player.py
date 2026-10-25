@@ -123,13 +123,23 @@ class BoxPlayer(MediaPlayerEntity):
             if library and field == 'ContentAudioId':
                 if not text:
                     library.box_cleared(self.entry.entry_id)
-                elif text != previous:
-                    # A genuinely new Audio-ID transition adds the figure to
-                    # the persistent library. Status refreshes never resurrect
-                    # items that a user intentionally deleted.
-                    self.hass.async_create_task(
-                        library.async_seen(self.entry.entry_id, text)
+                elif library.needs_observation(self.entry.entry_id, text):
+                    # A new Audio-ID (or same ID after a removed figure) is
+                    # newly collected; simple status repeats won't re-add
+                    # a deleted item.
+                    current_image = resolved_picture(
+                        self._values.get('ContentPicture', ''),
+                        self.entry.options.get('teddycloud_url', ''),
                     )
+                    self.hass.async_create_task(library.async_seen(
+                        self.entry.entry_id, text,
+                        title=self._values.get('ContentTitle'),
+                        image=current_image,
+                    ))
+            elif library and field == 'TagValid' and text.startswith('-'):
+                # Removing the tag unlocks the next placement, including the
+                # same figure whose library record was deleted previously.
+                library.box_cleared(self.entry.entry_id)
             elif library and field in ('ContentTitle', 'ContentPicture') and audio_id:
                 if field == 'ContentTitle':
                     self.hass.async_create_task(library.async_metadata(audio_id, title=text))
