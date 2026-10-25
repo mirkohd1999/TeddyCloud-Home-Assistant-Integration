@@ -215,7 +215,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         ha-card{padding:16px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${color}20,transparent 73%),var(--ha-card-background,var(--card-background-color,#fff))}
         .board{display:grid;gap:12px;min-width:0}
         .board.grid{grid-template-columns:repeat(var(--board-cols),minmax(0,1fr))}
-        .board.grid .board-section{grid-column:span min(var(--section-span,1),var(--board-cols))}
+        .board.grid .board-section{grid-column:span var(--section-span,1)}
         .board.compact{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
         .board-section{min-width:0;padding:13px;border-radius:13px;border:1px solid var(--divider-color,#ddd);background:color-mix(in srgb,var(--card-background-color,#fff),${color} 5%)}
         .board.compact .board-section{padding:0;border:0;background:none}
@@ -410,6 +410,8 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
       ".section-row label{display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-size:13px;cursor:pointer}",
       ".section-row input{width:17px;height:17px;accent-color:var(--primary-color,#03a9f4);flex:none}",
       ".section-row button,.actions button{border:1px solid var(--divider-color,#777);border-radius:7px;padding:7px 10px;background:transparent;color:inherit;cursor:pointer;font:inherit}",
+      ".section-row .width-choice{width:auto;max-width:120px;min-width:100px;padding:7px 5px;font-size:12px;flex-shrink:0}",
+      ".section-width-label{font-size:11px;color:var(--secondary-text-color);white-space:nowrap}",
       ".section-row button:disabled{opacity:.35;cursor:default}",
       ".field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}",
       ".custom-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
@@ -432,7 +434,9 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
       custom ? [
         "<section class='step'><h3>3. Deine Bausteine</h3>",
         "<div class='help'>Wähle nur das aus, was du sehen möchtest. ",
-        selected, " Bausteine aktiv.</div>",
+        selected, " Bausteine aktiv. ",layout === 'grid' ?
+          'Für jeden Baustein kannst du rechts die Breite einstellen.' :
+          'Für eigene Breiten „Kacheln“ auswählen.',"</div>",
         "<div class='custom-tools'><div class='field'><label for='layout'>Anordnung</label>",
         "<select id='layout'><option value='grid'", layout === 'grid' ? " selected" : "",
         ">Kacheln</option><option value='stack'",layout === 'stack' ? " selected" : "",
@@ -462,7 +466,7 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
       "<div class='field'><label for='manual'>Entitäts-ID manuell eingeben (nur bei Bedarf)</label>",
       "<input type='text' id='manual' placeholder='media_player.meine_toniebox' value='",escape(box),"'></div>",
       "</details>",
-      "<div class='version'>TeddyCloud Karteneditor v0.3.4 · Auswahl wird automatisch in die Kartenvorschau übernommen</div>"
+      "<div class='version'>TeddyCloud Karteneditor v0.3.5 · Auswahl wird automatisch in die Kartenvorschau übernommen</div>"
     ].join('');
     const element = id => this.shadowRoot.getElementById(id);
     element('entity').addEventListener('change', e => this.change('entity', e.target.value));
@@ -472,6 +476,8 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     element('columns')?.addEventListener('change', e => this.change('columns', Number(e.target.value)));
     this.shadowRoot.querySelectorAll('input[data-section]').forEach(input =>
       input.addEventListener('change', e => this.changeSections(e.target.dataset.section, e.target.checked)));
+    this.shadowRoot.querySelectorAll('select[data-width]').forEach(input =>
+      input.addEventListener('change', e => this.changeSectionWidth(e.target.dataset.width, Number(e.target.value))));
     this.shadowRoot.querySelectorAll('button[data-move]').forEach(button =>
       button.addEventListener('click', e => this.moveSection(e.currentTarget.dataset.move, Number(e.currentTarget.dataset.step))));
     for (const field of ['name','color','artwork_mode']) {
@@ -493,17 +499,42 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
   sectionEditorRows(escape) {
     const selected = teddySelectedSections(this._config);
     const ordered = [...selected, ...TEDDY_SECTION_IDS.filter(id => !selected.includes(id))];
+    const grid = this._config.layout !== 'stack';
+    const columns = Math.min(3, Math.max(1, Number(this._config.columns) || 2));
     return ordered.map(id => {
       const label = TEDDY_SECTIONS.find(([key]) => key === id)?.[1] || id;
       const index = selected.indexOf(id);
+      // Each enabled block gets its own width control. A span is relative to
+      // the whole card grid, not a fixed pixel width.
+      const configured = Number(this._config.section_widths?.[id]);
+      const current = Number.isInteger(configured) && configured > 0
+        ? Math.min(columns, configured) : 1;
+      const widthSelect = grid && index >= 0 ? (
+        "<select class='width-choice' data-width='" + escape(id) +
+        "' aria-label='" + escape(label) + " Breite'>" +
+        Array.from({length:columns}, (_, i) => {
+          const n = i + 1;
+          const option = n === columns && n > 1 ? 'Volle Breite' :
+            n + (n === 1 ? ' Spalte' : ' Spalten');
+          return "<option value='" + n + "'" + (n === current ? ' selected' : '') +
+            ">" + option + "</option>";
+        }).join('') + "</select>"
+      ) : '';
       return "<div class='section-row'><label><input type='checkbox' data-section='" +
         escape(id) + "'" + (index>=0 ? " checked" : "") + "> " + escape(label) +
-        "</label><button type='button' data-move='" + escape(id) +
+        "</label>" + widthSelect +
+        "<button type='button' data-move='" + escape(id) +
         "' data-step='-1' aria-label='" + escape(label) + " nach oben'" +
         (index<1 ? " disabled" : "") + ">↑</button><button type='button' data-move='" +
         escape(id) + "' data-step='1' aria-label='" + escape(label) + " nach unten'" +
         (index<0 || index>=selected.length-1 ? " disabled" : "") + ">↓</button></div>";
     }).join('');
+  }
+  changeSectionWidth(id, width) {
+    if (!TEDDY_SECTION_IDS.includes(id) || !teddySelectedSections(this._config).includes(id)) return;
+    const columns = Math.min(3, Math.max(1, Number(this._config.columns) || 2));
+    if (!Number.isInteger(width) || width < 1 || width > columns) return;
+    this.change('section_widths', {...this._config.section_widths, [id]:width});
   }
   changeSections(id, enabled) {
     if (!TEDDY_SECTION_IDS.includes(id)) return;
