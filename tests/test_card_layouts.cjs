@@ -238,4 +238,45 @@ libraryCard.render();
 assert.ok(!libraryCard.shadowRoot.innerHTML.includes('<script>'));
 assert.ok(!libraryCard.shadowRoot.innerHTML.includes('src="javascript'));
 assert.ok(components.has('teddycloud-tonie-library-editor'));
+
+// Reproduce a user who still has a *previous* TeddyCloud card resource
+// registered: its main card is already defined, but the new library is not.
+// The freshly loaded resource must still define the library successfully.
+const assetCode = fs.readFileSync(
+  paths.join(__dirname, '../www/teddycloud-homeassistant-card.js'), 'utf8'
+);
+const priorRegistry = new Map([
+  ['teddycloud-homeassistant-card', Card],
+  ['teddycloud-homeassistant-card-editor', Editor]
+]);
+const mockedCustomElements = {
+  get(name) { return priorRegistry.get(name); },
+  define(name, definition) {
+    if (priorRegistry.has(name)) throw new Error('Duplicate custom element: ' + name);
+    priorRegistry.set(name, definition);
+  }
+};
+const sameWindow = {
+  customCards: [{type:'teddycloud-homeassistant-card',name:'Previously installed player'}]
+};
+const freshContext = () => ({
+  HTMLElement: FakeElement,
+  customElements: mockedCustomElements,
+  window: sameWindow,
+  setInterval: () => 1,
+  clearInterval() {},
+  console,
+  Date,
+  Event: class {},
+  CustomEvent: context.CustomEvent,
+});
+vm.runInNewContext(assetCode, freshContext());
+assert.ok(priorRegistry.get('teddycloud-tonie-library-card'),
+  'library must register even if the old player custom element already exists');
+assert.ok(priorRegistry.get('teddycloud-tonie-library-editor'));
+assert.equal(sameWindow.customCards.filter(x => x.type === 'teddycloud-tonie-library-card').length,1);
+assert.equal(sameWindow.customCards.filter(x => x.type === 'teddycloud-homeassistant-card').length,1);
+// A second resource import should also be safe and not duplicate the picker.
+vm.runInNewContext(assetCode, freshContext());
+assert.equal(sameWindow.customCards.filter(x => x.type === 'teddycloud-tonie-library-card').length,1);
 console.log('Dashboard layout, editor and Tonie library tests passed.');

@@ -7,7 +7,7 @@ from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .card_registration import CARD_PATH, PREVIOUS_CARD_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH, BRANDING_STORE
+from .card_registration import CARD_PATH, PREVIOUS_CARD_PATH, OLDER_V035_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH, BRANDING_STORE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def async_remove_owned_data(hass, removed_entry_id):
             match = next(
                 (item for item in resources.async_items()
                  if item.get("id") == resource_id
-                 and item.get("url", "").split("?")[0] in (CARD_PATH, PREVIOUS_CARD_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH)),
+                 and item.get("url", "").split("?")[0] in (CARD_PATH, PREVIOUS_CARD_PATH, OLDER_V035_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH)),
                 None,
             )
             if match:
