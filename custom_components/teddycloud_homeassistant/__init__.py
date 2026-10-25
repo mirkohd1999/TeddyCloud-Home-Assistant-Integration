@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def incoming(message):
         field = message.topic.rsplit('/', 1)[-1]
         if field in FIELDS:
-            player.receive(field, message.payload)
+            player.receive(field, message.payload, retained=getattr(message, "retain", False))
 
     await hass.config_entries.async_forward_entry_setups(entry, ["media_player", "number", "sensor"])
     try:
