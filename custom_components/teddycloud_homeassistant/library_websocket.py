@@ -1,6 +1,6 @@
-"""Authenticated WebSocket commands for a non-admin editable shared Tonie library.
+"""Authenticated WebSocket commands for a shared Tonie library.
 
-Dashboard users can manage their *library contents*, not HA configuration.
+Only admins may add or edit entries; all signed-in users may read and delete.
 All operations require an authenticated Home Assistant session.
 """
 from homeassistant.components import websocket_api
@@ -40,6 +40,11 @@ async def ws_library_list(hass, connection, msg):
 })
 @websocket_api.async_response
 async def ws_library_save(hass, connection, msg):
+    # Enforce permissions server-side, including direct WebSocket requests
+    # from old clients that still display the editing controls.
+    if not connection.user or not connection.user.is_admin:
+        connection.send_error(msg["id"], "unauthorized", "Nur Administratoren dürfen Tonies hinzufügen oder bearbeiten")
+        return
     library = get_library(hass)
     if library is None:
         connection.send_error(msg["id"], "not_ready", "Tonie-Bibliothek nicht bereit")
@@ -112,3 +117,4 @@ def register_library_websockets(hass):
     ):
         websocket_api.async_register_command(hass, command)
     hass.data[key] = True
+
