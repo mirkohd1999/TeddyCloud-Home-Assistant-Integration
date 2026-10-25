@@ -30,11 +30,12 @@ jobs:
           manifest = json.loads(Path("custom_components/teddycloud_homeassistant/manifest.json").read_text())
           version = manifest["version"]
           if version != "0.3.4":
-              raise SystemExit("Not a v0.3.4 release commit; skipping publication.")
+              print(f"Validated main version {version} is not v0.3.4; no release to create.")
           with open(__import__("os").environ["GITHUB_OUTPUT"], "a") as output:
               output.write(f"version={version}\n")
           PY
       - name: Publish tagged GitHub release if absent
+        if: steps.version.outputs.version == '0.3.4'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
