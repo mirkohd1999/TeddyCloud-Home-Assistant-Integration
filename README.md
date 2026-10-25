@@ -155,6 +155,7 @@ type: custom:teddycloud-tonie-library-card
 
 ### Sammeln und verwalten
 
+- **System-Sounds ausblenden:** Als „System sounds“ erkannte Start-Jingles und Systemansagen erscheinen nicht in der Sammlung; das gilt auch für bereits gespeicherte Einträge.
 - **Automatisch sammeln:** Sobald die Integration eine neue Audio-ID von einer Toniebox empfängt, wird der Tonie gespeichert. Zum Start eine Figur auf die eingeschaltete Box stellen.
 - **Suchen:** Die Sammlung über das Suchfeld filtern. Die Kacheln zeigen Bild, Titel und Laufzeit.
 - **Bearbeiten:** Administratoren können Titel und Laufzeit in Minuten anpassen sowie eine Bildadresse hinterlegen oder ein JPG-, PNG- oder WebP-Bild bis 2 MB hochladen.
@@ -216,7 +217,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v040.js?v=0.4.1
+/teddycloud-homeassistant/card-v040.js?v=0.4.2
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.

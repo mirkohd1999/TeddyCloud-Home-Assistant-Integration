@@ -1,12 +1,13 @@
-# TeddyCloud Home Assistant Integration v0.4.1
+# TeddyCloud Home Assistant Integration v0.4.2
 
-Der Untertitel der Tonie-Bibliothek richtet sich nach der Home-Assistant-Nutzerrolle:
+## System-Sounds gehören nicht in die Tonie-Bibliothek
 
-- **Normale Nutzer:** „Deine Figuren – automatisch gesammelt“.
-- **Administratoren:** „Deine Figuren – automatisch gesammelt – Bearbeiten möglich“.
+- Einträge mit TeddyClouds eindeutiger „System sounds“-Kennzeichnung werden aus der Bibliotheksansicht und ihrer Zählung ausgeschlossen.
+- Der Filter greift auch für bereits gespeicherte Einträge und nach einem Neustart. Manuelles Löschen ist nicht erforderlich.
+- Nachträglich eintreffende MQTT- oder Katalogtitel aktualisieren die Einordnung. Es werden keine Audio-IDs dauerhaft gesperrt: Falsch zugeordnete, zeitversetzte Titel können durch echte Figurendaten korrigiert werden.
+- Allgemeine Titel wie „Startup“ oder „Jingle Bells“ werden nicht pauschal ausgefiltert.
+- Rohdaten bleiben intern erhalten; es werden keine gespeicherten Bilder oder eigenen Angaben gelöscht.
 
-Die vorhandenen Rechte bleiben bestehen: Nur Admins dürfen hinzufügen und bearbeiten; alle angemeldeten Nutzer dürfen löschen. Bei einem Rollenwechsel aktualisiert sich der Text mit den Bedienelementen.
+## Update
 
-## Aktualisieren
-
-In HACS v0.4.1 herunterladen, Home Assistant neu starten und das Dashboard auf allen Geräten neu laden. Die Kartenressource wird in Storage-Dashboards automatisch auf `/teddycloud-homeassistant/card-v040.js?v=0.4.1` aktualisiert. Bei YAML-Ressourcen die URL manuell anpassen.
+In HACS v0.4.2 herunterladen und Home Assistant neu starten. Danach das Dashboard neu laden. Die vorhandenen Rechte und rollenabhängigen Untertitel bleiben bestehen.
