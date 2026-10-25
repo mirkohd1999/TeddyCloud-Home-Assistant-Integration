@@ -1,30 +1,25 @@
-# TeddyCloud Home Assistant Integration v0.3.4
+# TeddyCloud Home Assistant Integration v0.3.5
 
-## Neu: Dashboard in wenigen Klicks einrichten
+## Neu: Jede Dashboard-Kachel einzeln in der Breite anpassen
 
-Der Dashboard-Karteneditor wurde für Endnutzer deutlich vereinfacht:
+- **Bildüberschrift entfernt:** Der Text „Tonie-Bild oder Toniebox“ steht nicht mehr störend neben dem Tonie-Bild. Das betrifft die Ansichten „Großes Bild“, „Kacheln“ und „Selbst gestalten“.
+- **Einstellbare Breite pro Baustein:** Im visuellen Editor unter **Selbst gestalten → Anordnung: Kacheln** kann jeder aktivierte Baustein seine eigene Breite erhalten, unabhängig von den anderen.
+- Wähle die gewünschte Breite als **1 Spalte**, **2 Spalten** oder **Volle Breite**, passend zur Zahl der Spalten (1–3).
+- **Individuelle Layouts:** Das Tonie-Bild kann z. B. zwei Spalten belegen, während Titel, Status und Steuerungen daneben oder darunter angeordnet sind.
+- **Bestehende Karten bleiben kompatibel:** Ohne individuelle Breitenangaben verhalten sich Bausteine wie bisher. Gespeicherte Breiten bleiben bei Änderungen der Anordnung erhalten.
+- **Responsive Darstellung:** Auf kleinen Displays erscheinen Kacheln lesbar untereinander.
+- **Fehlerbehebung:** Der Bildbaustein und sein inneres Bild verwenden nun unterschiedliche CSS-Klassen. So schiebt die Überschrift das Bild nicht mehr an den Rand.
+- **Neue Kartendatei:** `/teddycloud-homeassistant/card-v035.js?v=0.3.5` für eine zuverlässige Browser-Aktualisierung.
 
-- **Vorlage antippen statt Dropdown-Menüs durchsuchen**: Acht große, beschriftete Auswahlflächen mit klaren Namen und kurzer Erklärung.
-- **Toniebox automatisch auswählen**, wenn genau eine passende Toniebox-Entität vorhanden ist.
-- **Live-Vorschau** beim Wechseln der Vorlage.
-- **„Selbst gestalten“**: Nur hier erscheint der Baukasten, mit fünf vorausgewählten Bausteinen; weitere Bereiche lassen sich einfach an- und abwählen und mit Pfeilen sortieren.
-- **Erweiterte Optionen verborgen**, bis sie wirklich gebraucht werden: Anzeigename, Farbwähler, Bilddarstellung sowie manuelle Entitäts-ID.
-- **Neue versionierte Kartendatei** unter `/teddycloud-homeassistant/card-v034.js?v=0.3.4`. Bereits vorhandene, von der Integration erkannte Ressourcen werden in Lovelace-Storage-Dashboards automatisch auf diese Adresse aktualisiert. Die bisherige URL bleibt als Kompatibilitätspfad erreichbar, aber bei neuen Installationen wird die neue URL genutzt.
-- **Kein YAML erforderlich**, keine zusätzliche MQTT-Einrichtung, keine Veränderungen an bestehenden Dashboard-Konfigurationen.
-- Weitere Tests für Presets, Box-Auswahl, Baukasten und Eingabe-Sicherheit.
+## Aktualisierung
 
-## Einrichtung
+1. In HACS **TeddyCloud Home Assistant Integration v0.3.5** aktualisieren.
+2. Home Assistant neu starten.
+3. Dashboard bearbeiten → TeddyCloud-Karte → **Selbst gestalten** → **Kacheln**.
+4. Spaltenzahl wählen und die **Breite direkt neben jedem Baustein** ändern, dann speichern.
 
-1. Integration auf `v0.3.4` über HACS aktualisieren, **Home Assistant neu starten**.
-2. Dashboard → Bearbeiten → Karte hinzufügen → **TeddyCloud Home Assistant Integration**.
-3. Toniebox auswählen (bei einer Toniebox automatisch), die gewünschte Vorlage anklicken und **Speichern**.
+Für automatisch verwaltete Dashboard-Ressourcen wird die neue Kartendatei selbst registriert. Es ist kein YAML und keine manuelle Ressourcen-URL notwendig.
 
-Die Integration registriert die Kartenressource bei Storage-Dashboards automatisch; die neue URL muss nicht manuell gepflegt werden. Falls der Karteneditor weiterhin wie früher aussieht, die Home-Assistant-Seite nach dem Neustart einmal neu laden (ggf. Browserfenster vollständig schließen).
+## Unverändert
 
-## Kompatibilität
-
-Die bestehenden Ansichten `all`, `player`, `settings` und die bereits vorhandenen Konfigurationen mit `mode: custom` bleiben nutzbar. Alle bisherigen MQTT-Sensoren, Ohrtasten, Tonie-Bilder und Lautsprecher-/Kopfhörer-/LED-Einstellungen funktionieren unverändert.
-
-Die neuen Dashboard-Vorlagen ändern **nicht** die vorhandene Einschränkung, dass aktuelle Lautstärke und Play/Pause nicht ferngesteuert werden können.
-
-**Release-Hinweis:** `v0.3.4` ist erst als reguläres HACS-Update verfügbar, nachdem der gleichnamige GitHub-Release auf dem geprüften `main` veröffentlicht wurde.
+Die bisherigen acht Kartenansichten, Tonie-Bilder, Lautstärkelimits, LED-Steuerung und Ohrtasten-Sensoren bleiben erhalten. Die aktuelle Lautstärke und Play/Pause sind weiterhin nicht fernsteuerbar.

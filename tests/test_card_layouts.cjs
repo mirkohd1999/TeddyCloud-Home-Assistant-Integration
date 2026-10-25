@@ -84,7 +84,7 @@ const editor = new Editor();
 editor.setConfig({entity:'media_player.test',mode:'custom',sections:['title','charger','ears']});
 editor.hass = hass;
 assert.ok(editor.shadowRoot.innerHTML.includes('3. Deine Bausteine'));
-assert.ok(editor.shadowRoot.innerHTML.includes('TeddyCloud Karteneditor v0.3.4'));
+assert.ok(editor.shadowRoot.innerHTML.includes('TeddyCloud Karteneditor v0.3.5'));
 assert.ok(editor.shadowRoot.innerHTML.includes('Selbst gestalten'));
 assert.ok(editor.shadowRoot.innerHTML.includes('Weitere Einstellungen (optional)'));
 editor.moveSection('ears',-1);
@@ -138,4 +138,68 @@ const oldPlaceholder = new Editor();
 oldPlaceholder.setConfig({entity:'media_player.meine_toniebox_now_playing'});
 oldPlaceholder.hass = hass;
 assert.equal(oldPlaceholder._config.entity,'media_player.test');
+
+// The artwork caption is no longer rendered; it used to push the actual
+// picture out of its tile in artwork, tiles, and custom modes.
+for (const mode of ['artwork','tiles','custom']) {
+  const c = new Card();
+  c.setConfig({entity:'media_player.test',mode});
+  c.hass = hass;
+  assert.ok(!c.shadowRoot.innerHTML.includes('Tonie-Bild oder Toniebox'),
+    'artwork label must not appear in ' + mode);
+  assert.ok(c.shadowRoot.innerHTML.includes('board-artwork-media'));
+}
+
+// Width spans can be configured independently for every section. Both HTML
+// output and the editing preview use the same saved values.
+const sized = new Card();
+sized.setConfig({entity:'media_player.test',mode:'custom',layout:'grid',columns:3,
+  sections:['artwork','title','led','volume'],section_widths:{artwork:3,title:2,led:1,volume:3}});
+sized.hass = hass;
+const output = sized.shadowRoot.innerHTML;
+for (const [id,span] of [['artwork',3],['title',2],['led',1],['volume',3]]) {
+  assert.ok(output.includes('board-' + id + '" style="--section-span:' + span + '"'),
+    'wrong span for ' + id);
+}
+assert.ok(!output.includes('Tonie-Bild oder Toniebox'));
+
+// Invalid, oversized or hostile values must not become inline CSS.
+const oversized = new Card();
+oversized.setConfig({entity:'media_player.test',mode:'custom',layout:'grid',columns:2,
+  sections:['title','artwork','volume'],
+  section_widths:{title:99,artwork:'0; color:red',volume:-1}});
+oversized.hass = hass;
+const safeOutput = oversized.shadowRoot.innerHTML;
+assert.ok(safeOutput.includes('board-title" style="--section-span:2"'));
+assert.ok(safeOutput.includes('board-artwork" style="--section-span:1"'));
+assert.ok(safeOutput.includes('board-volume" style="--section-span:1"'));
+assert.ok(!safeOutput.includes('color:red'));
+
+// A list layout ignores saved grid widths, but keeps them for future changes.
+const stacked = new Card();
+stacked.setConfig({entity:'media_player.test',mode:'custom',layout:'stack',
+  sections:['artwork','title'],section_widths:{artwork:3}});
+stacked.hass = hass;
+assert.ok(!stacked.shadowRoot.innerHTML.includes('--section-span:'));
+
+const widthEditor = new Editor();
+widthEditor.setConfig({entity:'media_player.test',mode:'custom',layout:'grid',
+  columns:3,sections:['artwork','title','ears'],section_widths:{artwork:2}});
+widthEditor.hass = hass;
+assert.ok(widthEditor.shadowRoot.innerHTML.includes("data-width='artwork'"));
+assert.ok(widthEditor.shadowRoot.innerHTML.includes('Volle Breite'));
+widthEditor.changeSectionWidth('title',3);
+assert.equal(widthEditor._config.section_widths.title,3);
+assert.equal(widthEditor._config.section_widths.artwork,2);
+assert.equal(widthEditor._lastEvent.type,'config-changed');
+widthEditor.changeSectionWidth('title',0);
+widthEditor.changeSectionWidth('title',10);
+widthEditor.changeSectionWidth('unknown',2);
+assert.equal(widthEditor._config.section_widths.title,3);
+widthEditor.change('columns',2);
+assert.ok(!widthEditor.shadowRoot.innerHTML.includes('3 Spalten'));
+assert.ok(widthEditor.shadowRoot.innerHTML.includes("data-width='title'"));
+widthEditor.change('layout','stack');
+assert.ok(!widthEditor.shadowRoot.innerHTML.includes("data-width='title'"));
+assert.equal(widthEditor._config.section_widths.title,3);
 console.log('Dashboard layout and visual editor tests passed.');
