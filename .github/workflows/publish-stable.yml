@@ -1,0 +1,65 @@
+name: Publish stable HACS release
+
+on:
+  workflow_run:
+    workflows: [Validate HACS integration]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-stable-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Verify release metadata
+        id: version
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          root = Path('custom_components/teddycloud_homeassistant')
+          version = json.loads((root / 'manifest.json').read_text())['version']
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version)
+          assert f'CARD_VERSION = "{version}"' in (root / 'card_registration.py').read_text()
+          assert Path('RELEASE_NOTES.md').read_text().splitlines()[0].endswith(f'v{version}')
+          assert (root / 'teddycloud-homeassistant-card.js').read_bytes() == Path('www/teddycloud-homeassistant-card.js').read_bytes()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\n')
+          PY
+      - name: Publish the validated commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists; leaving published releases unchanged."
+            exit 0
+          fi
+          # Refuse an existing tag so a release cannot silently target old code.
+          if gh api "repos/$GH_REPO/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists without a release. Inspect it manually."
+            exit 1
+          fi
+          gh release create "$TAG" --target "$COMMIT_SHA" \
+            --title "TeddyCloud Home Assistant Integration $TAG" \
+            --notes-file RELEASE_NOTES.md --latest

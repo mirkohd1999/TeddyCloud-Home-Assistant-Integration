@@ -1,23 +1,34 @@
-# TeddyCloud Home Assistant Integration v0.3.7
+# TeddyCloud Home Assistant Integration v0.4.0
 
-## Fehlerbehebung: Tonie-Bibliothek wird im Dashboard nicht gefunden
+Dieser stabile Sammelrelease enthält die Dashboard- und Bibliotheksfunktionen der bisherigen 0.3.x-Versionen sowie die abschließenden Korrekturen.
 
-- Behebt **„Custom element doesn't exist: teddycloud-tonie-library-card“** bei gleichzeitig geladenen älteren und neueren TeddyCloud-Dashboard-Ressourcen.
-- Beide Custom Elements werden jetzt nur registriert, falls sie noch nicht existieren. Eine vorhandene Toniebox-Karte blockiert die spätere Registrierung der Bibliothek damit nicht mehr.
-- Auch bei mehrfach eingebundenen Ressourcen entstehen keine doppelten Einträge im Kartenkatalog.
-- Neue cache-sichere Kartenressource: `/teddycloud-homeassistant/card-v037.js?v=0.3.7`.
-- Die Integration kann die automatische Lovelace-Ressourcenregistrierung erneut versuchen, wenn Home Assistant diese beim frühen Start noch nicht bereitgestellt hat.
-- Automatisierter Regressionstest lädt die Kartendatei wie auf einer Installation mit vorhandener älterer Player-Karte mehrfach, einschließlich Bibliotheksregistrierung.
-- **Keine Änderungen an gespeicherten Tonies, Bildern, Titeln und Laufzeiten.** Die Bibliothek aus v0.3.6 bleibt erhalten.
+## Tonie-Bibliothek
 
-## Aktualisierung
+- Erkannte Tonies dauerhaft sammeln, suchen und als Bilderkacheln anzeigen.
+- Nur Home-Assistant-Administratoren können Tonies hinzufügen, Titel/Laufzeit bearbeiten und Bilder ändern oder hochladen. Die Prüfung erfolgt auch serverseitig.
+- Alle angemeldeten Nutzer können Tonies ansehen und nach Bestätigung löschen.
+- Audio-IDs werden nicht mehr in den Kacheln angezeigt. Beim Bearbeiten stehen sie unter eingeklappten „Technischen Details“.
+- Neuer Untertitel: „Deine Tonies – automatisch gesammelt und übersichtlich an einem Ort.“
 
-1. Über HACS auf **v0.3.7** aktualisieren.
-2. **Home Assistant vollständig neu starten.**
-3. Dashboard bearbeiten → **TeddyCloud Tonie-Bibliothek** als zusätzliche Karte hinzufügen; alternativ manuell:
+## Dashboard und Update
 
-```yaml
-type: custom:teddycloud-tonie-library-card
-```
+- Acht Vorlagen und individuell einstellbare Bausteinbreiten bleiben enthalten.
+- Identische Kartendateien für Integration und manuelle Installation.
+- Neue Ressource: `/teddycloud-homeassistant/card-v040.js?v=0.4.0`.
+- Automatische Migration bekannter Ressourcen in Storage-Dashboards; bisherige Kartenpfade bleiben erreichbar.
+- Bestehende Boxen, Entitäten und gespeicherte Bibliotheksdaten werden weiterverwendet.
 
-In normalen Storage-Dashboards ist keine manuelle Ressourcenadresse erforderlich. Die Ressource wird automatisch aktualisiert. Bei weiterhin altem Dashboard zuerst den Browser-Tab einmal neu laden. Falls Home Assistant Ressourcen über YAML verwaltet, muss die neue URL dort manuell eingebunden werden.
+## Installation über HACS
+
+Repository als **Integration** hinzufügen: https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration
+
+1. In HACS Version **v0.4.0** herunterladen.
+2. Home Assistant vollständig neu starten.
+3. Dashboard auf jedem verwendeten Gerät neu laden.
+4. Bei YAML-verwalteten Ressourcen die neue Adresse als JavaScript-Modul eintragen.
+
+Die Integration ist kein Add-on. Die vorhandene MQTT-Integration und ein TeddyCloud-Server werden benötigt. Play/Pause, aktuelle Lautstärke-Fernsteuerung und verlässliche Akku-Prozentwerte sind weiterhin nicht verfügbar; der Abspielfortschritt ist geschätzt.
+
+## Ältere Releases
+
+Dieser Release benötigt keine Dateien aus älteren GitHub-Releases. Ältere Release-Einträge können nach erfolgreichem Update entfernt werden; ihre Downloadlinks und die jeweilige Rückkehrmöglichkeit über HACS entfallen dann. Die Git-Tags und mindestens einen bekannten funktionierenden Rückfallrelease behalten. Bereits veröffentlichte Tags nicht verschieben.

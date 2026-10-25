@@ -858,7 +858,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '</style><ha-card>',
       '<header class="header"><h2>🧸 Meine Tonie-Bibliothek</h2>',
       '<span class="hint">' + entries.length + ' Tonies</span></header>',
-      '<p class="subtitle">Deine Figuren – automatisch gesammelt. Bearbeiten nur für Admins; Löschen für alle angemeldeten Nutzer.</p>',
+      '<p class="subtitle">Deine Tonies – automatisch gesammelt und übersichtlich an einem Ort.</p>',
       this._error ? '<p class="error" role="alert">' + e(this._error) + '</p>' : '',
       view, '</ha-card>'
     ].join('');
@@ -886,4 +886,3 @@ if (!window.customCards.some(item => item.type === 'teddycloud-tonie-library-car
   description:'Deine Tonie-Sammlung ansehen, bearbeiten, Bilder ändern und Tonies hinzufügen – direkt im Dashboard',
   preview:true});
 }
-

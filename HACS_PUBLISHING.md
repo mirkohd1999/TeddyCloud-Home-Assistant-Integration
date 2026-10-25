@@ -1,85 +1,51 @@
-# HACS-Veröffentlichung – Checkliste
+# HACS-Veröffentlichung und Release-Pflege
 
-**Projekt:** TeddyCloud Home Assistant Integration  
-**Repository:** https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration  
-**Kategorie:** Integration (nicht Home-Assistant-Add-on und nicht separates Dashboard-Plugin)  
-**Nächster Release:** `v0.3.1` (Manifest: `0.3.1`)
+Projekt: **TeddyCloud Home Assistant Integration**  
+Repository: https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration  
+Stabiler Sammelrelease: **v0.4.0** (Manifest **0.4.0**)  
+Kategorie: **Integration**, kein Add-on und kein separates Dashboard-Repository.
 
-## 1. GitHub-Repository vervollständigen
+## Veröffentlichung
 
-Auf der Repository-Startseite neben **About** auf das Zahnrad klicken:
+1. Änderungen auf `main` übernehmen.
+2. Alle Jobs von **Validate HACS integration** müssen erfolgreich sein: HACS, Hassfest und Paket-/Regressionstests.
+3. **Publish stable HACS release** veröffentlicht anschließend automatisch den exakt geprüften Commit. Der Workflow erstellt einen regulären Release mit Tag aus der Manifestversion, Release-Text aus `RELEASE_NOTES.md` und Markierung als neuester Release.
+4. Bestehende Releases und Tags werden nicht überschrieben. Bei einem bereits vorhandenen Tag ohne Release stoppt der Workflow zur manuellen Prüfung.
+5. Auf GitHub kontrollieren: Release nicht als Entwurf/Vorabversion, Version stimmt mit dem Manifest am Tag überein.
+6. In einer vorhandenen Home-Assistant-Installation über HACS aktualisieren, neu starten und alle Dashboard-Clients neu laden. Zusätzlich eine Erstinstallation prüfen.
 
-- **Description:** `Toniebox-Status, Figurenbilder und Einstellungen über TeddyCloud MQTT in Home Assistant.`
-- **Topics:** `home-assistant`, `hacs`, `teddycloud`, `toniebox`, `mqtt`, `home-assistant-integration`
-- **Website:** optional den README-Link bzw. die Projekt-URL
-- **Issues** aktiviert lassen
+HACS lädt die Integration aus `custom_components/teddycloud_homeassistant/` am Release-Tag. Alle Laufzeitdateien einschließlich Karte, Übersetzungen und Branding liegen dort. Ein zusätzliches ZIP-Asset ist nicht erforderlich; `zip_release` ist nicht aktiviert.
 
-Die Kurzbeschreibung und Topics werden in den GitHub-Repository-Einstellungen gepflegt, **nicht** in `hacs.json`.
+## Abnahme auf Home Assistant
 
-## 2. Automatische Prüfungen
+- MQTT-Boxerkennung, Titel, Bild und Einstellungen prüfen.
+- Bibliothek mit Admin und normalem Nutzer öffnen: Nur Admin sieht Hinzufügen/Bearbeiten; beide können nach Bestätigung löschen.
+- Kein sichtbarer Audio-ID-Text in Tonie-Kacheln; technische Details im Admin-Editor einklappbar.
+- Bibliotheksdaten und Entitäts-IDs bleiben beim Update erhalten.
+- Neue Ressource `/teddycloud-homeassistant/card-v040.js?v=0.4.0` lädt auf allen Clients.
 
-Unter **Actions** müssen die Jobs aus `.github/workflows/validate.yml` erfolgreich sein:
+Automatisierte Tests ersetzen diesen Praxistest nicht.
 
-- **HACS validation** (`hacs/action@main`, `category: integration`) — für die Aufnahme in den Katalog ohne Fehlermeldungen und ohne ignorierte Fehler
-- **Home Assistant hassfest** (`home-assistant/actions/hassfest@master`)
-- **Syntax and packaging checks** (Python, JavaScript, Sprachdateien, Paketdaten)
+## Ältere Releases aufräumen
 
-Ein roter Job ist ein Blocker für die Einreichung. Die Tests ersetzen keine praktische Installation in Home Assistant mit TeddyCloud und MQTT.
+Erst nach erfolgreichem Update auf v0.4.0:
 
-## 3. Version v0.3.1 als GitHub-Release veröffentlichen
+- v0.4.0 als neuesten Release behalten.
+- Mindestens einen selbst geprüften vorherigen Release als Rückfallversion behalten.
+- Weitere ältere Release-Einträge können gelöscht werden. Ihre Links/Assets und Auswahlmöglichkeiten in HACS entfallen. Installierte Dateien werden dadurch nicht vom Home-Assistant-System entfernt.
+- Git-Tags und Commit-Historie behalten; veröffentlichte Tags niemals auf neue Commits verschieben.
+- Keine automatische Löschung: Die Auswahl der alten Releases bleibt beim Maintainer.
 
-**Wichtig:** `v0.3.0` existiert bereits, zeigt aber auf den älteren Entwicklungsstand mit Manifestversion `0.3.0-dev31`. Diesen alten Tag bitte nicht nachträglich verschieben.
+## Aufnahme in den HACS-Standardkatalog
 
-1. Erst nach erfolgreichen GitHub-Actions auf dem aktualisierten `main` öffnen:
-   https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/releases/new
-2. **Choose a tag:** `v0.3.1` (neuen Tag von `main` erstellen)
-3. **Release title:** `TeddyCloud Home Assistant Integration v0.3.1`
-4. **Description:** Inhalt aus [RELEASE_NOTES.md](RELEASE_NOTES.md) einfügen; die abschließende Erklärung, dass der Release noch nicht veröffentlicht sei, weglassen
-5. **Set as latest release:** aktivieren
-6. **Set as a pre-release:** nicht aktivieren, falls die Integration praktisch getestet wurde
-7. **Publish release** anklicken
+Die Nutzung als benutzerdefiniertes Repository ist von der Aufnahme in den Standardkatalog unabhängig. Für den Standardkatalog müssen die aktuellen HACS-Anforderungen erfüllt und eine Einreichung akzeptiert werden. Dieser Release allein bedeutet keine Katalogaufnahme.
 
-Danach prüfen, ob `v0.3.1` wirklich auf den Commit mit `manifest.json: "version": "0.3.1"` zeigt.
+- Öffentliche Repository-Beschreibung, Topics, README, Lizenz und Issues prüfen.
+- HACS- und Hassfest-Prüfungen ohne ignorierte Fehler bestehen lassen.
+- Aktuelle Einreichungsanleitung: https://www.hacs.xyz/docs/publish/include/
+- Integrationsanforderungen: https://www.hacs.xyz/docs/publish/integration/
+- Allgemeine Anforderungen: https://www.hacs.xyz/docs/publish/start/
 
-## 4. In den offiziellen HACS-Katalog aufnehmen lassen
+## Zukünftige Releases
 
-Das Repository ist schon vorher als **benutzerdefiniertes HACS-Repository** nutzbar. Die Aufnahme in den Standardkatalog ist ein separater Schritt:
-
-1. [hacs/default](https://github.com/hacs/default) forken.
-2. Vom Branch `master` einen neuen Branch erstellen.
-3. In die Datei [`integration`](https://github.com/hacs/default/blob/master/integration) den Eintrag `mirkohd1999/TeddyCloud-Home-Assistant-Integration` **alphabetisch sortiert** einfügen.
-4. Pull Request von deinem Fork nach `hacs/default:master` erstellen. Den Maintainers erlauben, den PR-Branch zu bearbeiten.
-5. Review und automatische Prüfungen abwarten. Erst ein angenommener und gemergter Pull Request führt zur Aufnahme in den Katalog.
-
-### PR-Text als Vorlage
-
-**Titel:** `Add TeddyCloud Home Assistant Integration`
-
-**Beschreibung:**
-
-> Adds `mirkohd1999/TeddyCloud-Home-Assistant-Integration` as an integration to the HACS default catalog.
->
-> - Public GitHub repository with MIT license and documentation
-> - Complete Home Assistant integration in `custom_components/teddycloud_homeassistant/`
-> - German and English translations and bundled branding
-> - Passing HACS action and hassfest checks
-> - Published GitHub release `v0.3.1` matching manifest version `0.3.1`
->
-> Provides Toniebox monitoring, artwork, configurable volume limits, LED settings, and a bundled Lovelace card using TeddyCloud MQTT.
-
-**Dokumentation:**
-- HACS-Aufnahme: https://hacs.dev/docs/publish/include/
-- Home Assistant Marketplace (ab Home Assistant 2026.11): https://contributors.home-assistant.io/marketplace/guides/catalog/
-
-## 5. Funktionstest vor der Freigabe
-
-In Home Assistant mit funktionierendem TeddyCloud MQTT überprüfen:
-
-- Erstinstallation über HACS, Neustart und MQTT-Boxsuche
-- Media-Player zeigt Titel, Bild und korrekten Boxnamen
-- Karte `mode: all`, `player`, `settings` und Ressource laden ohne JavaScript-Fehler
-- Lautsprecher-/Kopfhörerlimits und LED-Helligkeit funktionieren
-- Aktualisierung einer bestehenden Installation erhält Entitäts-IDs und Einstellungen
-- Entfernen des letzten Integrationseintrags bereinigt nur integrationsinterne Daten
-
-Die Aufnahme in den HACS-Katalog ist **erst nach bestandenen Prüfungen, Release und Freigabe durch HACS** abgeschlossen.
+Manifestversion, `CARD_VERSION`, neue Karten-URL, Kompatibilitätspfade sowie README und Release-Notes gemeinsam aktualisieren. Die zwei Kartendateien müssen identisch bleiben. Der Publish-Workflow verwendet die Manifestversion; kein weiterer versionsspezifischer Workflow ist nötig.
