@@ -182,7 +182,15 @@ class TonieLibrary:
                 directory.mkdir(parents=True, exist_ok=True)
                 dest = directory / f"{audio_id}{suffix}"
                 await asyncio.to_thread(dest.write_bytes, body)
-                custom["image"] = f"/local/{DOMAIN}/library/{dest.name}?v={int(datetime.now(timezone.utc).timestamp())}"
+                # Changing JPG -> PNG must not leave the obsolete uploaded
+                # image behind. Never remove files outside our own directory.
+                for other_ext in IMAGE_TYPES.values():
+                    if other_ext == suffix:
+                        continue
+                    previous = directory / f"{audio_id}{other_ext}"
+                    if previous.is_file() and not previous.is_symlink():
+                        await asyncio.to_thread(previous.unlink)
+                custom["image"] = f"/local/{DOMAIN}/library/{dest.name}?v={int(datetime.now(timezone.utc).timestamp() * 1000)}"
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
         return self._public_entry(audio_id)
