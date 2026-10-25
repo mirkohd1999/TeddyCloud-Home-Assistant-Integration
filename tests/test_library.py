@@ -81,7 +81,7 @@ class TestLibrary(unittest.TestCase):
             self.assertEqual(lib.public_entries(), [])
             # New HA startup gets a retained/unchanged ID: stay deleted.
             lib = await self.load()
-            await lib.async_seen("box1", "123456", title="Still old content")
+            await lib.async_seen("box1", "123456", title="Still old content", retained=True)
             self.assertEqual(lib.public_entries(), [])
             # Physically removing and replacing the same figure recovers it.
             lib.box_cleared("box1")
@@ -101,6 +101,22 @@ class TestLibrary(unittest.TestCase):
             # Repeat the same MQTT state must not increase visits.
             await lib.async_seen("box1", "first")
             self.assertEqual(next(e for e in lib.public_entries() if e["audio_id"] == "first")["times_seen"],1)
+        asyncio.run(run())
+
+    def test_new_live_placement_on_other_box_recovers_deleted_figure(self):
+        async def run():
+            lib = await self.load()
+            await lib.async_seen("boxA", "777")
+            await lib.async_delete("777")
+            # Same content on boxA doesn't revive the deleted record.
+            await lib.async_seen("boxA", "777")
+            self.assertEqual(len(lib.public_entries()), 0)
+            # The retained message at a new subscriber isn't a new placement.
+            await lib.async_seen("boxB", "777", retained=True)
+            self.assertEqual(len(lib.public_entries()), 0)
+            # But a genuinely new live MQTT event from boxC is.
+            await lib.async_seen("boxC", "777", retained=False)
+            self.assertEqual(len(lib.public_entries()), 1)
         asyncio.run(run())
 
     def test_safe_image_upload_and_validation(self):
