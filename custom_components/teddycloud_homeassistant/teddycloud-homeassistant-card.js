@@ -581,6 +581,9 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     this._listen();
   }
   static getStubConfig() { return {}; }
+  static getConfigElement() {
+    return document.createElement('teddycloud-tonie-library-editor');
+  }
   getCardSize() { return 7; }
   setConfig(config) {
     this._config = {...config};
@@ -849,6 +852,17 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     ].join('');
     if (!this._edit) this._applySearch();
   }
+}
+class TeddyCloudLibraryEditor extends HTMLElement {
+  setConfig() {
+    this.textContent = 'Die Tonie-Bibliothek wird direkt in der Dashboard-Karte verwaltet. Hier musst du nichts einstellen.';
+    this.style.display = 'block';
+    this.style.padding = '12px';
+  }
+  set hass(_hass) {}
+}
+if (!customElements.get('teddycloud-tonie-library-editor')) {
+  customElements.define('teddycloud-tonie-library-editor', TeddyCloudLibraryEditor);
 }
 if (!customElements.get('teddycloud-tonie-library-card')) {
   customElements.define('teddycloud-tonie-library-card', TeddyCloudTonieLibraryCard);
