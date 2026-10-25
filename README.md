@@ -61,6 +61,37 @@ Für Endnutzer reicht jetzt **Dashboard bearbeiten → Karte hinzufügen → Ted
 
 **Update:** Der Release `v0.3.4` wird nach erfolgreichen GitHub-Prüfungen auf `main` automatisch erstellt. Sobald HACS das Update anbietet, die Integration über HACS aktualisieren und Home Assistant einmal neu starten. Die Ressourcenadresse wird in normalen Storage-Dashboards automatisch angepasst. Bereits eingerichtete Karten müssen nicht neu erstellt werden.
 
+## 📐 Neu in v0.3.5: Breite für jeden Baustein einzeln einstellen
+
+In der Ansicht **„Selbst gestalten“** kannst du ab v0.3.5 **jeden gewählten Baustein unabhängig von den anderen breit oder schmal machen**:
+
+1. **Selbst gestalten** wählen.
+2. Unter **Anordnung** auf **Kacheln** stellen und 1, 2 oder 3 **Spalten** für die Karte wählen.
+3. Neben jedem aktivierten Baustein die **Breite** wählen: **1 Spalte**, **2 Spalten** bzw. **Volle Breite** (abhängig von der Spaltenzahl).
+4. Die Bausteine mit den Pfeilen wie bisher sortieren und die Karte speichern.
+
+Beispielsweise kann das Tonie-Bild **über beide Spalten**, der Titel **über eine** und die LED-Einstellung **über die gesamte Breite** laufen. Die Breite jeder Kachel wird in der Live-Vorschau angezeigt. Auf schmalen Displays werden die Bausteine automatisch einspaltig dargestellt. Bereits gespeicherte Karten ohne Breitenangaben behalten ihre bisherige Breite.
+
+Die störende Überschrift „Tonie-Bild oder Toniebox“ **über dem eigentlichen Bild** wurde in **Großes Bild**, **Kacheln** und **Selbst gestalten** entfernt; das Bild nimmt diesen Platz nun selbst ein.
+
+Falls du YAML statt des visuellen Editors verwendest:
+
+```yaml
+type: custom:teddycloud-homeassistant-card
+entity: media_player.meine_toniebox
+mode: custom
+layout: grid
+columns: 2
+sections: [artwork, title, playback, led]
+section_widths:
+  artwork: 2
+  title: 1
+  playback: 1
+  led: 2
+```
+
+Der visuelle Editor schreibt diese Einstellungen automatisch – **YAML ist nicht notwendig**.
+
 ## 🧩 Dashboard-Baukasten und Kartenvarianten (v0.3.3)
 
 Der visuelle Karteneditor bietet nun **acht Ansichten**. Bereits angelegte Karten mit `mode: all`, `mode: player` oder `mode: settings` bleiben unverändert:
