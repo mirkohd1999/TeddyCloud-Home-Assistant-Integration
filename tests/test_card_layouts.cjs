@@ -203,7 +203,7 @@ widthEditor.change('layout','stack');
 assert.ok(!widthEditor.shadowRoot.innerHTML.includes("data-width='title'"));
 assert.equal(widthEditor._config.section_widths.title,3);
 
-// Separate non-admin library card: no dashboard editing or YAML needed.
+// Library controls respect Home Assistant admin roles.
 const LibraryCard = components.get('teddycloud-tonie-library-card');
 assert.ok(LibraryCard, 'Tonie library card must be registered');
 const libraryCard = new LibraryCard();
@@ -219,11 +219,25 @@ libraryCard._entries = libraryData;
 libraryCard.render();
 assert.ok(libraryCard.shadowRoot.innerHTML.includes('Der kleine Tonie'));
 assert.ok(libraryCard.shadowRoot.innerHTML.includes('60 Min.'));
+assert.ok(!libraryCard.shadowRoot.innerHTML.includes('Tonie hinzufügen'));
+assert.ok(!libraryCard.shadowRoot.innerHTML.includes('data-action="edit"'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('data-action="delete"'));
+assert.ok(!libraryCard.shadowRoot.innerHTML.includes('Audio-ID:'));
+libraryCard._openEdit('12345');
+assert.equal(libraryCard._edit, null);
+libraryCard._hass = {user:{is_admin:true}};
+libraryCard.render();
 assert.ok(libraryCard.shadowRoot.innerHTML.includes('Tonie hinzufügen'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('data-action="edit"'));
 libraryCard._openEdit('12345');
 assert.ok(libraryCard.shadowRoot.innerHTML.includes('Hörspiellänge in Minuten'));
 assert.ok(libraryCard.shadowRoot.innerHTML.includes('Bild direkt vom Gerät'));
 assert.ok(libraryCard.shadowRoot.innerHTML.includes('Änderungen speichern'));
+assert.ok(libraryCard.shadowRoot.innerHTML.includes('<details class="technical">'));
+libraryCard._subscribe = () => {};
+libraryCard.hass = {user:{is_admin:false}};
+assert.equal(libraryCard._edit, null);
+assert.ok(!libraryCard.shadowRoot.innerHTML.includes('data-action="edit"'));
 libraryCard._edit = null;
 libraryCard._deleteId = '12345';
 libraryCard.render();

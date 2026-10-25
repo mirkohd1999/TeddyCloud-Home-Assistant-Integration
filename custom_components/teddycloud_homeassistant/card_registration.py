@@ -12,9 +12,10 @@ LEGACY_CARD_PATH = "/teddycloud-homeassistant/card.js"
 OLDER_CARD_PATH = "/teddycloud-homeassistant/card-v034.js"
 OLDER_V035_PATH = "/teddycloud-homeassistant/card-v035.js"
 OLDER_V036_PATH = "/teddycloud-homeassistant/card-v036.js"
-PREVIOUS_CARD_PATH = "/teddycloud-homeassistant/card-v037.js"
-CARD_PATH = "/teddycloud-homeassistant/card-v038.js"
-CARD_VERSION = "0.3.8"
+OLDER_V037_PATH = "/teddycloud-homeassistant/card-v037.js"
+PREVIOUS_CARD_PATH = "/teddycloud-homeassistant/card-v038.js"
+CARD_PATH = "/teddycloud-homeassistant/card-v040.js"
+CARD_VERSION = "0.4.0"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
 
@@ -31,7 +32,7 @@ async def async_register_card(hass):
         # The latest URL is always new, so old browser modules cannot mask
         # new custom elements. Keep legacy paths available for existing cards.
         for path in (
-            LEGACY_CARD_PATH, OLDER_CARD_PATH, OLDER_V035_PATH, OLDER_V036_PATH,
+            LEGACY_CARD_PATH, OLDER_CARD_PATH, OLDER_V035_PATH, OLDER_V036_PATH, OLDER_V037_PATH,
             PREVIOUS_CARD_PATH, CARD_PATH,
         ):
             try:
@@ -70,7 +71,7 @@ async def async_register_card(hass):
             await resources.async_load()
         existing = [
             item for item in resources.async_items()
-            if item.get("url", "").split("?")[0] in (CARD_PATH, PREVIOUS_CARD_PATH, OLDER_V036_PATH, OLDER_V035_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH)
+            if item.get("url", "").split("?")[0] in (CARD_PATH, PREVIOUS_CARD_PATH, OLDER_V037_PATH, OLDER_V036_PATH, OLDER_V035_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH)
         ]
         if existing:
             for item in existing:
