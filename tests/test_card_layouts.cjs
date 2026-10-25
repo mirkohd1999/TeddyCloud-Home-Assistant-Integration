@@ -83,7 +83,10 @@ assert.ok(empty.shadowRoot.innerHTML.includes('Keine Bausteine ausgewählt'));
 const editor = new Editor();
 editor.setConfig({entity:'media_player.test',mode:'custom',sections:['title','charger','ears']});
 editor.hass = hass;
-assert.ok(editor.shadowRoot.innerHTML.includes('Bausteine auswählen und sortieren'));
+assert.ok(editor.shadowRoot.innerHTML.includes('3. Deine Bausteine'));
+assert.ok(editor.shadowRoot.innerHTML.includes('TeddyCloud Karteneditor v0.3.4'));
+assert.ok(editor.shadowRoot.innerHTML.includes('Selbst gestalten'));
+assert.ok(editor.shadowRoot.innerHTML.includes('Weitere Einstellungen (optional)'));
 editor.moveSection('ears',-1);
 assert.equal(editor._config.sections.join(','),'title,ears,charger');
 editor.changeSections('volume',true);
@@ -92,4 +95,43 @@ editor.changeSections('title',false);
 assert.equal(editor._config.sections.join(','),'ears,charger,volume');
 editor.changeSections('not-a-section',true);
 assert.equal(editor._config.sections.join(','),'ears,charger,volume');
+// One-tap presets switch the preview without typing YAML or configuring MQTT.
+editor.choosePreset('compact');
+assert.equal(editor._config.mode, 'compact');
+assert.equal(editor._lastEvent.type,'config-changed');
+assert.ok(editor.shadowRoot.innerHTML.includes("class='preset selected'"));
+editor.choosePreset('custom');
+assert.equal(editor._config.sections.join(','),'ears,charger,volume');
+editor.choosePreset('does-not-exist');
+assert.equal(editor._config.mode, 'custom');
+
+// A new self-built dashboard starts small rather than exposing all ten blocks.
+const firstTime = new Editor();
+firstTime.setConfig({entity:'media_player.test',mode:'all'});
+firstTime.hass = hass;
+assert.ok(firstTime.shadowRoot.innerHTML.includes('So soll deine Karte aussehen'));
+assert.ok(firstTime.shadowRoot.innerHTML.includes('Selbst gestalten'));
+assert.ok(!firstTime.shadowRoot.innerHTML.includes('3. Deine Bausteine'));
+firstTime.choosePreset('custom');
+assert.equal(firstTime._config.sections.join(','),'artwork,title,playback,charger,volume');
+assert.equal(firstTime._config.layout,'grid');
+assert.equal(firstTime._config.columns,2);
+assert.ok(firstTime.shadowRoot.innerHTML.includes('3. Deine Bausteine'));
+firstTime.change('name',"<script>alert(1)</script>");
+assert.ok(!firstTime.shadowRoot.innerHTML.includes('<script>'));
+
+// Pick the only Toniebox automatically, but never replace a deliberate choice.
+const auto = new Editor();
+auto.setConfig({entity:''});
+auto.hass = hass;
+assert.equal(auto._config.entity,'media_player.test');
+assert.equal(auto._lastEvent.type,'config-changed');
+const manual = new Editor();
+manual.setConfig({entity:'media_player.explicit'});
+manual.hass = hass;
+assert.equal(manual._config.entity,'media_player.explicit');
+const oldPlaceholder = new Editor();
+oldPlaceholder.setConfig({entity:'media_player.meine_toniebox_now_playing'});
+oldPlaceholder.hass = hass;
+assert.equal(oldPlaceholder._config.entity,'media_player.test');
 console.log('Dashboard layout and visual editor tests passed.');
