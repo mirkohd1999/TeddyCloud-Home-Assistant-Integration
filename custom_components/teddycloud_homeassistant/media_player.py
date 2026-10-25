@@ -69,7 +69,7 @@ class BoxPlayer(MediaPlayerEntity):
     def device_info(self):
         return DeviceInfo(identifiers={(DOMAIN, self.entry.unique_id)}, name=self.entry.data[CONF_BOX_NAME], manufacturer='TeddyCloud', model='Toniebox (MQTT)')
 
-    def receive(self, field, payload):
+    def receive(self, field, payload, retained=False):
         text = mqtt_text(payload)
         previous = self._values.get(field)
         # Clear active metadata on removal. Archived images remain on disk.
