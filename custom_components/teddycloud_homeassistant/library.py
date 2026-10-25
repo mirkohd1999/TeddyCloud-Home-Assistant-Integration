@@ -118,6 +118,9 @@ class TonieLibrary:
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
 
+    def needs_observation(self, box_id, audio_id):
+        return self._last_ids.get(box_id) != audio_id
+
     def box_cleared(self, box_id):
         """Allow the same figurine to return after removing it from this box."""
         self._last_ids[box_id] = ""
