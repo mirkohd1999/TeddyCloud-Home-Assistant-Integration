@@ -113,6 +113,7 @@ class BoxPlayer(MediaPlayerEntity):
     def receive(self, field, payload, retained=False):
         text = mqtt_text(payload)
         previous = self._values.get(field)
+        observation = None
         # Clear active metadata on removal. Archived images remain on disk.
         # Never display the previous figurine as the currently playing one.
         if field == 'ContentAudioId' and text != previous:
@@ -162,7 +163,6 @@ class BoxPlayer(MediaPlayerEntity):
                 self._catalog_status = 'loading'
                 if self._lookup_task and not self._lookup_task.done():
                     self._lookup_task.cancel()
-                self._lookup_task = self.hass.async_create_task(self._lookup_image(text))
         if (field == 'ContentAudioId' and not text) or (field == 'TagValid' and text.startswith('-')):
             self._availability.stop_playback(fresh=self._was_playing and not retained)
             self._was_playing = False
@@ -183,7 +183,7 @@ class BoxPlayer(MediaPlayerEntity):
                         self._values.get('ContentPicture', ''),
                         self.entry.options.get('teddycloud_url', ''),
                     )
-                    self.hass.async_create_task(library.async_seen(
+                    observation = self.hass.async_create_task(library.async_seen(
                         self.entry.entry_id, text,
                         title=self._values.get('ContentTitle'),
                         image=current_image,
@@ -200,6 +200,8 @@ class BoxPlayer(MediaPlayerEntity):
                 elif field == 'ContentPicture':
                     url = resolved_picture(text, self.entry.options.get('teddycloud_url', ''))
                     self.hass.async_create_task(library.async_metadata(audio_id, image=url))
+            if field == 'ContentAudioId' and previous != text and text:
+                self._lookup_task = self.hass.async_create_task(self._lookup_image(text, observation))
             self.async_write_ha_state()
 
     async def async_added_to_hass(self):
@@ -228,8 +230,12 @@ class BoxPlayer(MediaPlayerEntity):
             self._lookup_task.cancel()
         await super().async_will_remove_from_hass()
 
-    async def _lookup_image(self, audio_id):
-        """Retry catalog errors for the current figure without another MQTT event."""
+    async def _lookup_image(self, audio_id, observation=None):
+        """Wait for collection, then publish metadata before downloading artwork."""
+        if observation is not None:
+            # A cached catalog hit can finish before async_seen has acquired the
+            # library lock. Cancelling a lookup must not cancel collection itself.
+            await asyncio.shield(observation)
         while self._online_audio_id == audio_id and self.hass is not None:
             try:
                 result = await self._online_catalog.find(audio_id)
@@ -252,6 +258,14 @@ class BoxPlayer(MediaPlayerEntity):
                 continue
 
             self._catalog_status = 'matched' if result else 'audio_id_not_found'
+            self._online_result = result
+            if self._library and result:
+                await self._library.async_metadata(
+                    audio_id, title=result.get('catalog_title'),
+                    image=result.get('figure'), duration=result.get('duration_seconds'),
+                    audio_ids=result.get('audio_ids'),
+                )
+            self._refresh_availability()
             cached = self._archive.lookup(audio_id) if self._archive else None
             if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
                 cached = await self._archive.store(audio_id, result['figure'])

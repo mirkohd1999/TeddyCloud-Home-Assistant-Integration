@@ -293,6 +293,8 @@ class TonieLibrary:
             custom = {}
             for key in visible:
                 other = self._public_entry(key)
+                if not self._entries[visible[0]].get("title") and self._entries[key].get("title"):
+                    item["title"] = self._entries[key]["title"]
                 for field in ("image", "duration_seconds"):
                     if not item.get(field) and other.get(field):
                         item[field] = other[field]

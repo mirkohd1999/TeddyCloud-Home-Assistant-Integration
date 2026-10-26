@@ -258,6 +258,17 @@ class TestLibrary(unittest.TestCase):
             self.assertEqual(lib.public_entries()[0]["times_seen"], 2)
         asyncio.run(run())
 
+    def test_group_uses_known_title_when_first_alias_has_none(self):
+        async def run():
+            lib = await self.load()
+            await lib.async_seen('box', '123')
+            await lib.async_seen('box', '456', title='Yakari')
+            await lib.async_metadata('456', audio_ids=['123', '456'])
+            self.assertEqual(lib.public_entries()[0]['title'], 'Yakari')
+            await lib.async_edit('123', title='Mein Yakari')
+            self.assertEqual(lib.public_entries()[0]['title'], 'Mein Yakari')
+        asyncio.run(run())
+
 
 if __name__ == "__main__":
     unittest.main()
