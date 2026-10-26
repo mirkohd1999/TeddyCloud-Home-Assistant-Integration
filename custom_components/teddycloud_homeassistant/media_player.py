@@ -8,6 +8,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.core import callback
 from .library import SIGNAL_CHANGED
+from .availability import Availability
+from homeassistant.helpers.event import async_call_later
 from .online_catalog import RETRY
 from .artwork_archive import ArtworkArchive
 from .const import (DOMAIN, CONF_BOX_NAME, CONF_BOX_COLOR, CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_COLOR)
@@ -64,12 +66,42 @@ class BoxPlayer(MediaPlayerEntity):
         self._figure_present = None
         self._figure_removed_at = None
         self._library = None
+        self._availability = Availability(entry.options.get("offline_timeout", 5))
+        self._offline_cancel = None
+        self._last_message_at = None
 
     @property
     def device_info(self):
         return DeviceInfo(identifiers={(DOMAIN, self.entry.unique_id)}, name=self.entry.data[CONF_BOX_NAME], manufacturer='TeddyCloud', model='Toniebox (MQTT)')
 
+    @property
+    def available(self):
+        return self._availability.online
+
+    @callback
+    def note_message(self, retained=False):
+        if retained:
+            return
+        self._availability.received()
+        self._last_message_at = datetime.now(timezone.utc).isoformat()
+        if self._offline_cancel:
+            self._offline_cancel()
+        if self.hass is not None:
+            self._offline_cancel = async_call_later(
+                self.hass, self._availability.timeout, self._mark_offline
+            )
+            self.async_write_ha_state()
+
+    @callback
+    def _mark_offline(self, _now):
+        self._offline_cancel = None
+        self._availability.last_message = None
+        self._was_playing = False
+        self._started = None
+        self.async_write_ha_state()
+
     def receive(self, field, payload, retained=False):
+        self.note_message(retained)
         text = mqtt_text(payload)
         previous = self._values.get(field)
         # Clear active metadata on removal. Archived images remain on disk.
@@ -136,6 +168,7 @@ class BoxPlayer(MediaPlayerEntity):
                         title=self._values.get('ContentTitle'),
                         image=current_image,
                         retained=retained,
+                        box_color=self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
                     ))
             elif library and field == 'TagValid' and text.startswith('-'):
                 # Removing the tag unlocks the next placement, including the
@@ -168,6 +201,9 @@ class BoxPlayer(MediaPlayerEntity):
 
     async def async_will_remove_from_hass(self):
         """Stop pending catalog requests when the entity is unloaded."""
+        if self._offline_cancel:
+            self._offline_cancel()
+            self._offline_cancel = None
         if self._lookup_task and not self._lookup_task.done():
             self._lookup_task.cancel()
         await super().async_will_remove_from_hass()
@@ -208,6 +244,7 @@ class BoxPlayer(MediaPlayerEntity):
                         title=result.get('catalog_title'),
                         image=cached or result.get('figure'),
                         duration=result.get('duration_seconds'),
+                        audio_ids=result.get('audio_ids'),
                     )
                 self.async_write_ha_state()
             return
@@ -268,6 +305,9 @@ class BoxPlayer(MediaPlayerEntity):
     def extra_state_attributes(self):
         return {
             'content_audio_id': self._values.get('ContentAudioId'),
+            'box_online': self.available,
+            'last_message_received': self._last_message_at,
+            'offline_timeout_minutes': self._availability.timeout // 60,
             'figure_present': self._figure_present,
             'figure_removed_at': self._figure_removed_at.isoformat() if self._figure_removed_at else None,
             'volume_level_raw': self._values.get('VolumeLevel'),

@@ -145,7 +145,7 @@ class OnlineCatalog:
                                             continue
                                         aid = str(ident.get("audio-id") or "").strip()
                                         if aid.isdecimal():
-                                            new_items[aid] = {"figure": pic, "catalog_title": title, "duration_seconds": length}
+                                            new_items[aid] = {"figure": pic, "catalog_title": title, "duration_seconds": length, "audio_ids": sorted({str(i.get("audio-id")) for i in entry.get("ids", []) if isinstance(i, dict) and str(i.get("audio-id", "")).isdecimal()})}
                         else:
                             # Older catalog has artwork but no runtime.
                             for entry in data:
@@ -164,6 +164,7 @@ class OnlineCatalog:
                                             "figure": pic,
                                             "catalog_title": str(entry.get("title") or ""),
                                             "duration_seconds": None,
+                                            "audio_ids": [str(i) for i in audio_ids if str(i).isdecimal()],
                                         }
                         if not new_items:
                             raise ValueError("Catalog contains no audio IDs")

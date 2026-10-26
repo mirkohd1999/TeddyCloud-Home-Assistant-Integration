@@ -95,7 +95,8 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     if (!this.shadowRoot || !this.config) return;
     const e = this._hass?.states?.[this.config.entity];
     const attr = e?.attributes || {};
-    const title = attr.figure_present === false ? 'Keine Figur aufgestellt' : (attr.media_title || (!e ? 'Toniebox auswählen' : 'Noch keine Titelinformationen'));
+    const offline = e?.state === 'unavailable' || attr.box_online === false;
+    const title = offline ? 'Toniebox offline' : attr.figure_present === false ? 'Keine Figur aufgestellt' : (attr.media_title || (!e ? 'Toniebox auswählen' : 'Noch keine Titelinformationen'));
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
     const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || '');
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
@@ -107,8 +108,8 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const showFigure = artworkMode === 'figure' || (artworkMode === 'auto' && !!this.config.figure_image);
     const mode = ['all', 'player', 'settings', 'compact', 'artwork', 'status', 'tiles', 'custom'].includes(this.config.mode) ? this.config.mode : 'all';
     const charger = String(attr.charger ?? '').trim().toUpperCase();
-    const chargerText = ['ON','1','TRUE'].includes(charger) ? '🔌 Auf Ladestation' : ['OFF','0','FALSE'].includes(charger) ? '🔋 Nicht auf Ladestation' : '🔋 Ladestatus unbekannt';
-    const playing = e?.state === 'playing';
+    const chargerText = offline ? 'Keine aktuellen Meldungen' : ['ON','1','TRUE'].includes(charger) ? '🔌 Auf Ladestation' : ['OFF','0','FALSE'].includes(charger) ? '🔋 Nicht auf Ladestation' : '🔋 Ladestatus unbekannt';
+    const playing = !offline && e?.state === 'playing';
     const started = attr.estimated_playback_started ? Date.parse(attr.estimated_playback_started) : NaN;
     const elapsed = playing && Number.isFinite(started) ? Math.max(0,(Date.now()-started)/1000) : null;
     const dur = Number(attr.media_duration) > 0 ? Number(attr.media_duration) : null;
@@ -166,7 +167,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         : '<div class="small-art fallback-art">🧸</div>';
       const titleMarkup = '<div class="board-name">' + safe(this.config.name || e?.attributes?.friendly_name || 'Toniebox') +
         '</div><div class="board-track">' + safe(title) + '</div>';
-      const playText = attr.figure_present === false ? 'Figur abgenommen' :
+      const playText = offline ? 'Toniebox offline' : attr.figure_present === false ? 'Figur abgenommen' :
         playing ? 'Wiedergabe gemeldet' : 'Keine Wiedergabe gemeldet';
       const progressMarkup = dur
         ? '<div class="board-bar"><div class="board-fill" style="width:' + progress.toFixed(2) +
@@ -290,7 +291,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .settings .panel{margin-top:0;padding-top:0;border-top:0}
     </style><ha-card class="${mode}"><div class="flex">${artBlock}
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud Home Assistant Integration')}</div><div class="title">${safe(title)}</div>
-    <div class="state"><i class="dot"></i>${attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div><div class="state">${chargerText}</div></div></div>
+    <div class="state"><i class="dot"></i>${offline ? 'Toniebox offline' : attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div><div class="state">${chargerText}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot duration-foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
     <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
     <div class="foot status-foot">Aktuelle Lautstärke: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : 'unbekannt'} · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
@@ -807,10 +808,14 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
           '<div class="library-grid">' + entries.map(item => {
             const title = item.title || 'Unbekannter Tonie';
             const removed = this._deleteId === item.audio_id;
-            return '<article class="tonie" data-library-entry data-search="' +
+            const recent = (item.last_heard_boxes || []).filter(box => /^#[0-9a-f]{6}$/i.test(box.color || ''));
+            const rings = recent.map((box, index) => '0 0 0 ' + ((index + 1) * 3) + 'px ' + box.color).join(',');
+            const highlight = rings ? ' style="box-shadow:' + rings + '"' : '';
+            const recentLabel = recent.length ? '<span class="recent">Zuletzt gehört: ' + e(recent.map(box => box.name).join(', ')) + '</span>' : '';
+            return '<article class="tonie"' + highlight + ' data-library-entry data-search="' +
               e((title + ' ' + item.audio_id).toLocaleLowerCase()) + '">' +
               this._image(item.image) +
-              '<div class="tonie-body"><strong>' + e(title) + '</strong>' +
+              '<div class="tonie-body"><strong>' + e(title) + '</strong>' + recentLabel +
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
               (Number(item.times_seen) > 0 ? '<span class="id">Schon ' + e(item.times_seen) + '× erkannt</span>' : '') +
               (item.last_seen ? '<span class="id">Zuletzt erkannt: ' + e(new Date(item.last_seen).toLocaleDateString('de-DE')) + '</span>' : '') +
@@ -839,6 +844,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '.cover{width:100%;height:165px;object-fit:contain;background:var(--secondary-background-color,#282828)}',
       '.cover.empty{display:grid;place-items:center;font-size:52px}',
       '.tonie-body{padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}',
+      '.recent{font-size:12px;font-weight:600}',
       '.tonie-body strong{font-size:14px;overflow-wrap:anywhere;line-height:1.3}',
       '.duration,.id,.hint{font-size:12px;color:var(--secondary-text-color)}',
       '.id{overflow-wrap:anywhere}',

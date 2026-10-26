@@ -14,7 +14,7 @@ import re
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_BOX_COLOR, CONF_BOX_NAME, DEFAULT_COLOR
 
 STORE_KEY = "teddycloud_homeassistant.tonie_library"
 SIGNAL_CHANGED = f"{DOMAIN}_library_changed"
@@ -97,13 +97,17 @@ class TonieLibrary:
         )
 
     def custom_metadata(self, audio_id):
-        item = self._entries.get(audio_id)
-        return item.get("custom", {}) if item else {}
+        result = {}
+        for ident in self._group_ids(audio_id):
+            for field, value in self._entries[ident].get("custom", {}).items():
+                if value and not result.get(field):
+                    result[field] = value
+        return result
 
     def _notify(self, audio_id):
         async_dispatcher_send(self.hass, SIGNAL_CHANGED, audio_id)
 
-    async def async_seen(self, box_id, audio_id, title=None, image=None, duration=None, retained=False):
+    async def async_seen(self, box_id, audio_id, title=None, image=None, duration=None, retained=False, box_color=None):
         """Collect on a NEW placement; ordinary status replays don't resurrect deletions."""
         if not valid_audio_id(audio_id):
             return
@@ -130,8 +134,12 @@ class TonieLibrary:
                     old["image"] = image
                 if duration and not old.get("duration_seconds"):
                     old["duration_seconds"] = duration
-            old["last_seen"] = datetime.now(timezone.utc).isoformat()
-            old["times_seen"] = int(old.get("times_seen") or 0) + 1
+            if not retained:
+                old["last_seen"] = datetime.now(timezone.utc).isoformat()
+                old["times_seen"] = int(old.get("times_seen") or 0) + 1
+                old.setdefault("box_last_seen", {})[box_id] = {
+                    "at": old["last_seen"], "color": box_color or DEFAULT_COLOR,
+                }
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
 
@@ -142,13 +150,18 @@ class TonieLibrary:
         """Allow the same figurine to return after removing it from this box."""
         self._last_ids[box_id] = ""
 
-    async def async_metadata(self, audio_id, title=None, image=None, duration=None):
+    async def async_metadata(self, audio_id, title=None, image=None, duration=None, audio_ids=None):
         """Refresh detected metadata only for items still in the collection."""
         async with self._lock:
             item = self._entries.get(audio_id)
             if item is None:
                 return
             dirty = False
+            if audio_ids:
+                known = sorted({str(value) for value in audio_ids if valid_audio_id(str(value))})
+                if audio_id in known and known != item.get("catalog_audio_ids"):
+                    item["catalog_audio_ids"] = known
+                    dirty = True
             for field, value in (("title", title), ("image", image), ("duration_seconds", duration)):
                 if value and value != item.get(field):
                     item[field] = value
@@ -208,8 +221,12 @@ class TonieLibrary:
                     if previous.is_file() and not previous.is_symlink():
                         await asyncio.to_thread(previous.unlink)
                 custom["image"] = f"/local/{DOMAIN}/library/{dest.name}?v={int(datetime.now(timezone.utc).timestamp() * 1000)}"
+            for alias in self._group_ids(audio_id):
+                if alias != audio_id:
+                    self._entries[alias].setdefault("custom", {}).update(custom)
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
-        self._notify(audio_id)
+        for alias in self._group_ids(audio_id):
+            self._notify(alias)
         return self._public_entry(audio_id)
 
     def _public_entry(self, audio_id):
@@ -226,14 +243,84 @@ class TonieLibrary:
             "custom": dict(custom),
         }
 
+    def _groups(self):
+        parents = {key: key for key in self._entries}
+
+        def find(key):
+            while parents[key] != key:
+                parents[key] = parents[parents[key]]
+                key = parents[key]
+            return key
+
+        for key, item in self._entries.items():
+            for alias in item.get("catalog_audio_ids", []):
+                if alias in parents:
+                    a, b = find(key), find(alias)
+                    parents[max(a, b)] = min(a, b)
+        groups = {}
+        for key in parents:
+            groups.setdefault(find(key), []).append(key)
+        return [sorted(ids) for ids in groups.values()]
+
+    def _group_ids(self, audio_id):
+        return next((ids for ids in self._groups() if audio_id in ids), [])
+
+    async def async_refresh_catalog(self, catalog):
+        """Resolve existing duplicates without requiring every figure to be replayed."""
+        for audio_id in list(self._entries):
+            result = await catalog.find(audio_id)
+            if result:
+                await self.async_metadata(
+                    audio_id, title=result.get("catalog_title"),
+                    image=result.get("figure"), duration=result.get("duration_seconds"),
+                    audio_ids=result.get("audio_ids"),
+                )
+
     def public_entries(self):
-        return sorted(
-            (self._public_entry(audio_id) for audio_id, item in self._entries.items()
-             if not is_system_sound_entry(item)),
-            key=lambda item: item["title"].casefold(),
-        )
+        combined = []
+        latest_by_box = {}
+        config_entries = getattr(self.hass, "config_entries", None)
+        configs = {entry.entry_id: entry for entry in config_entries.async_entries(DOMAIN)} if config_entries else {}
+        for ids in self._groups():
+            visible = [key for key in ids if not is_system_sound_entry(self._entries[key])]
+            if not visible:
+                continue
+            # Prefer fields explicitly edited by the user; retain all source records.
+            item = self._public_entry(visible[0])
+            item["audio_ids"] = ids
+            item["times_seen"] = sum(int(self._entries[key].get("times_seen") or 0) for key in visible)
+            item["last_seen"] = max((self._entries[key].get("last_seen") or "" for key in visible), default="") or None
+            custom = {}
+            for key in visible:
+                other = self._public_entry(key)
+                for field in ("image", "duration_seconds"):
+                    if not item.get(field) and other.get(field):
+                        item[field] = other[field]
+                for field, value in other["custom"].items():
+                    if value and not custom.get(field):
+                        custom[field] = value
+                for box_id, observation in self._entries[key].get("box_last_seen", {}).items():
+                    if observation.get("at", "") > latest_by_box.get(box_id, {}).get("at", ""):
+                        latest_by_box[box_id] = dict(observation, audio_id=item["audio_id"])
+            item["custom"] = custom
+            item.update(custom)
+            combined.append(item)
+        for item in combined:
+            item["last_heard_boxes"] = []
+            for box_id, observation in sorted(latest_by_box.items()):
+                if observation["audio_id"] != item["audio_id"]:
+                    continue
+                entry = configs.get(box_id)
+                color = entry.options.get(CONF_BOX_COLOR, entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)) if entry else observation.get("color", DEFAULT_COLOR)
+                name = entry.data.get(CONF_BOX_NAME, "Toniebox") if entry else "Toniebox"
+                item["last_heard_boxes"].append({"box_id": box_id, "name": name, "color": color})
+        return sorted(combined, key=lambda item: (-item["times_seen"], item["title"].casefold(), item["audio_id"]))
 
     async def async_delete(self, audio_id):
+        for alias in self._group_ids(audio_id):
+            await self._async_delete_one(alias)
+
+    async def _async_delete_one(self, audio_id):
         async with self._lock:
             if audio_id not in self._entries:
                 return
