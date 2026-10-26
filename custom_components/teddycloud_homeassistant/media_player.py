@@ -75,6 +75,14 @@ class BoxPlayer(MediaPlayerEntity):
         return DeviceInfo(identifiers={(DOMAIN, self.entry.unique_id)}, name=self.entry.data[CONF_BOX_NAME], manufacturer='TeddyCloud', model='Toniebox (MQTT)')
 
     @property
+    def capability_attributes(self):
+        """Keep static box appearance available when HA omits live attributes."""
+        return {
+            **(super().capability_attributes or {}),
+            'box_color': self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
+        }
+
+    @property
     def available(self):
         return self._availability.online
 
@@ -351,7 +359,6 @@ class BoxPlayer(MediaPlayerEntity):
             'charger': self._values.get('Charger'),
             'tag_valid': self._values.get('TagValid'),
             'last_seen': self._values.get('LastSeen'),
-            'box_color': self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
             'cover_url': self.media_image_url,
             'catalog_match': bool(self._online_result),
             'catalog_status': self._catalog_status,
