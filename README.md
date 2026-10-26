@@ -218,9 +218,13 @@ Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet
 
 ### Toniebox offline
 
-Nach **5 Minuten ohne frische MQTT-Meldung** wird der Media-Player nicht verfügbar und die Toniebox-Karte zeigt **„Toniebox offline“**. Die nächste frische Nachricht setzt die Box wieder online. Gespeicherte Retained-Meldungen gelten nicht als Lebenszeichen.
+Die Offline-Erkennung verwendet den von TeddyCloud gemeldeten Zeitpunkt **LastSeen**. Wiederholte MQTT-Meldungen mit demselben alten Zeitpunkt halten die Box nicht online. Fehlt ein gültiger LastSeen-Wert, dient der Empfang frischer MQTT-Meldungen als Ersatz.
 
-Die Wartezeit ist pro Box unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren → Offline nach ausbleibenden MQTT-Meldungen** von **1 bis 120 Minuten** einstellbar. Eine eingeschaltete, aber stille Box kann dadurch als offline gelten; die Anzeige ist eine zeitbasierte Einschätzung.
+Bei einem neu erkannten Wiedergabestart bleibt die Box mit bekannter Tonie-Laufzeit bis zum **geschätzten Ende plus 2 Minuten Puffer** online. Die Laufzeit stammt aus deinen Bibliotheksangaben, der manuellen Zuordnung oder dem Online-Katalog. Wiederholtes „spielt“ startet diesen Schutz nicht neu. Beim Abnehmen der Figur oder bei einer Stop-Meldung endet der Laufzeitschutz; die normale Wartezeit beginnt.
+
+Die normale Wartezeit beträgt **5 Minuten** und lässt sich pro Box unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren → Offline nach ausbleibender Box-Aktivität** auf **1 bis 120 Minuten** einstellen. Danach zeigt die Karte **„Toniebox offline“**. Ein aktueller LastSeen-Wert stellt den Online-Status wieder her.
+
+Die Anzeige bleibt eine Schätzung: Ausschalten während eines Hörspiels kann bis zum geschätzten Ende unbemerkt bleiben. Ohne bekannte Laufzeit gilt nur die Aktivitätsfrist. Nach einem HA-Neustart wird aus gespeicherten „spielt“-Meldungen kein neuer Wiedergabestart erfunden; ein bereits laufendes Hörspiel erhält deshalb erst beim nächsten neu erkannten Start wieder Laufzeitschutz. Live-Streams und manuelles Springen können nicht zuverlässig über die Gesamtlaufzeit geschätzt werden.
 
 ### Toniebox wird nicht gefunden
 
@@ -231,7 +235,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v050.js?v=0.5.0
+/teddycloud-homeassistant/card-v050.js?v=0.5.1
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.

@@ -65,7 +65,7 @@
           "catalog": "Katalog als JSON",
           "teddycloud_url": "TeddyCloud-Adresse für Coverbilder",
           "online_images": "Figurenbilder automatisch online suchen",
-          "offline_timeout": "Offline nach ausbleibenden MQTT-Meldungen (Minuten, 1–120)"
+          "offline_timeout": "Offline nach ausbleibender Box-Aktivität (Minuten, 1–120)"
         }
       }
     },

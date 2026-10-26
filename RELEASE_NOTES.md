@@ -1,23 +1,22 @@
-# TeddyCloud Home Assistant Integration v0.5.0
+# v0.5.1
 
-## Bibliothek
+## Offline-Erkennung mit Tonie-Laufzeit
 
-- Zuletzt erkannter Tonie je Box mit Rahmen in der konfigurierten Boxfarbe; mehrere Boxen können als mehrere Farbringe erscheinen.
-- Diese Zuordnung bleibt über Neustarts erhalten und wird ab der nächsten neuen Erkennung aufgebaut.
-- Häufigste Tonies zuerst: neue Erkennungen/Aufstellungen werden gezählt, keine vollständig gehörten Durchläufe. Retained-Meldungen erhöhen den Zähler nicht.
-- Mehrere Audio-IDs desselben Kataloginhalts werden als eine Karte dargestellt. Zähler werden summiert, eigene Titel/Bilder/Laufzeiten bevorzugt. Rohdaten bleiben erhalten; bei widersprüchlichen eigenen Angaben wird pro Feld ein vorhandener Wert angezeigt, die anderen bleiben intern erhalten.
-- Bearbeiten und Löschen wirken auf die zusammengefassten Einträge. Unterschiedliche Folgen werden nicht anhand ähnlicher Titel zusammengeführt.
-- Vorhandene Einträge werden beim Start im Hintergrund mit dem Katalog abgeglichen. Die automatische Zuordnung benötigt einen erreichbaren Katalog und dort eindeutig gemeinsam aufgeführte Audio-IDs.
+- LastSeen bestimmt die letzte tatsächliche Box-Aktivität. Wiederholte alte MQTT-Statuswerte verlängern die Offline-Frist nicht mehr.
+- Neu erkannte Wiedergabe mit bekannter Laufzeit bleibt bis zum geschätzten Ende plus zwei Minuten online. Gleiche Playback-ON-Meldungen starten diesen Schutz nicht neu.
+- Stop oder Abnehmen der Figur beendet den Laufzeitschutz und startet die konfigurierte normale Wartezeit (standardmäßig fünf Minuten).
+- Ohne gültiges LastSeen bleibt der Empfang frischer MQTT-Meldungen die Ersatzquelle; ohne Laufzeit gilt die normale Aktivitätsfrist.
+- Nachträglich geladene oder bearbeitete Laufzeiten aktualisieren die Frist anhand des ursprünglichen Starts.
+- Neue Diagnoseattribute: availability_source und playback_protection_remaining.
 
-## Offline-Anzeige
+## Update
 
-- Nach 5 Minuten ohne frische MQTT-Nachricht wird der Media-Player nicht verfügbar; die eigene Dashboard-Karte zeigt „Toniebox offline“.
-- Wartezeit je Box in den Integrationsoptionen einstellbar: 1–120 Minuten.
-- Neue Nachrichten stellen den Online-Status wieder her. Retained-Nachrichten verlängern die Frist nicht.
-- Die Anzeige ist eine Einschätzung anhand ausbleibender Meldungen, kein sicherer Nachweis einer ausgeschalteten Box.
+In HACS aktualisieren und Home Assistant neu starten. Die vorhandene Dashboard-Karte kann weiterverwendet werden.
 
-## Aktualisieren
+## Grenzen
 
-In HACS v0.5.0 herunterladen, Home Assistant neu starten und das Dashboard neu laden. Für YAML-Ressourcen: `/teddycloud-homeassistant/card-v050.js?v=0.5.0` als JavaScript-Modul eintragen. Storage-Ressourcen werden automatisch aktualisiert.
+Die Laufzeit ist eine Schätzung: Ausschalten während der Wiedergabe wird gegebenenfalls erst nach dem geschätzten Ende erkannt. Gespeicherte Playback-Meldungen nach einem HA-Neustart erzeugen keinen neuen Laufzeitschutz. Streams, unbekannte Laufzeiten und Titelsprünge sind nicht zuverlässig über die Gesamtlaufzeit abbildbar.
 
-Admin-Rechte zum Bearbeiten, Löschen für alle angemeldeten Nutzer und der System-Sound-Filter bleiben enthalten. Automatisierte Tests decken Gruppierung, Erhalt eigener Angaben, Farben, Sortierung, Offline-Frist, Rückkehr online und die Dashboard-Ansichten ab. Ein Praxistest auf der eigenen Toniebox bleibt erforderlich.
+## Prüfung
+
+Python-Regressionsprüfungen für alte LastSeen-Werte, wiederholte Statusmeldungen, lange Wiedergabe, Ablauf, Figur entfernt, Stop/Neustart, unbekannte und nachgeladene Laufzeiten, Zeitstempel sowie Timer und Entladen. Zusätzlich vorhandene Bibliotheks-, Rechte- und JavaScript-Tests. Kein Test an einer physischen Toniebox.
