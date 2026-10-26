@@ -51,7 +51,7 @@ class TestAvailability(unittest.TestCase):
         ns = {'MediaPlayerEntity':Entity, 'MediaPlayerEntityFeature':int,
               'callback':lambda fn: fn, 'Availability':availability.Availability,
               'async_call_later':schedule, 'datetime':datetime, 'timezone':timezone,
-              'json':json, 'CONF_CATALOG':'catalog', 'CONF_BOX_NAME':'box_name', 'CONF_BOX_COLOR':'box_color', 'DEFAULT_COLOR':'#8f77c7',
+              'asyncio':asyncio, 'json':json, 'CONF_CATALOG':'catalog', 'CONF_BOX_NAME':'box_name', 'CONF_BOX_COLOR':'box_color', 'DEFAULT_COLOR':'#8f77c7',
               'MediaPlayerState':SimpleNamespace(IDLE='idle', PLAYING='playing')}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(ROOT / 'media_player.py'), 'exec'), ns)
         entry = SimpleNamespace(entry_id='box', data={'box_name':'Box'}, options={'offline_timeout':7})
