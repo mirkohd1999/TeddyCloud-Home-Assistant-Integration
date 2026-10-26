@@ -16,7 +16,7 @@ OLDER_V037_PATH = "/teddycloud-homeassistant/card-v037.js"
 OLDER_V038_PATH = "/teddycloud-homeassistant/card-v038.js"
 PREVIOUS_CARD_PATH = "/teddycloud-homeassistant/card-v040.js"
 CARD_PATH = "/teddycloud-homeassistant/card-v050.js"
-CARD_VERSION = "0.5.0"
+CARD_VERSION = "0.5.1"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
 

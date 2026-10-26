@@ -82,26 +82,35 @@ class BoxPlayer(MediaPlayerEntity):
     def note_message(self, retained=False):
         if retained:
             return
-        self._availability.received()
+        self._availability.received(last_seen=self._values.get('LastSeen'))
         self._last_message_at = datetime.now(timezone.utc).isoformat()
+        if self._started is None and self._availability.playback_started is not None:
+            elapsed = self._availability.clock() - self._availability.playback_started
+            self._started = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() - elapsed, timezone.utc)
+        self._refresh_availability()
+
+    @callback
+    def _refresh_availability(self):
+        self._availability.duration = self.media_duration
         if self._offline_cancel:
             self._offline_cancel()
+            self._offline_cancel = None
         if self.hass is not None:
-            self._offline_cancel = async_call_later(
-                self.hass, self._availability.timeout, self._mark_offline
-            )
+            remaining = self._availability.remaining
+            if remaining > 0:
+                self._offline_cancel = async_call_later(
+                    self.hass, remaining, self._mark_offline
+                )
             self.async_write_ha_state()
 
     @callback
     def _mark_offline(self, _now):
         self._offline_cancel = None
-        self._availability.last_message = None
-        self._was_playing = False
-        self._started = None
-        self.async_write_ha_state()
+        # Re-evaluate the deadline: runtime metadata may have arrived meanwhile.
+        # Preserve the last Playback value so repeated ON cannot restart protection.
+        self._refresh_availability()
 
     def receive(self, field, payload, retained=False):
-        self.note_message(retained)
         text = mqtt_text(payload)
         previous = self._values.get(field)
         # Clear active metadata on removal. Archived images remain on disk.
@@ -112,6 +121,7 @@ class BoxPlayer(MediaPlayerEntity):
             self._online_result = None
             self._local_artwork = self._archive.lookup(text) if text and self._archive else None
         self._values[field] = text
+        self.note_message(retained)
         if field == 'TagValid' and text and not text.startswith('-'):
             self._figure_present = True
             self._figure_removed_at = None
@@ -132,23 +142,33 @@ class BoxPlayer(MediaPlayerEntity):
                 self._lookup_task.cancel()
             self._started = None
         if field == 'Playback':
-            playing = text.upper() in ('ON', '1', 'TRUE', 'PLAYING')
-            if playing and not self._was_playing:
-                self._started = datetime.now(timezone.utc)
+            playing = text.upper() in ('ON', '1', 'TRUE', 'PLAYING') and self._figure_present is not False
+            if playing and not self._was_playing and not retained:
+                self._availability.start_playback()
+                self._started = datetime.now(timezone.utc) if self._availability.playback_started is not None else None
             if not playing:
+                self._availability.stop_playback(fresh=self._was_playing and not retained)
                 self._started = None
             self._was_playing = playing
         if field == 'ContentAudioId' and previous != text:
             self._online_result = None
             self._local_artwork = self._archive.lookup(text) if self._archive else None
             self._online_audio_id = text
-            if self._was_playing:
-                self._started = datetime.now(timezone.utc)
+            if text and self._was_playing and not retained:
+                self._availability.stop_playback()
+                self._availability.start_playback()
+                self._started = datetime.now(timezone.utc) if self._availability.playback_started is not None else None
             if text and self.hass is not None:
                 self._catalog_status = 'loading'
                 if self._lookup_task and not self._lookup_task.done():
                     self._lookup_task.cancel()
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(text))
+        if (field == 'ContentAudioId' and not text) or (field == 'TagValid' and text.startswith('-')):
+            self._availability.stop_playback(fresh=self._was_playing and not retained)
+            self._was_playing = False
+            self._started = None
+            self._figure_present = False
+        self._refresh_availability()
         if self.hass is not None:
             library = self._library
             audio_id = self._values.get('ContentAudioId')
@@ -189,7 +209,7 @@ class BoxPlayer(MediaPlayerEntity):
             @callback
             def library_changed(audio_id):
                 if self._values.get('ContentAudioId') == audio_id:
-                    self.async_write_ha_state()
+                    self._refresh_availability()
 
             self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_CHANGED, library_changed))
         self._archive = self.hass.data.setdefault(DOMAIN, {}).setdefault('artwork_archive', ArtworkArchive(self.hass))
@@ -246,7 +266,7 @@ class BoxPlayer(MediaPlayerEntity):
                         duration=result.get('duration_seconds'),
                         audio_ids=result.get('audio_ids'),
                     )
-                self.async_write_ha_state()
+                self._refresh_availability()
             return
 
     @property
@@ -308,6 +328,8 @@ class BoxPlayer(MediaPlayerEntity):
             'box_online': self.available,
             'last_message_received': self._last_message_at,
             'offline_timeout_minutes': self._availability.timeout // 60,
+            'availability_source': 'last_seen' if self._availability.last_seen is not None else 'mqtt',
+            'playback_protection_remaining': round(self._availability.playback_remaining),
             'figure_present': self._figure_present,
             'figure_removed_at': self._figure_removed_at.isoformat() if self._figure_removed_at else None,
             'volume_level_raw': self._values.get('VolumeLevel'),
