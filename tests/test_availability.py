@@ -40,6 +40,7 @@ class TestAvailability(unittest.TestCase):
         timers = []
         class Entity:
             hass = None
+            capability_attributes = {"supported_test_capability": True}
             def async_write_ha_state(self): pass
             async def async_will_remove_from_hass(self): pass
         def schedule(hass, seconds, callback):
@@ -51,7 +52,7 @@ class TestAvailability(unittest.TestCase):
         ns = {'MediaPlayerEntity':Entity, 'MediaPlayerEntityFeature':int,
               'callback':lambda fn: fn, 'Availability':availability.Availability,
               'async_call_later':schedule, 'datetime':datetime, 'timezone':timezone,
-              'asyncio':asyncio, 'json':json, 'CONF_CATALOG':'catalog', 'CONF_BOX_NAME':'box_name', 'CONF_BOX_COLOR':'box_color', 'DEFAULT_COLOR':'#8f77c7',
+              'CONF_FALLBACK_COVER':'fallback_cover', 'resolved_picture':lambda v,s:v, 'asyncio':asyncio, 'json':json, 'CONF_CATALOG':'catalog', 'CONF_BOX_NAME':'box_name', 'CONF_BOX_COLOR':'box_color', 'DEFAULT_COLOR':'#8f77c7',
               'MediaPlayerState':SimpleNamespace(IDLE='idle', PLAYING='playing')}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(ROOT / 'media_player.py'), 'exec'), ns)
         entry = SimpleNamespace(entry_id='box', data={'box_name':'Box'}, options={'offline_timeout':7})
@@ -232,3 +233,26 @@ class TestAvailability(unittest.TestCase):
         self.assertEqual(player._availability.playback_started, 0)
         self.assertEqual(timers[-1]['seconds'], 2518)
         self.assertIsNotNone(player._started)
+
+
+    def test_configured_color_survives_unavailable_and_restart(self):
+        player, now, _ = self.make_player()
+        player.entry.data['box_color'] = '#D82F38'
+        def ha_attributes():
+            # HA keeps capabilities but deliberately omits live attributes offline.
+            return {**player.capability_attributes,
+                    **(player.extra_state_attributes if player.available else {})}
+        self.assertFalse(player.available)
+        self.assertEqual(ha_attributes()['box_color'], '#D82F38')
+        self.assertTrue(ha_attributes()['supported_test_capability'])
+        player.entry.options['box_color'] = '#12AB34'
+        self.assertEqual(ha_attributes()['box_color'], '#12AB34')
+        player.receive('Playback', 'ON')
+        self.assertEqual(ha_attributes()['box_color'], '#12AB34')
+        now[0] = 420
+        self.assertFalse(player.available)
+        self.assertEqual(ha_attributes()['box_color'], '#12AB34')
+        self.assertNotIn('box_online', ha_attributes())
+        fresh = type(player)(player.entry, None)
+        self.assertFalse(fresh.available)
+        self.assertEqual(fresh.capability_attributes['box_color'], '#12AB34')
