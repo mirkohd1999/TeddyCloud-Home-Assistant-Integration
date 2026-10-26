@@ -28,6 +28,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     register_library_websockets(hass)
     from .media_player import BoxPlayer
     catalog = data.setdefault("online_catalog", OnlineCatalog(hass))
+    if "library_catalog_task" not in data:
+        data["library_catalog_task"] = hass.async_create_background_task(
+            data["library"].async_refresh_catalog(catalog), "TeddyCloud library catalog refresh"
+        )
     player = BoxPlayer(entry, catalog)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = player
     prefix = entry.data[CONF_PREFIX].strip('/')
@@ -39,6 +43,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         field = message.topic.rsplit('/', 1)[-1]
         if field in FIELDS:
             player.receive(field, message.payload, retained=getattr(message, "retain", False))
+        else:
+            player.note_message(retained=getattr(message, "retain", False))
 
     await hass.config_entries.async_forward_entry_setups(entry, ["media_player", "number", "sensor"])
     try:

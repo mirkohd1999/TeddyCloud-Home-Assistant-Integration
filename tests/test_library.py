@@ -35,6 +35,9 @@ modules = {
 modules["homeassistant.helpers.storage"].Store = FakeStore
 modules["homeassistant.helpers.dispatcher"].async_dispatcher_send = lambda hass, name, id: events.append((name, id))
 modules["library_unit_pkg.const"].DOMAIN = "teddycloud_homeassistant"
+modules["library_unit_pkg.const"].CONF_BOX_COLOR = "box_color"
+modules["library_unit_pkg.const"].CONF_BOX_NAME = "box_name"
+modules["library_unit_pkg.const"].DEFAULT_COLOR = "#8f77c7"
 sys.modules.update(modules)
 
 path = Path(__file__).resolve().parents[1] / "custom_components" / "teddycloud_homeassistant" / "library.py"
@@ -155,6 +158,69 @@ class TestLibrary(unittest.TestCase):
             for index, title in enumerate(("Startup", "Jingle Bells", "System Sounds of Nature", "Unbekannter Tonie")):
                 await lib.async_seen("box", f"figure{index}", title=title)
             self.assertEqual(len(lib.public_entries()), 5)
+        asyncio.run(run())
+
+    def test_frequency_aliases_custom_data_and_group_delete(self):
+        async def run():
+            lib = await self.load()
+            await lib.async_seen("red", "111", title="Same episode", box_color="#D82F38")
+            await lib.async_edit("111", title="My title", image="https://example.test/my.png")
+            await lib.async_seen("blue", "222", title="Same episode", box_color="#78C9E5")
+            await lib.async_edit("222", duration_seconds=2400)
+            await lib.async_seen("red", "333", title="Different episode")
+            # Same title alone never merges two records.
+            self.assertEqual(len(lib.public_entries()), 3)
+            await lib.async_metadata("111", audio_ids=["111", "222"])
+            items = lib.public_entries()
+            self.assertEqual(len(items), 2)
+            self.assertEqual(items[0]["times_seen"], 2)
+            self.assertEqual(items[0]["title"], "My title")
+            self.assertEqual(items[0]["image"], "https://example.test/my.png")
+            self.assertEqual(items[0]["duration_seconds"], 2400)
+            self.assertEqual(len(lib._entries), 3)  # Lossless projection.
+            self.assertEqual(items[0]["last_heard_boxes"][0]["box_id"], "blue")
+            lib = await self.load()
+            self.assertEqual(lib.public_entries()[0]["times_seen"], 2)
+            await lib.async_edit("111", title="Updated")
+            self.assertEqual(lib.custom_metadata("222")["title"], "Updated")
+            await lib.async_delete("111")
+            self.assertEqual([x["audio_id"] for x in lib.public_entries()], ["333"])
+            lib = await self.load()
+            await lib.async_seen("new", "222", retained=True)
+            self.assertEqual(len(lib.public_entries()), 1)
+        asyncio.run(run())
+
+    def test_last_box_colors_retained_messages_and_system_sounds(self):
+        async def run():
+            lib = await self.load()
+            await lib.async_seen("red", "111", title="Real", box_color="#D82F38")
+            await lib.async_seen("blue", "111", title="Real", box_color="#78C9E5")
+            await lib.async_seen("red", "sound", title="System sounds de-de - Jingle (Startup)")
+            lib = await self.load()
+            await lib.async_seen("red", "111", retained=True)
+            item = lib.public_entries()[0]
+            self.assertEqual(item["times_seen"], 2)
+            self.assertEqual(len(item["last_heard_boxes"]), 2)
+            self.hass.config_entries = types.SimpleNamespace(async_entries=lambda domain: [
+                types.SimpleNamespace(entry_id="red", data={"box_name":"Bedroom", "box_color":"#D82F38"}, options={"box_color":"#123456"})
+            ])
+            boxes = {b["box_id"]: b for b in lib.public_entries()[0]["last_heard_boxes"]}
+            self.assertEqual(boxes["red"]["color"], "#123456")
+            self.assertEqual(boxes["red"]["name"], "Bedroom")
+        asyncio.run(run())
+
+    def test_catalog_backfills_existing_aliases(self):
+        async def run():
+            lib = await self.load()
+            await lib.async_edit("111", title="Own title")
+            await lib.async_edit("222", image="https://example.test/own.png")
+            class Catalog:
+                async def find(self, audio_id):
+                    return {"catalog_title":"Episode", "audio_ids":["111", "222"]}
+            await lib.async_refresh_catalog(Catalog())
+            self.assertEqual(len(lib.public_entries()), 1)
+            self.assertEqual(lib.public_entries()[0]["title"], "Own title")
+            self.assertEqual(lib.public_entries()[0]["image"], "https://example.test/own.png")
         asyncio.run(run())
 
     def test_safe_image_upload_and_validation(self):

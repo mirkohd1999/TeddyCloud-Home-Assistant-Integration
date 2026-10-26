@@ -164,6 +164,14 @@ type: custom:teddycloud-tonie-library-card
 
 Die Audio-ID wird nicht in den Kacheln angezeigt. Beim Bearbeiten findest du sie unter den eingeklappten **Technischen Details**. Beim manuellen Hinzufügen ist sie ein Pflichtfeld.
 
+### Häufigkeit, letzte Figur und doppelte Einträge
+
+Die häufigsten Tonies stehen oben. Gezählt werden neue Erkennungen/Aufstellungen, keine vollständig gehörten Durchläufe. Zwischengespeicherte MQTT-Meldungen erhöhen den Zähler nicht.
+
+Der zuletzt erkannte Tonie jeder Box erhält einen Rahmen in deren eingestellter Farbe. Nutzen mehrere Boxen denselben Tonie zuletzt, erscheinen mehrere Farbringe. Diese Zuordnung bleibt nach einem Neustart gespeichert; sie entsteht ab der nächsten neuen Erkennung. System-Sounds verdrängen keinen echten Tonie als letzte Figur.
+
+Audio-IDs, die der Online-Katalog ausdrücklich demselben Inhalt zuordnet, erscheinen als eine Karte. Zähler werden summiert und eigene Angaben bevorzugt. Die Originaldaten bleiben intern erhalten. Gleiche Titel allein reichen nicht zum Zusammenführen; unterschiedliche Folgen bleiben getrennt. Beim Start wird die vorhandene Sammlung im Hintergrund mit dem Katalog abgeglichen. Ohne erreichbaren Katalog oder eindeutige Zuordnung können doppelte Einträge zunächst bestehen bleiben.
+
 ### Berechtigungen
 
 | Aktion | Administratoren | Normale angemeldete Nutzer |
@@ -208,6 +216,12 @@ Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet
 
 ## Fehlerbehebung
 
+### Toniebox offline
+
+Nach **5 Minuten ohne frische MQTT-Meldung** wird der Media-Player nicht verfügbar und die Toniebox-Karte zeigt **„Toniebox offline“**. Die nächste frische Nachricht setzt die Box wieder online. Gespeicherte Retained-Meldungen gelten nicht als Lebenszeichen.
+
+Die Wartezeit ist pro Box unter **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren → Offline nach ausbleibenden MQTT-Meldungen** von **1 bis 120 Minuten** einstellbar. Eine eingeschaltete, aber stille Box kann dadurch als offline gelten; die Anzeige ist eine zeitbasierte Einschätzung.
+
 ### Toniebox wird nicht gefunden
 
 Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem passenden Präfix und der richtigen Box-ID eintreffen. Bei Bedarf die Box manuell hinzufügen.
@@ -217,7 +231,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v040.js?v=0.4.2
+/teddycloud-homeassistant/card-v050.js?v=0.5.0
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.

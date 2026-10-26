@@ -64,7 +64,8 @@
           "fallback_cover": "Fallback cover URL",
           "catalog": "Custom catalog JSON",
           "teddycloud_url": "TeddyCloud address for cover images",
-          "online_images": "Automatically find figurine images online"
+          "online_images": "Automatically find figurine images online",
+          "offline_timeout": "Offline after no new MQTT messages (minutes, 1–120)"
         }
       }
     },

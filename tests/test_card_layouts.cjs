@@ -297,3 +297,28 @@ assert.equal(sameWindow.customCards.filter(x => x.type === 'teddycloud-homeassis
 vm.runInNewContext(assetCode, freshContext());
 assert.equal(sameWindow.customCards.filter(x => x.type === 'teddycloud-tonie-library-card').length,1);
 console.log('Dashboard layout, editor and Tonie library tests passed.');
+
+// Offline state is clear in every player layout, not stale "playing" text.
+for (const mode of ['all','player','compact','artwork','tiles','status','custom']) {
+  const offlineCard = new Card();
+  offlineCard.setConfig({entity:'media_player.test',mode});
+  const previous = hass.states['media_player.test'];
+  offlineCard.hass = {states:{...hass.states,'media_player.test':{
+    ...previous,state:'unavailable',attributes:{...previous.attributes,box_online:false}
+  }}};
+  assert.ok(offlineCard.shadowRoot.innerHTML.includes('Toniebox offline'),mode);
+  assert.ok(!offlineCard.shadowRoot.innerHTML.includes('Wiedergabe gemeldet'),mode);
+  offlineCard.hass = hass;
+  assert.ok(!offlineCard.shadowRoot.innerHTML.includes('Toniebox offline'),mode);
+}
+const highlighted = new LibraryCard();
+highlighted.setConfig({});
+highlighted._entries = [{audio_id:'1',title:'Recent',times_seen:3,last_heard_boxes:[
+  {name:'Bedroom',color:'#D82F38'}, {name:'Kitchen',color:'#78C9E5'},
+  {name:'Bad',color:'red; background:url(bad)'}
+]}];
+highlighted.render();
+assert.ok(highlighted.shadowRoot.innerHTML.includes('0 0 0 3px #D82F38,0 0 0 6px #78C9E5'));
+assert.ok(highlighted.shadowRoot.innerHTML.includes('Zuletzt gehört: Bedroom, Kitchen'));
+assert.ok(!highlighted.shadowRoot.innerHTML.includes('background:url(bad)'));
+console.log('Offline layouts and multi-box highlights passed.');

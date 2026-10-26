@@ -177,6 +177,7 @@ class TeddyCloudOptionsFlow(config_entries.OptionsFlow):
         return vol.Schema({
             vol.Required(CONF_BOX_COLOR, default=current.get(CONF_BOX_COLOR, self.config_entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR))): str,
             vol.Required("online_images", default=current.get("online_images", True)): bool,
+            vol.Required("offline_timeout", default=current.get("offline_timeout", 5)): vol.All(vol.Coerce(int), vol.Range(min=1, max=120)),
             vol.Optional(CONF_FALLBACK_COVER, default=current.get(CONF_FALLBACK_COVER, "")): str,
             vol.Optional("teddycloud_url", default=current.get("teddycloud_url", "")): str,
             vol.Required(CONF_CATALOG, default=current.get(CONF_CATALOG, "{}")): str,
