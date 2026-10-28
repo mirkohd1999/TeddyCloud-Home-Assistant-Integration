@@ -216,6 +216,12 @@ Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet
 
 ## Fehlerbehebung
 
+### Sprache der Dashboard-Karten
+
+Die Player-Karte, Tonie-Bibliothek und Karteneditoren folgen automatisch der Sprache deines Home-Assistant-Profils. Bei **Englisch** (auch `en-GB` und `en-US`) erscheinen die Bedienelemente auf Englisch. Bei Deutsch und anderen Sprachen bleibt Deutsch die Standardsprache. Die Browsersprache wird dafür nicht verwendet.
+
+Jeder Nutzer sieht seine eigene Sprache. Hörspieltitel, Figurennamen und selbst vergebene Boxnamen werden nicht übersetzt. Eine zusätzliche Einstellung in der Karte ist nicht nötig.
+
 ### Toniebox offline
 
 Die Offline-Erkennung verwendet den von TeddyCloud gemeldeten Zeitpunkt **LastSeen**. Wiederholte MQTT-Meldungen mit demselben alten Zeitpunkt halten die Box nicht online. Fehlt ein gültiger LastSeen-Wert, dient der Empfang frischer MQTT-Meldungen als Ersatz.
@@ -235,7 +241,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v050.js?v=0.5.3
+/teddycloud-homeassistant/card-v054.js?v=0.5.4
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.

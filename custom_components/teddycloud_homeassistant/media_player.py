@@ -304,12 +304,15 @@ class BoxPlayer(MediaPlayerEntity):
         except (ValueError, AttributeError, TypeError):
             return {}
 
+    def _known_media_title(self):
+        library_title = self._library.custom_metadata(self._values.get('ContentAudioId')) if self._library else {}
+        return library_title.get('title') or self._metadata().get('title') or self._values.get('ContentTitle') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None)
+
     @property
     def media_title(self):
         if self._figure_present is False:
             return 'Keine Figur aufgestellt'
-        library_title = self._library.custom_metadata(self._values.get('ContentAudioId')) if self._library else {}
-        return library_title.get('title') or self._metadata().get('title') or self._values.get('ContentTitle') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None) or 'Unbekannter Tonie'
+        return self._known_media_title() or 'Unbekannter Tonie'
 
     @property
     def media_duration(self):
@@ -347,6 +350,7 @@ class BoxPlayer(MediaPlayerEntity):
     def extra_state_attributes(self):
         return {
             'content_audio_id': self._values.get('ContentAudioId'),
+            'media_title_is_fallback': self._figure_present is not False and not bool(self._known_media_title()),
             'box_online': self.available,
             'last_message_received': self._last_message_at,
             'offline_timeout_minutes': self._availability.timeout // 60,

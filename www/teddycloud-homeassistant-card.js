@@ -1,3 +1,152 @@
+function teddyLanguage(hass) {
+  const language = hass?.locale?.language || hass?.language || 'de';
+  return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
+}
+const TEDDY_EN = {
+  "Tonie-Bild oder Toniebox": "Tonie image or Toniebox",
+  "Titel und Boxname": "Title and box name",
+  "Wiedergabestatus": "Playback status",
+  "Ladestation": "Charging station",
+  "Laufzeit / Fortschritt": "Duration / progress",
+  "Aktuelle Lautstärke": "Current volume",
+  "Lautsprecher-Limit": "Speaker limit",
+  "Kopfhörer-Limit": "Headphone limit",
+  "LED-Helligkeit": "LED brightness",
+  "Ohrtasten-Ereignisse": "Ear button events",
+  "Toniebox offline": "Toniebox offline",
+  "Keine Figur aufgestellt": "No figurine placed",
+  "Toniebox auswählen": "Select Toniebox",
+  "Noch keine Titelinformationen": "No title information yet",
+  "Keine aktuellen Meldungen": "No recent updates",
+  "Auf Ladestation": "On charging station",
+  "Nicht auf Ladestation": "Not on charging station",
+  "Ladestatus unbekannt": "Charging status unknown",
+  "Unbekannter Tonie": "Unknown Tonie",
+  "Unbekannt": "Unknown",
+  "unbekannt": "unknown",
+  "Aus": "Off",
+  "Gedimmt": "Dimmed",
+  "An": "On",
+  "Tonie-Cover": "Tonie cover",
+  "Toniebox mit Tonie-Figur": "Toniebox with Tonie figurine",
+  "Erkanntes Tonie-Bild": "Detected Tonie image",
+  "Tonie-Bild": "Tonie image",
+  "Einfach": "Single",
+  "Doppelt": "Double",
+  "Dreifach": "Triple",
+  "Noch kein Tastendruck": "No button press yet",
+  "Figur abgenommen": "Figurine removed",
+  "Keine Wiedergabe gemeldet": "No playback reported",
+  "Wiedergabe gemeldet": "Playback reported",
+  "Fortschritt geschätzt": "Estimated progress",
+  "Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.": "Duration unknown – you can add it to the figurine catalog.",
+  "Laufzeit unbekannt": "Duration unknown",
+  "Großes Ohr": "Large ear",
+  "Kleines Ohr": "Small ear",
+  "Keine Bausteine ausgewählt – im Karteneditor auswählen.": "No sections selected – choose them in the card editor.",
+  "Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert": "Progress estimated from the MQTT event, not an actual playback position",
+  "Toniebox-Einstellungen": "Toniebox settings",
+  "Alles": "All",
+  "Toniebox und Einstellungen": "Toniebox and settings",
+  "Musik": "Music",
+  "Bild und Titel": "Image and title",
+  "Kompakt": "Compact",
+  "Schmale Leiste": "Slim bar",
+  "Großes Bild": "Large image",
+  "Tonie im Mittelpunkt": "Focus on the Tonie",
+  "Übersichtliche Kacheln": "Clear tiles",
+  "Kacheln": "Tiles",
+  "Alle wichtigen Infos": "All key information",
+  "Einstellungen": "Settings",
+  "Lautstärkelimits und LED": "Volume limits and LED",
+  "Selbst gestalten": "Customize",
+  "Eigene Bausteine wählen": "Choose your sections",
+  "1. Deine Toniebox": "1. Your Toniebox",
+  "Wähle die Toniebox aus. Mehr musst du dafür nicht einstellen.": "Select your Toniebox. No other settings are needed.",
+  "Keine Toniebox erkannt? Unten unter „Weitere Einstellungen“ kannst du die Entitäts-ID eingeben.": "No Toniebox detected? Enter its entity ID under “More settings” below.",
+  "2. So soll deine Karte aussehen": "2. Choose your card layout",
+  "Einfach eine Ansicht antippen – rechts siehst du sofort die Vorschau.": "Tap a layout to preview it on the right.",
+  "Dashboard-Ansicht wählen": "Choose dashboard layout",
+  "3. Deine Bausteine": "3. Your sections",
+  "Wähle nur das aus, was du sehen möchtest.": "Select only what you want to see.",
+  "Bausteine aktiv.": "sections enabled.",
+  "Für jeden Baustein kannst du rechts die Breite einstellen.": "Set each section’s width on the right.",
+  "Für eigene Breiten „Kacheln“ auswählen.": "Select “Tiles” to customize widths.",
+  "Anordnung": "Arrangement",
+  "Untereinander": "Stacked",
+  "Spalten": "Columns",
+  "Weitere Einstellungen (optional)": "More settings (optional)",
+  "Eigener Anzeigename": "Custom display name",
+  "z. B. Kinderzimmer": "e.g. Kids’ room",
+  "Toniebox-Farbe": "Toniebox color",
+  "Bild anzeigen als": "Display image as",
+  "Automatisch": "Automatic",
+  "Figur auf Toniebox": "Figurine on Toniebox",
+  "Nur Coverbild": "Cover image only",
+  "Toniebox mit Figur anzeigen": "Show Toniebox with figurine",
+  "Entitäts-ID manuell eingeben (nur bei Bedarf)": "Enter entity ID manually (only if needed)",
+  "TeddyCloud Karteneditor · Auswahl wird automatisch in die Kartenvorschau übernommen": "TeddyCloud card editor · Changes appear automatically in the preview",
+  "Volle Breite": "Full width",
+  " Spalte": " column",
+  " Spalten": " columns",
+  " Breite": " width",
+  " nach oben": " move up",
+  " nach unten": " move down",
+  "Bitte ein JPG-, PNG- oder WebP-Bild unter 2 MB auswählen.": "Please select a JPG, PNG or WebP image under 2 MB.",
+  "Bild ausgewählt: ": "Image selected: ",
+  "Bild konnte nicht geladen werden": "Could not load image",
+  "Bibliothek nicht erreichbar. Ist die Integration aktualisiert und Home Assistant neu gestartet? ": "Library unavailable. Have you updated the integration and restarted Home Assistant? ",
+  "Bitte eine gültige Audio-ID eingeben.": "Please enter a valid audio ID.",
+  "Bitte eine Laufzeit zwischen 0 und 1440 Minuten eingeben.": "Please enter a duration between 0 and 1440 minutes.",
+  "Tonie bearbeiten": "Edit Tonie",
+  "Tonie hinzufügen": "Add Tonie",
+  "Technische Details": "Technical details",
+  "Audio-ID des Tonies": "Tonie audio ID",
+  "Audio-ID": "Audio ID",
+  "Titel des Hörspiels": "Audio story title",
+  "Titel": "Title",
+  "Hörspiellänge in Minuten": "Duration in minutes",
+  "z. B. 45": "e.g. 45",
+  "Figurenbild (Bildadresse, optional)": "Figurine image (image URL, optional)",
+  "https://… oder /local/…": "https://… or /local/…",
+  "Oder Bild direkt vom Gerät auswählen": "Or select an image from your device",
+  "JPG, PNG oder WebP · maximal 2 MB": "JPG, PNG or WebP · up to 2 MB",
+  "Abbrechen": "Cancel",
+  "Änderungen speichern": "Save changes",
+  "Tonie suchen": "Search Tonies",
+  "Tonies suchen …": "Search Tonies …",
+  "Bibliothek wird geladen …": "Loading library …",
+  "Noch keine Tonies gespeichert. Stelle eine Figur auf die Toniebox, damit sie automatisch hier erscheint.": "No Tonies saved yet. Place a figurine on your Toniebox to add it automatically.",
+  "Zuletzt gehört: ": "Last played: ",
+  "Schon ": "Detected ",
+  "× erkannt": "×",
+  "Zuletzt erkannt: ": "Last detected: ",
+  "Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.": "Delete this Tonie from your library? It will be added again when you place it on the box.",
+  "Ja, löschen": "Yes, delete",
+  "Bearbeiten": "Edit",
+  "Löschen": "Delete",
+  "Meine Tonie-Bibliothek": "My Tonie library",
+  "Deine Figuren – automatisch gesammelt": "Your figurines – collected automatically",
+  " – Bearbeiten möglich": " – Editing available",
+  "Die Tonie-Bibliothek wird direkt in der Dashboard-Karte verwaltet. Hier musst du nichts einstellen.": "Manage your Tonie library directly in the dashboard card. No settings are needed here.",
+  " Min.": " min"
+};
+Object.assign(TEDDY_EN, {
+  "Tonie-Bibliothek nicht bereit": "Tonie library is not ready",
+  "Nur Administratoren dürfen Tonies hinzufügen oder bearbeiten": "Only administrators can add or edit Tonies",
+  "Bild zu groß (maximal 2 MB)": "Image too large (maximum 2 MB)",
+  "Bitte ein JPG-, PNG- oder WebP-Bild auswählen": "Please select a JPG, PNG or WebP image",
+  "Bilddatei konnte nicht gelesen werden": "Could not read the image file",
+  "Bild muss kleiner als 2 MB sein": "Image must be smaller than 2 MB",
+  "Ungültige Bilddatei": "Invalid image file",
+  "Ungültige Audio-ID": "Invalid audio ID",
+  "Titel darf maximal 200 Zeichen haben": "Title must not exceed 200 characters",
+  "Bildadresse muss http(s) oder /local/ verwenden": "Image URL must use http(s) or /local/",
+  "Laufzeit muss zwischen 0 und 86400 Sekunden liegen": "Duration must be between 0 and 86400 seconds"
+});
+function teddyText(hass, key) {
+  return teddyLanguage(hass) === 'en' ? (TEDDY_EN[key] ?? key) : key;
+}
 /* Dashboard building blocks. Older card configurations keep their original layout. */
 const TEDDY_SECTIONS = [
   ['artwork', '🧸 Tonie-Bild oder Toniebox'],
@@ -11,6 +160,10 @@ const TEDDY_SECTIONS = [
   ['led', '💡 LED-Helligkeit'],
   ['ears', '👂 Ohrtasten-Ereignisse']
 ];
+for (const [, label] of TEDDY_SECTIONS) {
+  const text = label.slice(label.indexOf(' ') + 1);
+  if (TEDDY_EN[text]) TEDDY_EN[label] = label.slice(0, label.indexOf(' ') + 1) + TEDDY_EN[text];
+}
 const TEDDY_SECTION_IDS = TEDDY_SECTIONS.map(([id]) => id);
 const TEDDY_DEFAULT_SECTIONS = [...TEDDY_SECTION_IDS];
 const TEDDY_MODE_SECTIONS = {
@@ -25,6 +178,7 @@ function teddySelectedSections(config) {
 }
 /* TeddyCloud Home Assistant Integration — custom Lovelace card (no build tooling). */
 class TeddyCloudNowPlayingCard extends HTMLElement {
+  _t(key) { return teddyText(this._hass, key); }
   setConfig(config) {
     // Allow editing and saving the card while the Toniebox is offline.
     this.config = config;
@@ -96,7 +250,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const e = this._hass?.states?.[this.config.entity];
     const attr = e?.attributes || {};
     const offline = e?.state === 'unavailable' || attr.box_online === false;
-    const title = offline ? 'Toniebox offline' : attr.figure_present === false ? 'Keine Figur aufgestellt' : (attr.media_title || (!e ? 'Toniebox auswählen' : 'Noch keine Titelinformationen'));
+    const title = offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Keine Figur aufgestellt") : ((attr.media_title_is_fallback ? this._t('Unbekannter Tonie') : attr.media_title) || (!e ? this._t("Toniebox auswählen") : this._t("Noch keine Titelinformationen")));
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
     const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || '');
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
@@ -108,7 +262,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const showFigure = artworkMode === 'figure' || (artworkMode === 'auto' && !!this.config.figure_image);
     const mode = ['all', 'player', 'settings', 'compact', 'artwork', 'status', 'tiles', 'custom'].includes(this.config.mode) ? this.config.mode : 'all';
     const charger = String(attr.charger ?? '').trim().toUpperCase();
-    const chargerText = offline ? 'Keine aktuellen Meldungen' : ['ON','1','TRUE'].includes(charger) ? '🔌 Auf Ladestation' : ['OFF','0','FALSE'].includes(charger) ? '🔋 Nicht auf Ladestation' : '🔋 Ladestatus unbekannt';
+    const chargerText = offline ? this._t("Keine aktuellen Meldungen") : ['ON','1','TRUE'].includes(charger) ? '🔌 ' + this._t("Auf Ladestation") + '' : ['OFF','0','FALSE'].includes(charger) ? '🔋 ' + this._t("Nicht auf Ladestation") + '' : '🔋 ' + this._t("Ladestatus unbekannt") + '';
     const playing = !offline && e?.state === 'playing';
     const started = attr.estimated_playback_started ? Date.parse(attr.estimated_playback_started) : NaN;
     const elapsed = playing && Number.isFinite(started) ? Math.max(0,(Date.now()-started)/1000) : null;
@@ -120,25 +274,25 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const safeBoxURL = /^(https?:\/\/|\/local\/)/i.test(boxImage) ? safe(boxImage) : '';
     const showCover = Boolean(url) && (artworkMode === 'cover' || !showFigure);
     const controlRows = [
-      ['speaker_entity', 'Lautsprecher-Lautstärkelimit', 'Lautsprecher-Limit', [25,50,75,100], '🔊'],
-      ['headphone_entity', 'Kopfhörer-Lautstärkelimit', 'Kopfhörer-Limit', [25,50,75,100], '🎧'],
+      ['speaker_entity', 'Lautsprecher-Lautstärkelimit', this._t("Lautsprecher-Limit"), [25,50,75,100], '🔊'],
+      ['headphone_entity', 'Kopfhörer-Lautstärkelimit', this._t("Kopfhörer-Limit"), [25,50,75,100], '🎧'],
       ['led_entity', 'LED-Helligkeit', 'LED-Helligkeit', [0,50,100], '☀️']
     ].map(([key, suffix, label, values, icon]) => {
       const id = this.resolveNumber(key, suffix);
       const state = id ? this._hass?.states?.[id] : null;
       const value = state && Number(state.state);
       const valid = state && state.state !== 'unknown' && state.state !== 'unavailable' && Number.isFinite(value);
-      const labels = values.map(v => key === 'led_entity' ? ({0:'Aus',50:'Gedimmt',100:'An'}[v]) : v+' %');
-      return `<div class="setting"><div class="setting-head"><span>${icon} ${safe(label)}</span><strong>${valid ? value+' %' : 'Unbekannt'}</strong></div>
+      const labels = values.map(v => key === 'led_entity' ? ({0:this._t("Aus"),50:this._t("Gedimmt"),100:this._t("An")}[v]) : v+' %');
+      return `<div class="setting"><div class="setting-head"><span>${icon} ${safe(this._t(label))}</span><strong>${valid ? value+' %' : this._t("Unbekannt")}</strong></div>
       <input type="range" data-control="${safe(key)}" data-entity="${safe(id || '')}" min="${values[0]}" max="${values[values.length-1]}" step="${values[1]-values[0]}" value="${valid ? value : values[0]}" ${valid ? '' : 'disabled'}>
       <div class="ticks">${labels.map(x => `<span>${safe(x)}</span>`).join('')}</div></div>`;
     });
     const controls = controlRows.join('');
-    const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="Tonie-Cover" loading="eager">` : composition ? `<div class="stage" aria-label="Toniebox mit Tonie-Figur">
+    const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
-      ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="Erkanntes Tonie-Bild" loading="eager" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">` : ''}
+      ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">` : ''}
       <div class="figure-fallback" style="display:${safeURL?'none':'grid'}">🧸</div>
-    </div>` : (safeURL ? `<img class="art" src="${safeURL}" alt="Tonie-Bild">` : `<div class="art placeholder">🧸</div>`);
+    </div>` : (safeURL ? `<img class="art" src="${safeURL}" alt="${this._t("Tonie-Bild")}">` : `<div class="art placeholder">🧸</div>`);
 
     // Additional presets and the configurable dashboard builder. Legacy
     // all/player/settings are intentionally left untouched for existing cards.
@@ -148,7 +302,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       const volumeText = volumeRaw !== null && volumeRaw !== undefined &&
         String(volumeRaw).trim() !== '' && Number.isInteger(volumeNumber) &&
         volumeNumber >= 0 && volumeNumber <= 16
-        ? Math.round(volumeNumber * 100 / 16) + ' %' : 'Unbekannt';
+        ? Math.round(volumeNumber * 100 / 16) + ' %' : this._t("Unbekannt");
       const boxName = String(e?.attributes?.friendly_name || '').replace(/ Now Playing$/, '');
       const resolveEar = (suffix) => {
         const match = Object.entries(this._hass?.states || {}).find(([id, state]) =>
@@ -158,22 +312,22 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       const earRow = (suffix, label) => {
         const state = resolveEar(suffix);
         const count = state?.attributes?.press_count;
-        const labelText = {'pressed':'Einfach','double-pressed':'Doppelt','triple-pressed':'Dreifach'}[state?.state] || 'Noch kein Tastendruck';
-        return '<div class="ear-row"><span>' + safe(label) + '</span><span>' +
+        const labelText = {'pressed':this._t("Einfach"),'double-pressed':this._t("Doppelt"),'triple-pressed':this._t("Dreifach")}[state?.state] || this._t("Noch kein Tastendruck");
+        return '<div class="ear-row"><span>' + safe(this._t(label)) + '</span><span>' +
           safe(labelText) + (Number.isInteger(count) ? ' · ' + safe(count) + '×' : '') + '</span></div>';
       };
       const smallArt = safeURL
-        ? '<img class="small-art" src="' + safeURL + '" alt="Tonie-Bild" loading="lazy">'
+        ? '<img class="small-art" src="' + safeURL + '" alt="' + this._t("Tonie-Bild") + '" loading="lazy">'
         : '<div class="small-art fallback-art">🧸</div>';
       const titleMarkup = '<div class="board-name">' + safe(this.config.name || e?.attributes?.friendly_name || 'Toniebox') +
         '</div><div class="board-track">' + safe(title) + '</div>';
-      const playText = offline ? 'Toniebox offline' : attr.figure_present === false ? 'Figur abgenommen' :
-        playing ? 'Wiedergabe gemeldet' : 'Keine Wiedergabe gemeldet';
+      const playText = offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Figur abgenommen") :
+        playing ? this._t("Wiedergabe gemeldet") : this._t("Keine Wiedergabe gemeldet");
       const progressMarkup = dur
         ? '<div class="board-bar"><div class="board-fill" style="width:' + progress.toFixed(2) +
           '%"></div></div><div class="board-times"><span>' + (elapsed===null?'–':this.fmt(Math.min(elapsed,dur))) +
-          '</span><span>' + this.fmt(dur) + '</span></div><div class="board-note">Fortschritt geschätzt</div>'
-        : '<div class="board-note">Laufzeit unbekannt</div>';
+          '</span><span>' + this.fmt(dur) + '</span></div><div class="board-note">' + this._t("Fortschritt geschätzt") + '</div>'
+        : '<div class="board-note">' + this._t("Laufzeit unbekannt") + '</div>';
       const modules = {
         artwork: mode === 'compact' ? smallArt : '<div class="board-artwork-media">' + artBlock + '</div>',
         title: titleMarkup,
@@ -185,8 +339,8 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         headphone: controlRows[1],
         led: controlRows[2],
         ears: '<div class="ear-list">' +
-          earRow('Großes Ohr (lauter)', 'Großes Ohr') +
-          earRow('Kleines Ohr (leiser)', 'Kleines Ohr') + '</div>'
+          earRow('Großes Ohr (lauter)', this._t("Großes Ohr")) +
+          earRow('Kleines Ohr (leiser)', this._t("Kleines Ohr")) + '</div>'
       };
       const selected = mode === 'custom' ? teddySelectedSections(this.config) :
         TEDDY_MODE_SECTIONS[mode];
@@ -207,7 +361,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         // An artwork heading used to push the image sideways because the
         // artwork container and section shared one CSS class.
         const labelHtml = id === 'artwork' ? '' :
-          '<div class="section-label">' + safe(label) + '</div>';
+          '<div class="section-label">' + safe(this._t(label)) + '</div>';
         return '<section class="board-section board-' + id + '"' + widthStyle +
           '>' + labelHtml + modules[id] + '</section>';
       }).join('');
@@ -258,7 +412,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         @media(max-width:640px){.board.grid{grid-template-columns:1fr}.board.grid .board-section{grid-column:1/-1}}
         @media(max-width:370px){ha-card{padding:9px}.board-section{padding:9px}.board-track{font-size:16px}}
       </style><ha-card><div class="board ${layout}" style="--board-cols:${cols}">${items ||
-        '<div class="board-note">Keine Bausteine ausgewählt – im Karteneditor auswählen.</div>'}</div></ha-card>`;
+        '<div class="board-note">' + this._t("Keine Bausteine ausgewählt – im Karteneditor auswählen.") + '</div>'}</div></ha-card>`;
       return;
     }
     this.shadowRoot.innerHTML = `<style>
@@ -291,10 +445,10 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .settings .panel{margin-top:0;padding-top:0;border-top:0}
     </style><ha-card class="${mode}"><div class="flex">${artBlock}
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud Home Assistant Integration')}</div><div class="title">${safe(title)}</div>
-    <div class="state"><i class="dot"></i>${offline ? 'Toniebox offline' : attr.figure_present === false ? 'Figur abgenommen' : playing?'Wiedergabe gemeldet':'Keine Wiedergabe gemeldet'}</div><div class="state">${chargerText}</div></div></div>
-    ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert</div>` : `<div class="foot duration-foot">Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.</div>`}
-    <div class="panel"><div class="panel-title">⚙️ Toniebox-Einstellungen</div>${controls}</div>
-    <div class="foot status-foot">Aktuelle Lautstärke: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : 'unbekannt'} · ${attr.charger === 'ON' || attr.charger === '1' ? 'Auf Ladestation' : 'Toniebox'}</div>
+    <div class="state"><i class="dot"></i>${offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Figur abgenommen") : playing?this._t("Wiedergabe gemeldet"):this._t("Keine Wiedergabe gemeldet")}</div><div class="state">${chargerText}</div></div></div>
+    ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ ${this._t("Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert")}</div>` : `<div class="foot duration-foot">${this._t("Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.")}</div>`}
+    <div class="panel"><div class="panel-title">⚙️ ${this._t("Toniebox-Einstellungen")}</div>${controls}</div>
+    <div class="foot status-foot">${this._t("Aktuelle Lautstärke")}: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : this._t("unbekannt")} · ${attr.charger === 'ON' || attr.charger === '1' ? this._t("Auf Ladestation") : 'Toniebox'}</div>
     </ha-card>`;
   }
 }
@@ -302,6 +456,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
 /* Visual editor: includes unavailable entities so the box need not be running. */
 /* Simple visual editor for people who don't want to edit YAML. */
 class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
+  _t(key) { return teddyText(this._hass, key); }
   constructor() {
     super();
     this.attachShadow({mode:'open'});
@@ -332,7 +487,7 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
   set hass(value) {
     this._hass = value;
     const boxes = this._availableBoxes();
-    const fingerprint = boxes.map(([id, state]) =>
+    const fingerprint = teddyLanguage(value) + ':' + boxes.map(([id, state]) =>
       id + ':' + (state.attributes?.friendly_name || '')).join('|');
     if (fingerprint === this._fingerprint) return;
     this._fingerprint = fingerprint;
@@ -369,14 +524,14 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
       "<option value='" + escape(id) + "'" + (id === box ? " selected" : "") + ">" +
       escape(state.attributes?.friendly_name || id) + "</option>").join('');
     const presets = [
-      ['all','🧸','Alles','Toniebox und Einstellungen'],
-      ['player','🎵','Musik','Bild und Titel'],
-      ['compact','▬','Kompakt','Schmale Leiste'],
-      ['artwork','🖼️','Großes Bild','Tonie im Mittelpunkt'],
-      ['tiles','▦','Kacheln','Übersichtliche Kacheln'],
-      ['status','📊','Status','Alle wichtigen Infos'],
-      ['settings','⚙️','Einstellungen','Lautstärkelimits und LED'],
-      ['custom','🧩','Selbst gestalten','Eigene Bausteine wählen']
+      ['all','🧸',this._t("Alles"),this._t("Toniebox und Einstellungen")],
+      ['player','🎵',this._t("Musik"),this._t("Bild und Titel")],
+      ['compact','▬',this._t("Kompakt"),this._t("Schmale Leiste")],
+      ['artwork','🖼️',this._t("Großes Bild"),this._t("Tonie im Mittelpunkt")],
+      ['tiles','▦',this._t("Kacheln"),this._t("Übersichtliche Kacheln")],
+      ['status','📊','Status',this._t("Alle wichtigen Infos")],
+      ['settings','⚙️',this._t("Einstellungen"),this._t("Lautstärkelimits und LED")],
+      ['custom','🧩',this._t("Selbst gestalten"),this._t("Eigene Bausteine wählen")]
     ];
     const presetHtml = presets.map(([id, icon, name, description]) =>
       "<button type='button' class='preset" + (mode === id ? " selected" : "") +
@@ -422,52 +577,52 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
       ".missing{font-size:12px;color:var(--warning-color,#d18b2f)}",
       "@media(max-width:380px){.preset-grid{grid-template-columns:1fr}.custom-tools{grid-template-columns:1fr}}",
       "</style>",
-      "<section class='step'><h3>1. Deine Toniebox</h3>",
-      "<div class='help'>Wähle die Toniebox aus. Mehr musst du dafür nicht einstellen.</div>",
-      "<select id='entity' aria-label='Toniebox auswählen'><option value=''>– Toniebox auswählen –</option>",
+      "<section class='step'><h3>" + this._t("1. Deine Toniebox") + "</h3>",
+      "<div class='help'>" + this._t("Wähle die Toniebox aus. Mehr musst du dafür nicht einstellen.") + "</div>",
+      "<select id='entity' aria-label='" + this._t("Toniebox auswählen") + "'><option value=''>– " + this._t("Toniebox auswählen") + " –</option>",
       options,"</select>",
-      choices.length === 0 ? "<div class='missing'>Keine Toniebox erkannt? Unten unter „Weitere Einstellungen“ kannst du die Entitäts-ID eingeben.</div>" : "",
+      choices.length === 0 ? "<div class='missing'>" + this._t("Keine Toniebox erkannt? Unten unter „Weitere Einstellungen“ kannst du die Entitäts-ID eingeben.") + "</div>" : "",
       "</section>",
-      "<section class='step'><h3>2. So soll deine Karte aussehen</h3>",
-      "<div class='help'>Einfach eine Ansicht antippen – rechts siehst du sofort die Vorschau.</div>",
-      "<div class='preset-grid' role='group' aria-label='Dashboard-Ansicht wählen'>",
+      "<section class='step'><h3>" + this._t("2. So soll deine Karte aussehen") + "</h3>",
+      "<div class='help'>" + this._t("Einfach eine Ansicht antippen – rechts siehst du sofort die Vorschau.") + "</div>",
+      "<div class='preset-grid' role='group' aria-label='" + this._t("Dashboard-Ansicht wählen") + "'>",
       presetHtml,"</div></section>",
       custom ? [
-        "<section class='step'><h3>3. Deine Bausteine</h3>",
-        "<div class='help'>Wähle nur das aus, was du sehen möchtest. ",
-        selected, " Bausteine aktiv. ",layout === 'grid' ?
-          'Für jeden Baustein kannst du rechts die Breite einstellen.' :
-          'Für eigene Breiten „Kacheln“ auswählen.',"</div>",
-        "<div class='custom-tools'><div class='field'><label for='layout'>Anordnung</label>",
+        "<section class='step'><h3>" + this._t("3. Deine Bausteine") + "</h3>",
+        "<div class='help'>" + this._t("Wähle nur das aus, was du sehen möchtest.") + " ",
+        selected, " " + this._t("Bausteine aktiv.") + " ",layout === 'grid' ?
+          this._t("Für jeden Baustein kannst du rechts die Breite einstellen.") :
+          this._t("Für eigene Breiten „Kacheln“ auswählen."),"</div>",
+        "<div class='custom-tools'><div class='field'><label for='layout'>" + this._t("Anordnung") + "</label>",
         "<select id='layout'><option value='grid'", layout === 'grid' ? " selected" : "",
-        ">Kacheln</option><option value='stack'",layout === 'stack' ? " selected" : "",
-        ">Untereinander</option></select></div>",
+        ">" + this._t("Kacheln") + "</option><option value='stack'",layout === 'stack' ? " selected" : "",
+        ">" + this._t("Untereinander") + "</option></select></div>",
         layout === 'grid' ? [
-          "<div class='field'><label for='columns'>Spalten</label><select id='columns'>",
+          "<div class='field'><label for='columns'>" + this._t("Spalten") + "</label><select id='columns'>",
           [1,2,3].map(n => "<option value='" + n + "'" +
             (columns === n ? " selected" : "") + ">" + n + "</option>").join(''),
           "</select></div>"
         ].join('') : "",
         "</div><div class='section-editor'>", this.sectionEditorRows(escape), "</div></section>"
       ].join('') : "",
-      "<details id='advanced'",showDetails ? " open" : "","><summary>⚙️ Weitere Einstellungen (optional)</summary>",
-      "<div class='field'><label for='name'>Eigener Anzeigename</label>",
-      "<input type='text' id='name' placeholder='z. B. Kinderzimmer' value='",escape(this._config.name || ''),"'></div>",
-      "<div class='field'><label for='color'>Toniebox-Farbe</label>",
+      "<details id='advanced'",showDetails ? " open" : "","><summary>⚙️ " + this._t("Weitere Einstellungen (optional)") + "</summary>",
+      "<div class='field'><label for='name'>" + this._t("Eigener Anzeigename") + "</label>",
+      "<input type='text' id='name' placeholder='" + this._t("z. B. Kinderzimmer") + "' value='",escape(this._config.name || ''),"'></div>",
+      "<div class='field'><label for='color'>" + this._t("Toniebox-Farbe") + "</label>",
       "<input type='color' id='color' value='",escape(color),"'></div>",
-      "<div class='field'><label for='artwork_mode'>Bild anzeigen als</label>",
+      "<div class='field'><label for='artwork_mode'>" + this._t("Bild anzeigen als") + "</label>",
       "<select id='artwork_mode'>",
-      [['auto','Automatisch'],['figure','Figur auf Toniebox'],['cover','Nur Coverbild']].map(([id,name]) =>
+      [['auto',this._t("Automatisch")],['figure',this._t("Figur auf Toniebox")],['cover',this._t("Nur Coverbild")]].map(([id,name]) =>
         "<option value='" + id + "'" + ((this._config.artwork_mode || 'auto') === id ? " selected" : "") + ">" +
         name + "</option>").join(''),
       "</select></div>",
       "<div class='field'><label><input type='checkbox' id='composition' ",
       this._config.composition !== false ? "checked" : "",
-      "> Toniebox mit Figur anzeigen</label></div>",
-      "<div class='field'><label for='manual'>Entitäts-ID manuell eingeben (nur bei Bedarf)</label>",
+      "> " + this._t("Toniebox mit Figur anzeigen") + "</label></div>",
+      "<div class='field'><label for='manual'>" + this._t("Entitäts-ID manuell eingeben (nur bei Bedarf)") + "</label>",
       "<input type='text' id='manual' placeholder='media_player.meine_toniebox' value='",escape(box),"'></div>",
       "</details>",
-      "<div class='version'>TeddyCloud Karteneditor v0.3.5 · Auswahl wird automatisch in die Kartenvorschau übernommen</div>"
+      "<div class='version'>" + this._t("TeddyCloud Karteneditor · Auswahl wird automatisch in die Kartenvorschau übernommen") + "</div>"
     ].join('');
     const element = id => this.shadowRoot.getElementById(id);
     element('entity').addEventListener('change', e => this.change('entity', e.target.value));
@@ -512,22 +667,22 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
         ? Math.min(columns, configured) : 1;
       const widthSelect = grid && index >= 0 ? (
         "<select class='width-choice' data-width='" + escape(id) +
-        "' aria-label='" + escape(label) + " Breite'>" +
+        "' aria-label='" + escape(this._t(label)) + "" + this._t(" Breite") + "'>" +
         Array.from({length:columns}, (_, i) => {
           const n = i + 1;
-          const option = n === columns && n > 1 ? 'Volle Breite' :
-            n + (n === 1 ? ' Spalte' : ' Spalten');
+          const option = n === columns && n > 1 ? this._t("Volle Breite") :
+            n + (n === 1 ? this._t(" Spalte") : this._t(" Spalten"));
           return "<option value='" + n + "'" + (n === current ? ' selected' : '') +
             ">" + option + "</option>";
         }).join('') + "</select>"
       ) : '';
       return "<div class='section-row'><label><input type='checkbox' data-section='" +
-        escape(id) + "'" + (index>=0 ? " checked" : "") + "> " + escape(label) +
+        escape(id) + "'" + (index>=0 ? " checked" : "") + "> " + escape(this._t(label)) +
         "</label>" + widthSelect +
         "<button type='button' data-move='" + escape(id) +
-        "' data-step='-1' aria-label='" + escape(label) + " nach oben'" +
+        "' data-step='-1' aria-label='" + escape(this._t(label)) + "" + this._t(" nach oben") + "'" +
         (index<1 ? " disabled" : "") + ">↑</button><button type='button' data-move='" +
-        escape(id) + "' data-step='1' aria-label='" + escape(label) + " nach unten'" +
+        escape(id) + "' data-step='1' aria-label='" + escape(this._t(label)) + "" + this._t(" nach unten") + "'" +
         (index<0 || index>=selected.length-1 ? " disabled" : "") + ">↓</button></div>";
     }).join('');
   }
@@ -566,12 +721,13 @@ if (!customElements.get('teddycloud-homeassistant-card')) {
 }
 window.customCards = window.customCards || [];
 if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-card')) {
-  window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'Toniebox, Tonie-Figur, Lautstärke-Limits und LED-Helligkeit', preview:true});
+  window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'TeddyCloud Toniebox · DE / EN', preview:true});
 }
 
 
 /* Separate Tonie library card. Editing happens here, not in dashboard edit mode. */
 class TeddyCloudTonieLibraryCard extends HTMLElement {
+  _t(key) { return teddyText(this._hass, key); }
   constructor() {
     super();
     this.attachShadow({mode:'open'});
@@ -597,10 +753,11 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   }
   set hass(hass) {
     const wasAdmin = this._isAdmin;
+    const oldLanguage = teddyLanguage(this._hass);
     this._hass = hass;
     if (!this._isAdmin) { this._edit = null; this._upload = null; }
     this._subscribe();
-    if (wasAdmin !== this._isAdmin) this.render();
+    if (wasAdmin !== this._isAdmin || oldLanguage !== teddyLanguage(hass)) this.render();
   }
   connectedCallback() {
     this._connected = true;
@@ -639,7 +796,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       const file = event.target.files?.[0];
       if (!file) { this._upload = null; return; }
       if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 2097152) {
-        this._error = 'Bitte ein JPG-, PNG- oder WebP-Bild unter 2 MB auswählen.';
+        this._error = "Bitte ein JPG-, PNG- oder WebP-Bild unter 2 MB auswählen.";
         this._upload = null;
         this.render();
         return;
@@ -648,9 +805,9 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       reader.onload = () => {
         this._upload = reader.result;
         const label = this.shadowRoot.getElementById('library-upload-label');
-        if (label) label.textContent = 'Bild ausgewählt: ' + file.name;
+        if (label) label.textContent = this._t("Bild ausgewählt: ") + file.name;
       };
-      reader.onerror = () => { this._error = 'Bild konnte nicht geladen werden'; this.render(); };
+      reader.onerror = () => { this._error = "Bild konnte nicht geladen werden"; this.render(); };
       reader.readAsDataURL(file);
     });
   }
@@ -672,7 +829,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       else unsubscribe();
     }).catch(error => {
       this._subscribePromise = null;
-      this._error = 'Bibliothek nicht erreichbar. Ist die Integration aktualisiert und Home Assistant neu gestartet? ' +
+      this._error = this._t("Bibliothek nicht erreichbar. Ist die Integration aktualisiert und Home Assistant neu gestartet? ") +
         String(error?.message || error);
       this.render();
     });
@@ -689,14 +846,14 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   _image(url, className='cover') {
     const safeURL = this._safeImage(url);
     return safeURL
-      ? '<img class="' + className + '" src="' + this._escape(safeURL) + '" alt="Tonie-Bild" loading="lazy">'
+      ? '<img class="' + className + '" src="' + this._escape(safeURL) + '" alt="' + this._t("Tonie-Bild") + '" loading="lazy">'
       : '<div class="' + className + ' empty">🧸</div>';
   }
   _mins(seconds) {
     const number = Number(seconds);
     return Number.isFinite(number) && number > 0
-      ? (number / 60).toLocaleString('de-DE',{maximumFractionDigits:1}) + ' Min.'
-      : 'Laufzeit unbekannt';
+      ? (number / 60).toLocaleString(teddyLanguage(this._hass) === 'en' ? 'en-US' : 'de-DE',{maximumFractionDigits:1}) + this._t(" Min.")
+      : this._t("Laufzeit unbekannt");
   }
   _openEdit(id) {
     if (!this._isAdmin) return;
@@ -718,14 +875,14 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     const audioId = get('library-audio').trim();
     const duration = get('library-duration').trim();
     if (!/^[a-z0-9_-]{1,80}$/i.test(audioId)) {
-      this._error = 'Bitte eine gültige Audio-ID eingeben.';
+      this._error = "Bitte eine gültige Audio-ID eingeben.";
       this.render();
       return;
     }
     const minutes = duration ? Number(duration.replace(',','.')) : 0;
     const seconds = Math.round(minutes * 60);
     if (!Number.isFinite(seconds) || seconds < 0 || seconds > 86400) {
-      this._error = 'Bitte eine Laufzeit zwischen 0 und 1440 Minuten eingeben.';
+      this._error = "Bitte eine Laufzeit zwischen 0 und 1440 Minuten eingeben.";
       this.render();
       return;
     }
@@ -781,51 +938,51 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       const editing = Boolean(item.audio_id);
       const minutes = item.duration_seconds ? Math.round(Number(item.duration_seconds) / 6) / 10 : '';
       return '<section class="form-panel"><h3>' +
-        (editing ? 'Tonie bearbeiten' : 'Tonie hinzufügen') +
-        '</h3>' + (editing ? '<details class="technical"><summary>Technische Details</summary>' : '') +
-        '<div class="field"><label for="library-audio">Audio-ID</label><input id="library-audio" maxlength="80"' +
+        (editing ? this._t("Tonie bearbeiten") : this._t("Tonie hinzufügen")) +
+        '</h3>' + (editing ? '<details class="technical"><summary>' + this._t("Technische Details") + '</summary>' : '') +
+        '<div class="field"><label for="library-audio">' + this._t("Audio-ID") + '</label><input id="library-audio" maxlength="80"' +
         (editing ? ' readonly' : '') + ' value="' + e(item.audio_id) +
-        '" placeholder="Audio-ID des Tonies"></div>' + (editing ? '</details>' : '') +
-        '<div class="field"><label for="library-title">Titel</label><input id="library-title" maxlength="200" value="' +
-        e(item.title) + '" placeholder="Titel des Hörspiels"></div>' +
-        '<div class="field"><label for="library-duration">Hörspiellänge in Minuten</label>' +
+        '" placeholder="' + this._t("Audio-ID des Tonies") + '"></div>' + (editing ? '</details>' : '') +
+        '<div class="field"><label for="library-title">' + this._t("Titel") + '</label><input id="library-title" maxlength="200" value="' +
+        e(item.title) + '" placeholder="' + this._t("Titel des Hörspiels") + '"></div>' +
+        '<div class="field"><label for="library-duration">' + this._t("Hörspiellänge in Minuten") + '</label>' +
         '<input type="number" id="library-duration" min="0" max="1440" step="0.1" value="' +
-        e(minutes) + '" placeholder="z. B. 45"></div>' +
-        '<div class="field"><label for="library-image">Figurenbild (Bildadresse, optional)</label>' +
+        e(minutes) + '" placeholder="' + this._t("z. B. 45") + '"></div>' +
+        '<div class="field"><label for="library-image">' + this._t("Figurenbild (Bildadresse, optional)") + '</label>' +
         '<input id="library-image" maxlength="2048" value="' + e(item.image) +
-        '" placeholder="https://… oder /local/…"></div>' +
-        '<div class="field"><label for="library-upload">Oder Bild direkt vom Gerät auswählen</label>' +
+        '" placeholder="' + this._t("https://… oder /local/…") + '"></div>' +
+        '<div class="field"><label for="library-upload">' + this._t("Oder Bild direkt vom Gerät auswählen") + '</label>' +
         '<input type="file" id="library-upload" accept="image/png,image/jpeg,image/webp">' +
-        '<p class="hint" id="library-upload-label">JPG, PNG oder WebP · maximal 2 MB</p></div>' +
-        '<div class="edit-actions"><button data-action="cancel" type="button">Abbrechen</button>' +
+        '<p class="hint" id="library-upload-label">' + this._t("JPG, PNG oder WebP · maximal 2 MB") + '</p></div>' +
+        '<div class="edit-actions"><button data-action="cancel" type="button">' + this._t("Abbrechen") + '</button>' +
         '<button class="primary" data-action="save" type="button"' +
-        (this._saving ? ' disabled' : '') + '>Änderungen speichern</button></div></section>';
+        (this._saving ? ' disabled' : '') + '>' + this._t("Änderungen speichern") + '</button></div></section>';
     })() : (
-      '<div class="toolbar"><input id="library-search" aria-label="Tonie suchen" placeholder="🔎 Tonies suchen …" value="' +
-      e(this._query) + '">' + (this._isAdmin ? '<button class="primary" type="button" data-action="add">+ Tonie hinzufügen</button>' : '') + '</div>' +
-      (!this._entries ? '<p class="hint">Bibliothek wird geladen …</p>' :
-        !entries.length ? '<p class="empty-library">Noch keine Tonies gespeichert. Stelle eine Figur auf die Toniebox, damit sie automatisch hier erscheint.</p>' :
+      '<div class="toolbar"><input id="library-search" aria-label="' + this._t("Tonie suchen") + '" placeholder="🔎 ' + this._t("Tonies suchen …") + '" value="' +
+      e(this._query) + '">' + (this._isAdmin ? '<button class="primary" type="button" data-action="add">+ ' + this._t("Tonie hinzufügen") + '</button>' : '') + '</div>' +
+      (!this._entries ? '<p class="hint">' + this._t("Bibliothek wird geladen …") + '</p>' :
+        !entries.length ? '<p class="empty-library">' + this._t("Noch keine Tonies gespeichert. Stelle eine Figur auf die Toniebox, damit sie automatisch hier erscheint.") + '</p>' :
           '<div class="library-grid">' + entries.map(item => {
-            const title = item.title || 'Unbekannter Tonie';
+            const title = item.title || this._t("Unbekannter Tonie");
             const removed = this._deleteId === item.audio_id;
             const recent = (item.last_heard_boxes || []).filter(box => /^#[0-9a-f]{6}$/i.test(box.color || ''));
             const rings = recent.map((box, index) => '0 0 0 ' + ((index + 1) * 3) + 'px ' + box.color).join(',');
             const highlight = rings ? ' style="box-shadow:' + rings + '"' : '';
-            const recentLabel = recent.length ? '<span class="recent">Zuletzt gehört: ' + e(recent.map(box => box.name).join(', ')) + '</span>' : '';
+            const recentLabel = recent.length ? '<span class="recent">' + this._t("Zuletzt gehört: ") + e(recent.map(box => box.name).join(', ')) + '</span>' : '';
             return '<article class="tonie"' + highlight + ' data-library-entry data-search="' +
               e((title + ' ' + item.audio_id).toLocaleLowerCase()) + '">' +
               this._image(item.image) +
               '<div class="tonie-body"><strong>' + e(title) + '</strong>' + recentLabel +
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
-              (Number(item.times_seen) > 0 ? '<span class="id">Schon ' + e(item.times_seen) + '× erkannt</span>' : '') +
-              (item.last_seen ? '<span class="id">Zuletzt erkannt: ' + e(new Date(item.last_seen).toLocaleDateString('de-DE')) + '</span>' : '') +
+              (Number(item.times_seen) > 0 ? '<span class="id">' + this._t("Schon ") + e(item.times_seen) + this._t("× erkannt") + '</span>' : '') +
+              (item.last_seen ? '<span class="id">' + this._t("Zuletzt erkannt: ") + e(new Date(item.last_seen).toLocaleDateString(teddyLanguage(this._hass) === 'en' ? 'en-US' : 'de-DE')) + '</span>' : '') +
               (removed ?
-                '<p class="warning">Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.</p>' +
-                '<div class="actions"><button data-action="cancel-delete">Abbrechen</button>' +
-                '<button class="danger" data-action="confirm-delete" data-id="' + e(item.audio_id) + '">Ja, löschen</button></div>' :
+                '<p class="warning">' + this._t("Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.") + '</p>' +
+                '<div class="actions"><button data-action="cancel-delete">' + this._t("Abbrechen") + '</button>' +
+                '<button class="danger" data-action="confirm-delete" data-id="' + e(item.audio_id) + '">' + this._t("Ja, löschen") + '</button></div>' :
                 '<div class="actions">' + (this._isAdmin ? '<button data-action="edit" data-id="' + e(item.audio_id) +
-                '">✏️ Bearbeiten</button>' : '') + '<button data-action="delete" data-id="' +
-                e(item.audio_id) + '">Löschen</button></div>') +
+                '">✏️ ' + this._t("Bearbeiten") + '</button>' : '') + '<button data-action="delete" data-id="' +
+                e(item.audio_id) + '">' + this._t("Löschen") + '</button></div>') +
               '</div></article>';
           }).join('') + '</div>')
     );
@@ -862,23 +1019,24 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '.empty-library{font-size:14px;opacity:.8;text-align:center;padding:26px 10px}',
       '.edit-actions{justify-content:flex-end;padding-top:12px}',
       '</style><ha-card>',
-      '<header class="header"><h2>🧸 Meine Tonie-Bibliothek</h2>',
+      '<header class="header"><h2>🧸 ' + this._t("Meine Tonie-Bibliothek") + '</h2>',
       '<span class="hint">' + entries.length + ' Tonies</span></header>',
-      '<p class="subtitle">Deine Figuren – automatisch gesammelt' +
-      (this._isAdmin ? ' – Bearbeiten möglich' : '') + '</p>',
-      this._error ? '<p class="error" role="alert">' + e(this._error) + '</p>' : '',
+      '<p class="subtitle">' + this._t("Deine Figuren – automatisch gesammelt") + '' +
+      (this._isAdmin ? this._t(" – Bearbeiten möglich") : '') + '</p>',
+      this._error ? '<p class="error" role="alert">' + e(this._t(this._error)) + '</p>' : '',
       view, '</ha-card>'
     ].join('');
     if (!this._edit) this._applySearch();
   }
 }
 class TeddyCloudLibraryEditor extends HTMLElement {
+  _t(key) { return teddyText(this._hass, key); }
   setConfig() {
-    this.textContent = 'Die Tonie-Bibliothek wird direkt in der Dashboard-Karte verwaltet. Hier musst du nichts einstellen.';
+    this.textContent = this._t("Die Tonie-Bibliothek wird direkt in der Dashboard-Karte verwaltet. Hier musst du nichts einstellen.");
     this.style.display = 'block';
     this.style.padding = '12px';
   }
-  set hass(_hass) {}
+  set hass(hass) { this._hass = hass; this.setConfig(); }
 }
 if (!customElements.get('teddycloud-tonie-library-editor')) {
   customElements.define('teddycloud-tonie-library-editor', TeddyCloudLibraryEditor);
@@ -889,7 +1047,7 @@ if (!customElements.get('teddycloud-tonie-library-card')) {
 if (!window.customCards.some(item => item.type === 'teddycloud-tonie-library-card')) {
   window.customCards.push({
   type:'teddycloud-tonie-library-card',
-  name:'TeddyCloud Tonie-Bibliothek',
-  description:'Deine Tonie-Sammlung ansehen, bearbeiten, Bilder ändern und Tonies hinzufügen – direkt im Dashboard',
+  name:'TeddyCloud Tonie Library',
+  description:'TeddyCloud Tonie Library · DE / EN',
   preview:true});
 }
