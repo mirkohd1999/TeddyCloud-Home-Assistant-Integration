@@ -104,6 +104,38 @@ class TonieLibrary:
                     result[field] = value
         return result
 
+    def detected_metadata(self, audio_id):
+        """Metadata already associated with this exact ID; never infer by title."""
+        item = self._entries.get(audio_id, {})
+        return {key: item.get(key) for key in ('title', 'image', 'duration_seconds')}
+
+    async def async_mqtt_metadata(self, audio_id, title=None, image=None, is_current=None):
+        """Uncorrelated MQTT may fill a blank entry, never rename a known one."""
+        async with self._lock:
+            if is_current is not None and not is_current():
+                return
+            item = self._entries.get(audio_id)
+            if item is None or item.get('metadata_source') == 'catalog' or not title:
+                return
+            if item.get('title') and item['title'] != title:
+                return
+            aliases = set(self._group_ids(audio_id))
+            # Replays of another figure's title/image must not create lookalikes.
+            for other_id, other in self._entries.items():
+                if other_id not in aliases and (
+                    other.get('title') == title or (image and other.get('image') == image)
+                ):
+                    return
+            dirty = False
+            for key, value in (('title', title), ('image', image)):
+                if value and not item.get(key):
+                    item[key] = value
+                    dirty = True
+            if dirty:
+                await self._store.async_save({'entries': self._entries, 'hidden': sorted(self._hidden)})
+        if dirty:
+            self._notify(audio_id)
+
     def _notify(self, audio_id):
         async_dispatcher_send(self.hass, SIGNAL_CHANGED, audio_id)
 
@@ -156,7 +188,8 @@ class TonieLibrary:
             item = self._entries.get(audio_id)
             if item is None:
                 return
-            dirty = False
+            dirty = item.get('metadata_source') != 'catalog'
+            item['metadata_source'] = 'catalog'
             if audio_ids:
                 known = sorted({str(value) for value in audio_ids if valid_audio_id(str(value))})
                 if audio_id in known and known != item.get("catalog_audio_ids"):

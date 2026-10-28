@@ -69,6 +69,12 @@ class BoxPlayer(MediaPlayerEntity):
         self._availability = Availability(entry.options.get("offline_timeout", 5))
         self._offline_cancel = None
         self._last_message_at = None
+        self._figure_generation = 0
+        self._pending_metadata = {}
+        self._pending_metadata_at = None
+        self._metadata_cancel = None
+        self._metadata_task = None
+        self._observation_task = None
 
     @property
     def device_info(self):
@@ -118,17 +124,101 @@ class BoxPlayer(MediaPlayerEntity):
         # Preserve the last Playback value so repeated ON cannot restart protection.
         self._refresh_availability()
 
+    def _queue_observation(self, audio_id, retained=False):
+        previous = self._observation_task
+        library = self._library
+        async def record():
+            if previous is not None:
+                await asyncio.shield(previous)
+            if audio_id:
+                await library.async_seen(
+                    self.entry.entry_id, audio_id, retained=retained,
+                    box_color=self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
+                )
+            else:
+                library.box_cleared(self.entry.entry_id)
+        self._observation_task = self.hass.async_create_task(record())
+        return self._observation_task
+
+    def _clear_figure_metadata(self, keep_pending=False):
+        self._figure_generation += 1
+        self._values['ContentTitle'] = ''
+        self._values['ContentPicture'] = ''
+        self._online_result = None
+        self._online_audio_id = None
+        self._local_artwork = None
+        if self._lookup_task and not self._lookup_task.done():
+            self._lookup_task.cancel()
+        if self._metadata_cancel:
+            self._metadata_cancel()
+            self._metadata_cancel = None
+        if not keep_pending:
+            self._pending_metadata = {}
+            self._pending_metadata_at = None
+
+    def _schedule_metadata(self):
+        if self._metadata_cancel:
+            self._metadata_cancel()
+        if self.hass is not None:
+            self._metadata_cancel = async_call_later(self.hass, 1, self._flush_metadata)
+
+    @callback
+    def _flush_metadata(self, _now):
+        self._metadata_cancel = None
+        audio_id = self._values.get('ContentAudioId')
+        if (not audio_id or not self._library or self._figure_present is False
+                or self._pending_metadata_at is None
+                or self._availability.clock() - self._pending_metadata_at > 2):
+            return
+        generation = self._figure_generation
+        pending = dict(self._pending_metadata)
+        observation = self._observation_task
+        def is_current():
+            return generation == self._figure_generation and self._values.get('ContentAudioId') == audio_id
+        async def apply():
+            if observation is not None:
+                await asyncio.shield(observation)
+            await self._library.async_mqtt_metadata(
+                audio_id, title=pending.get('ContentTitle'),
+                image=resolved_picture(pending.get('ContentPicture'), self.entry.options.get('teddycloud_url', '')),
+                is_current=is_current,
+            )
+            if is_current():
+                self._refresh_availability()
+        self._metadata_task = self.hass.async_create_task(apply())
+
     def receive(self, field, payload, retained=False):
         text = mqtt_text(payload)
         previous = self._values.get(field)
         observation = None
-        # Clear active metadata on removal. Archived images remain on disk.
-        # Never display the previous figurine as the currently playing one.
-        if field == 'ContentAudioId' and text != previous:
-            # Title/picture may arrive BEFORE the audio ID via MQTT.
-            # Do not erase valid metadata simply because the ID arrived later.
-            self._online_result = None
-            self._local_artwork = self._archive.lookup(text) if text and self._archive else None
+        # Title/picture topics carry no Audio-ID. Buffer a short fresh batch;
+        # never assign these directly to the previously active library entry.
+        if field in ('ContentTitle', 'ContentPicture'):
+            self.note_message(retained)
+            if not retained and text:
+                now = self._availability.clock()
+                if self._pending_metadata_at is None or now - self._pending_metadata_at > 2:
+                    self._pending_metadata = {}
+                if field == 'ContentTitle' and self._pending_metadata.get(field) not in (None, text):
+                    self._pending_metadata = {}
+                self._pending_metadata[field] = text
+                self._pending_metadata_at = now
+                self._schedule_metadata()
+            return
+        removed = (field == 'ContentAudioId' and not text) or (field == 'TagValid' and text.startswith('-'))
+        if removed:
+            self._clear_figure_metadata()
+            self._values['ContentAudioId'] = ''
+            self._catalog_status = 'waiting_for_audio_id'
+            self._figure_removed_at = datetime.now(timezone.utc)
+        elif field == 'ContentAudioId' and text != previous:
+            fresh_pending = self._pending_metadata_at is not None and self._availability.clock() - self._pending_metadata_at <= 2
+            if previous:
+                old_title = self._known_media_title()
+                # Only carry a distinct new title across an unannounced ID switch.
+                # Otherwise it may simply be the previous figure's pending batch.
+                fresh_pending = fresh_pending and bool(old_title) and bool(self._pending_metadata.get('ContentTitle')) and self._pending_metadata['ContentTitle'] != old_title
+            self._clear_figure_metadata(keep_pending=fresh_pending)
         self._values[field] = text
         self.note_message(retained)
         if field == 'TagValid' and text and not text.startswith('-'):
@@ -137,19 +227,6 @@ class BoxPlayer(MediaPlayerEntity):
         if field == 'ContentAudioId' and text:
             self._figure_present = True
             self._figure_removed_at = None
-        if field == 'ContentAudioId' and not text:
-            self._catalog_status = 'waiting_for_audio_id'
-            self._values['ContentTitle'] = ''
-            self._values['ContentPicture'] = ''
-            self._local_artwork = None
-            self._online_result = None
-            self._figure_present = False
-            self._figure_removed_at = datetime.now(timezone.utc)
-        if field == 'ContentAudioId' and not text:
-            self._online_audio_id = None
-            if self._lookup_task and not self._lookup_task.done():
-                self._lookup_task.cancel()
-            self._started = None
         if field == 'Playback':
             playing = text.upper() in ('ON', '1', 'TRUE', 'PLAYING') and self._figure_present is not False
             if playing and not self._was_playing and not retained:
@@ -178,36 +255,13 @@ class BoxPlayer(MediaPlayerEntity):
             self._figure_present = False
         self._refresh_availability()
         if self.hass is not None:
-            library = self._library
-            audio_id = self._values.get('ContentAudioId')
-            if library and field == 'ContentAudioId':
-                if not text:
-                    library.box_cleared(self.entry.entry_id)
-                elif library.needs_observation(self.entry.entry_id, text):
-                    # A new Audio-ID (or same ID after a removed figure) is
-                    # newly collected; simple status repeats won't re-add
-                    # a deleted item.
-                    current_image = resolved_picture(
-                        self._values.get('ContentPicture', ''),
-                        self.entry.options.get('teddycloud_url', ''),
-                    )
-                    observation = self.hass.async_create_task(library.async_seen(
-                        self.entry.entry_id, text,
-                        title=self._values.get('ContentTitle'),
-                        image=current_image,
-                        retained=retained,
-                        box_color=self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
-                    ))
-            elif library and field == 'TagValid' and text.startswith('-'):
-                # Removing the tag unlocks the next placement, including the
-                # same figure whose library record was deleted previously.
-                library.box_cleared(self.entry.entry_id)
-            elif library and field in ('ContentTitle', 'ContentPicture') and audio_id:
-                if field == 'ContentTitle':
-                    self.hass.async_create_task(library.async_metadata(audio_id, title=text))
-                elif field == 'ContentPicture':
-                    url = resolved_picture(text, self.entry.options.get('teddycloud_url', ''))
-                    self.hass.async_create_task(library.async_metadata(audio_id, image=url))
+            if self._library:
+                if removed:
+                    self._queue_observation('')
+                elif field == 'ContentAudioId' and text:
+                    observation = self._queue_observation(text, retained)
+                    if self._pending_metadata:
+                        self._schedule_metadata()
             if field == 'ContentAudioId' and previous != text and text:
                 self._lookup_task = self.hass.async_create_task(self._lookup_image(text, observation))
             self.async_write_ha_state()
@@ -234,6 +288,12 @@ class BoxPlayer(MediaPlayerEntity):
         if self._offline_cancel:
             self._offline_cancel()
             self._offline_cancel = None
+        if self._metadata_cancel:
+            self._metadata_cancel()
+            self._metadata_cancel = None
+        self._figure_generation += 1
+        if self._metadata_task and not self._metadata_task.done():
+            self._metadata_task.cancel()
         if self._lookup_task and not self._lookup_task.done():
             self._lookup_task.cancel()
         await super().async_will_remove_from_hass()
@@ -244,7 +304,8 @@ class BoxPlayer(MediaPlayerEntity):
             # A cached catalog hit can finish before async_seen has acquired the
             # library lock. Cancelling a lookup must not cancel collection itself.
             await asyncio.shield(observation)
-        while self._online_audio_id == audio_id and self.hass is not None:
+        generation = self._figure_generation
+        while self._online_audio_id == audio_id and generation == self._figure_generation and self.hass is not None:
             try:
                 result = await self._online_catalog.find(audio_id)
             except asyncio.CancelledError:
@@ -255,7 +316,7 @@ class BoxPlayer(MediaPlayerEntity):
                     self.async_write_ha_state()
                 return
 
-            if self._online_audio_id != audio_id:
+            if self._online_audio_id != audio_id or generation != self._figure_generation:
                 return
             if result is None and self._online_catalog.failed_at:
                 self._catalog_status = 'unavailable'
@@ -277,7 +338,7 @@ class BoxPlayer(MediaPlayerEntity):
             cached = self._archive.lookup(audio_id) if self._archive else None
             if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
                 cached = await self._archive.store(audio_id, result['figure'])
-            if self._online_audio_id == audio_id and self.hass is not None:
+            if self._online_audio_id == audio_id and generation == self._figure_generation and self.hass is not None:
                 self._online_result = result
                 self._local_artwork = cached
                 if self._library and result:
@@ -306,7 +367,7 @@ class BoxPlayer(MediaPlayerEntity):
 
     def _known_media_title(self):
         library_title = self._library.custom_metadata(self._values.get('ContentAudioId')) if self._library else {}
-        return library_title.get('title') or self._metadata().get('title') or self._values.get('ContentTitle') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None)
+        return library_title.get('title') or self._metadata().get('title') or ((self._online_result or {}).get('catalog_title') if self._online_audio_id == self._values.get('ContentAudioId') else None) or (self._library.detected_metadata(self._values.get('ContentAudioId')).get('title') if self._library else None) or self._values.get('ContentTitle')
 
     @property
     def media_title(self):
@@ -343,7 +404,7 @@ class BoxPlayer(MediaPlayerEntity):
         # User-defined figurine photo overrides catalog; exact Audio-ID match
         # preferred over the book/episode cover reported by TeddyCloud.
         figure = custom.get('figure') or self._local_artwork or ((self._online_result or {}).get('figure') if self.entry.options.get('online_images', True) else None) or (self._archive.lookup(self._values.get('ContentAudioId')) if self._archive else None)
-        url = figure or custom.get('cover') or self._values.get('ContentPicture') or self.entry.options.get(CONF_FALLBACK_COVER, '')
+        url = figure or custom.get('cover') or (self._library.detected_metadata(self._values.get('ContentAudioId')).get('image') if self._library else None) or self._values.get('ContentPicture') or self.entry.options.get(CONF_FALLBACK_COVER, '')
         return resolved_picture(url, self.entry.options.get('teddycloud_url', ''))
 
     @property

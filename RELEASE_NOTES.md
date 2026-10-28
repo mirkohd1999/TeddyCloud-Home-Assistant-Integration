@@ -1,17 +1,22 @@
-# v0.5.4
+# v0.5.5
 
-## Dashboard-Karten automatisch auf Englisch
+## Zuverlässigere Zuordnung beim Toniewechsel
 
-- Player, Tonie-Bibliothek und beide Karteneditoren folgen der Sprache des jeweiligen Home-Assistant-Nutzers.
-- Englisch einschließlich en-GB/en-US aktiviert englische Beschriftungen. Deutsch und andere Sprachen verwenden die bisherige deutsche Oberfläche. Keine Auswertung der Browsersprache und keine neue Karteneinstellung.
-- Übersetzte Statusmeldungen, Suchfelder, Bibliotheksformulare, Löschbestätigungen, bekannte Validierungsfehler und barrierefreie Beschriftungen.
-- Eigene Namen, Hörspieltitel, technische Entitätszuordnungen und Berechtigungen bleiben erhalten.
-- Ein Sprachwechsel aktualisiert die Karten und Editoren. Bibliothekszahlen und Datumsangaben passen sich der gewählten Anzeigesprache an.
+- Abnehmen leert die aktive Titel-/Bildzuordnung und beendet ausstehende Erkennung der vorherigen Figur. Gespeicherte Bibliothekseinträge bleiben erhalten.
+- Frische MQTT-Titel und Bilder werden eine Sekunde gesammelt. Kurze Umordnungen vor/nach der Audio-ID werden berücksichtigt; unsichere alte Daten werden nicht auf neue IDs übertragen.
+- Bereits bekannte Titel und Bilder werden durch MQTT nicht überschrieben. Eindeutige Katalogtreffer und eigene Änderungen haben Vorrang.
+- Titel/Bilder, die schon einer anderen, nicht katalogzugeordneten Audio-ID gehören, werden nicht ungeprüft auf neue Einträge kopiert. Gleicher Titel ist kein Grund zum automatischen Zusammenführen.
+- Schnelles Abnehmen und erneutes Aufstellen wird in der richtigen Reihenfolge gezählt. Wiederholte identische Audio-ID-Meldungen erzeugen keinen zusätzlichen Eintrag.
+- Ausstehende Metadaten-Schreibvorgänge und verspätete Katalogantworten können die nächste Figur nicht verändern.
 
 ## Update
 
-In HACS aktualisieren, Home Assistant neu starten und das Dashboard neu laden. Die neue Kartenressource wird automatisch registriert; bei manueller YAML-Verwaltung `/teddycloud-homeassistant/card-v054.js?v=0.5.4` verwenden.
+In HACS aktualisieren und Home Assistant neu starten. Den betroffenen Tonie danach neu aufstellen. Vorhandene Einträge werden nicht automatisch gelöscht oder nach Titeln zusammengeführt. Der Katalogabgleich beim Start kann bekannte IDs korrigieren.
+
+## Grenzen
+
+MQTT-Titel-/Bildmeldungen enthalten keine eigene Audio-ID. Bei fehlender oder widersprüchlicher Zuordnung bleibt ein Eintrag lieber ohne erkannte Metadaten, statt einen fremden Titel zu übernehmen. Gespeicherte Retained-Titel werden nicht neu zugeordnet. Ein Katalogtreffer oder eine eindeutige neue Meldungsfolge ist dann erforderlich.
 
 ## Prüfung
 
-39 Python-Tests sowie Dashboard-Tests einschließlich aller Player-Layouts, englischer und deutscher Editoren, Sprachwechsel, Admin-/Nutzerrollen, Fehlertexte, unveränderter eigener Titel und funktionierender Reglerzuordnung. Kein Test an einer physischen Toniebox.
+53 Python-Tests und bestehende Dashboard-/Sprachtests bestanden. Neue Tests decken Rocky → Bibi → Rocky mit ID zuerst, Titel zuerst, direktem Wechsel, Abnehmen, fehlendem Titel, alten Bildern, verspäteten Katalogantworten, blockiertem Speicher und schneller erneuter Aufstellung ab. Tests verwenden simulierte MQTT-Meldungen und den echten Player-/Bibliothekscode; kein Test an einer physischen Toniebox.

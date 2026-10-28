@@ -216,6 +216,12 @@ Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet
 
 ## Fehlerbehebung
 
+### Erkennung beim Figurenwechsel
+
+Titel- und Bildmeldungen werden kurz gesammelt, damit unterschiedlich schnell eintreffende MQTT-Nachrichten berücksichtigt werden. Beim Abnehmen wird die aktuelle Zuordnung geleert; gespeicherte Figuren bleiben erhalten. Eigene Titel und eindeutige Katalogtreffer haben Vorrang. Unklare oder widersprüchliche MQTT-Meldungen überschreiben keine bereits bekannten Figuren.
+
+Wenn eine Audio-ID nicht eindeutig erkannt wird, kann sie vorübergehend ohne Titel oder Bild erscheinen. Gleiche Titel allein führen nicht zum Zusammenführen oder Löschen von Einträgen. Gespeicherte MQTT-Meldungen nach einem Neustart werden nicht als neue Titelzuordnung übernommen; der Katalog oder neue Live-Meldungen ergänzen die Daten.
+
 ### Sprache der Dashboard-Karten
 
 Die Player-Karte, Tonie-Bibliothek und Karteneditoren folgen automatisch der Sprache deines Home-Assistant-Profils. Bei **Englisch** (auch `en-GB` und `en-US`) erscheinen die Bedienelemente auf Englisch. Bei Deutsch und anderen Sprachen bleibt Deutsch die Standardsprache. Die Browsersprache wird dafür nicht verwendet.
@@ -241,7 +247,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v054.js?v=0.5.4
+/teddycloud-homeassistant/card-v054.js?v=0.5.5
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.
