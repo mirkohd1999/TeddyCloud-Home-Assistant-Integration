@@ -256,3 +256,13 @@ class TestAvailability(unittest.TestCase):
         fresh = type(player)(player.entry, None)
         self.assertFalse(fresh.available)
         self.assertEqual(fresh.capability_attributes['box_color'], '#12AB34')
+
+    def test_unknown_title_flag_does_not_mark_custom_or_detected_titles(self):
+        player, _, _ = self.make_player()
+        self.assertTrue(player.extra_state_attributes['media_title_is_fallback'])
+        player._values['ContentTitle'] = 'Unbekannter Tonie'
+        self.assertFalse(player.extra_state_attributes['media_title_is_fallback'])
+        player._values['ContentTitle'] = ''
+        player._values['ContentAudioId'] = '123'
+        player.entry.options['catalog'] = json.dumps({'123': {'title': 'Unbekannter Tonie'}})
+        self.assertFalse(player.extra_state_attributes['media_title_is_fallback'])
