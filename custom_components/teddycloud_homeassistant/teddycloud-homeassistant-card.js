@@ -137,6 +137,7 @@ Object.assign(TEDDY_EN, {
   "Hörproben-Katalog vorübergehend nicht erreichbar. Ein neuer Versuch folgt automatisch.": "The audio sample catalog is temporarily unavailable. It will be retried automatically.",
   "Für diese Tonies ist im Katalog derzeit keine zugeordnete Hörprobe verfügbar.": "The catalog currently has no matching audio samples for these Tonies.",
   "Bitte die Integration in HACS aktualisieren und Home Assistant neu starten.": "Please update the integration in HACS and restart Home Assistant.",
+  "Karte konnte nicht aktualisiert werden. Dashboard bitte neu öffnen.": "Could not update the card. Please reopen the dashboard.",
   "Hörprobe": "Audio sample",
   "Hörprobe derzeit nicht erreichbar.": "Audio sample is currently unavailable.",
   "Tonie-Bibliothek nicht bereit": "Tonie library is not ready",
@@ -733,6 +734,62 @@ if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-car
 
 
 /* Separate Tonie library card. Editing happens here, not in dashboard edit mode. */
+// A resource URL update can load a new module into an already-open dashboard.
+// Existing custom elements cannot be defined twice: upgrade compatible methods
+// in place, so the old registration cannot retain the previous sample player.
+const TEDDY_CARD_VERSION = '0.5.9';
+const teddyCardUpdates = new Map();
+function teddyLoadCardUpdate(data, loader = url => import(url)) {
+  const version = data?.card_version;
+  if (typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version)) return;
+  const target = version.split('.').map(Number), current = TEDDY_CARD_VERSION.split('.').map(Number);
+  const difference = target.map((part, index) => part - current[index]).find(part => part !== 0) || 0;
+  if (difference <= 0) return;
+  const url = data.card_url;
+  if (typeof url !== 'string' || !/^\/teddycloud-homeassistant\/card-v[0-9]+\.js\?v=\d+\.\d+\.\d+&build=[a-f0-9]{12}$/.test(url)) return;
+  if (!url.startsWith('/teddycloud-homeassistant/card-v' + version.replace(/\./g, '') + '.js?v=' + version + '&')) return;
+  if (!teddyCardUpdates.has(url)) {
+    const pending = Promise.resolve().then(() => loader(url)).catch(error => {
+      teddyCardUpdates.delete(url);
+      throw error;
+    });
+    teddyCardUpdates.set(url, pending);
+  }
+  return teddyCardUpdates.get(url);
+}
+function teddyRegisterLibraryCard(Card) {
+  const name = 'teddycloud-tonie-library-card';
+  const registered = customElements.get(name);
+  if (!registered) {
+    Card.teddyCardVersion = TEDDY_CARD_VERSION;
+    customElements.define(name, Card);
+    return;
+  }
+  if (typeof registered.teddyCardVersion === 'string') {
+    const previous = registered.teddyCardVersion.split('.').map(Number);
+    const current = TEDDY_CARD_VERSION.split('.').map(Number);
+    const difference = previous.map((part, index) => part - current[index]).find(part => part !== 0) || 0;
+    if (difference >= 0) return;
+  }
+  const instances = [];
+  const visit = root => {
+    for (const node of root?.querySelectorAll?.('*') || []) {
+      if (node.localName === name) instances.push(node);
+      if (node.shadowRoot) visit(node.shadowRoot);
+    }
+  };
+  if (typeof document !== 'undefined') visit(document);
+  // Release old native players before replacing their lifecycle methods.
+  for (const instance of instances) instance._stopPreview?.(false);
+  for (const key of Object.getOwnPropertyNames(Card.prototype)) {
+    if (key !== 'constructor') Object.defineProperty(registered.prototype, key,
+      Object.getOwnPropertyDescriptor(Card.prototype, key));
+  }
+  registered.teddyCardVersion = TEDDY_CARD_VERSION;
+  // Keep an unsaved admin form intact; its next normal render uses the new methods.
+  for (const instance of instances) if (!instance._edit) instance.render();
+}
+
 // Only one library sample may play across dashboard cards.
 let teddyPreviewOwner = null;
 
@@ -835,12 +892,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     // A single authenticated WebSocket subscription shares updates between
     // family members, even if they cannot edit the Home Assistant dashboard.
     this._subscribePromise = connection.subscribeMessage(
-      data => {
-        if (!Array.isArray(data?.entries)) return;
-        this._entries = data.entries;
-        this._previewCatalogStatus = data.preview_catalog_status || "unknown";
-        if (!this._edit) this.render();
-      },
+      data => this._acceptLibraryData(data),
       {type:'teddycloud_homeassistant/library/subscribe'}
     ).then(unsubscribe => {
       this._subscribePromise = null;
@@ -852,6 +904,16 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
         String(error?.message || error);
       this.render();
     });
+  }
+  _acceptLibraryData(data) {
+    if (!Array.isArray(data?.entries)) return;
+    this._entries = data.entries;
+    this._previewCatalogStatus = data.preview_catalog_status || 'unknown';
+    teddyLoadCardUpdate(data)?.catch(() => {
+      this._error = 'Karte konnte nicht aktualisiert werden. Dashboard bitte neu öffnen.';
+      this.render();
+    });
+    if (!this._edit) this.render();
   }
   _escape(value) {
     return String(value ?? '').replace(/[&<>"']/g,
@@ -875,8 +937,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     this.render();
     try {
       const data = await this._hass.callWS({type:'teddycloud_homeassistant/library/refresh'});
-      if (Array.isArray(data?.entries)) this._entries = data.entries;
-      this._previewCatalogStatus = data?.preview_catalog_status || 'unknown';
+      this._acceptLibraryData(data);
     } catch (error) {
       this._error = error?.code === 'unknown_command'
         ? 'Bitte die Integration in HACS aktualisieren und Home Assistant neu starten.'
@@ -959,7 +1020,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   _updatePreviewButtons() {
     this.shadowRoot.querySelectorAll('button[data-action="preview"]').forEach(button => {
       const playing = button.dataset.id === this._previewId && Boolean(this._previewAudio);
-      button.textContent = playing ? '■ Stop' : '▶ Play';
+      button.textContent = playing ? '■ Stop' : '▶ ' + this._t('Hörprobe');
       button.setAttribute('aria-pressed', playing ? 'true' : 'false');
     });
   }
@@ -1093,7 +1154,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
               (Number(item.times_seen) > 0 ? '<span class="id">' + this._t("Schon ") + e(item.times_seen) + this._t("× erkannt") + '</span>' : '') +
               (item.last_seen ? '<span class="id">' + this._t("Zuletzt erkannt: ") + e(new Date(item.last_seen).toLocaleDateString(teddyLanguage(this._hass) === 'en' ? 'en-US' : 'de-DE')) + '</span>' : '') +
-              (this._safePreview(item.preview_url) ? '<button class="preview-button" data-action="preview" aria-pressed="false" aria-label="' + e(this._t('Hörprobe') + ': ' + title) + '" data-id="' + e(item.audio_id) + '">▶ Play</button>' : '') +
+              (this._safePreview(item.preview_url) ? '<button class="preview-button" data-action="preview" aria-pressed="false" aria-label="' + e(this._t('Hörprobe') + ': ' + title) + '" data-id="' + e(item.audio_id) + '">▶ ' + this._t('Hörprobe') + '</button>' : '') +
               (this._previewError === item.audio_id ? '<span class="error" role="alert">' + this._t('Hörprobe derzeit nicht erreichbar.') + '</span>' : '') +
               (removed ?
                 '<p class="warning">' + this._t("Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.") + '</p>' +
@@ -1163,9 +1224,7 @@ class TeddyCloudLibraryEditor extends HTMLElement {
 if (!customElements.get('teddycloud-tonie-library-editor')) {
   customElements.define('teddycloud-tonie-library-editor', TeddyCloudLibraryEditor);
 }
-if (!customElements.get('teddycloud-tonie-library-card')) {
-  customElements.define('teddycloud-tonie-library-card', TeddyCloudTonieLibraryCard);
-}
+teddyRegisterLibraryCard(TeddyCloudTonieLibraryCard);
 if (!window.customCards.some(item => item.type === 'teddycloud-tonie-library-card')) {
   window.customCards.push({
   type:'teddycloud-tonie-library-card',

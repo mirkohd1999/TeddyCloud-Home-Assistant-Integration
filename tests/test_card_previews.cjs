@@ -90,14 +90,14 @@ async function run() {
   await card._togglePreview('a');
   assert.equal(first.paused, true);
   assert.equal(card._previewAudio, null, 'The second click stops and releases playback');
-  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '▶ Play');
+  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '▶ Hörprobe');
   await card._togglePreview('a');
   assert.notEqual(card._previewAudio, first, 'Play after Stop starts a fresh sample');
   assert.equal(card._previewAudio.currentTime, 0);
   card._previewAudio.ended = true;
   card._previewAudio.emit('ended');
   assert.equal(card._previewAudio, null, 'Natural end resets the button to Play');
-  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '▶ Play');
+  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '▶ Hörprobe');
   await card._togglePreview('a');
   await card._togglePreview('b');
   assert.equal(first.paused, true);
