@@ -139,7 +139,7 @@ Ersetze die Beispiel-Entität durch deine tatsächliche ID unter **Einstellungen
 
 **Deine Tonies – automatisch gesammelt und übersichtlich an einem Ort.**
 
-![Tonie-Bibliothek im Home-Assistant-Dashboard mit Suchfeld und noch leerer Sammlung](docs/images/tonie-bibliothek.png)
+![Tonie-Bibliothek mit Figuren, Hörproben-Buttons und farbiger Markierung der zuletzt gehörten Figur](docs/images/tonie-bibliothek.png?v=3e78dd449471)
 
 Die Bibliothek ist eine eigene Dashboard-Karte. Gespeicherte Tonies bleiben sichtbar, auch wenn keine Toniebox eingeschaltet ist.
 
