@@ -5,7 +5,7 @@ from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from .const import DOMAIN, CONF_PREFIX, CONF_BOX_ID
-from .online_catalog import OnlineCatalog
+from .online_catalog import OnlineCatalog, REFRESH, RETRY
 from .card_registration import async_register_card
 from .cleanup import async_remove_owned_data
 from .library import TonieLibrary
@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     catalog = data.setdefault("online_catalog", OnlineCatalog(hass))
     if "library_catalog_task" not in data:
         data["library_catalog_task"] = hass.async_create_background_task(
-            data["library"].async_refresh_catalog(catalog), "TeddyCloud library catalog refresh"
+            _refresh_library_catalog(data["library"], catalog), "TeddyCloud library catalog refresh"
         )
     player = BoxPlayer(entry, catalog)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = player
@@ -52,10 +52,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception:
         await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor"])
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        _stop_library_catalog_if_unused(hass.data[DOMAIN])
         raise
     hass.data[DOMAIN][f"{entry.entry_id}_unsubscribe"] = unsubscribe
     entry.async_on_unload(entry.add_update_listener(_update_options))
     return True
+
+async def _refresh_library_catalog(library, catalog):
+    """Refresh the shared catalog only; never request samples or shop pages."""
+    while True:
+        await catalog.refresh()
+        await library.async_refresh_catalog(catalog)
+        await asyncio.sleep(RETRY.total_seconds() + 2 if catalog.failed_at else REFRESH.total_seconds())
+
+
+def _stop_library_catalog_if_unused(data):
+    """Keep the shared refresh while any box still uses it, including during setup."""
+    catalog = data.get("online_catalog")
+    if catalog is None or any(getattr(value, "_online_catalog", None) is catalog for value in data.values()):
+        return
+    task = data.pop("library_catalog_task", None)
+    if task:
+        task.cancel()
+
 
 async def _update_options(hass, entry):
     await hass.config_entries.async_reload(entry.entry_id)
@@ -67,6 +86,7 @@ async def async_unload_entry(hass, entry):
     unloaded = await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor"])
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        _stop_library_catalog_if_unused(hass.data[DOMAIN])
     return unloaded
 
 

@@ -3,6 +3,7 @@ import ast
 import asyncio
 from datetime import datetime, timezone, timedelta
 import logging
+import re
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
@@ -13,7 +14,7 @@ class TestCatalogAliases(unittest.TestCase):
         path=Path(__file__).resolve().parents[1]/'custom_components/teddycloud_homeassistant/online_catalog.py'
         tree=ast.parse(path.read_text())
         nodes=[n for n in tree.body if isinstance(n,(ast.ClassDef,ast.FunctionDef))]
-        ns={'asyncio':asyncio,'dt_util':SimpleNamespace(utcnow=lambda:datetime.now(timezone.utc)),
+        ns={'re':re,'asyncio':asyncio,'dt_util':SimpleNamespace(utcnow=lambda:datetime.now(timezone.utc)),
             'REFRESH':timedelta(hours=24),'RETRY':timedelta(seconds=20),
             'async_get_clientsession':lambda hass:None,'_LOGGER':logging.getLogger(__name__)}
         exec(compile(ast.Module(body=nodes,type_ignores=[]),str(path),'exec'),ns)

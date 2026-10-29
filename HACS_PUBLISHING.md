@@ -2,7 +2,7 @@
 
 Projekt: **TeddyCloud Home Assistant Integration**  
 Repository: https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration  
-Stabiler Sammelrelease: **v0.5.5** (Manifest **0.5.5**)  
+Stabiler Sammelrelease: **v0.5.6** (Manifest **0.5.6**)  
 Kategorie: **Integration**, kein Add-on und kein separates Dashboard-Repository.
 
 ## Veröffentlichung
@@ -22,15 +22,15 @@ HACS lädt die Integration aus `custom_components/teddycloud_homeassistant/` am 
 - Bibliothek mit Admin und normalem Nutzer öffnen: Nur Admin sieht Hinzufügen/Bearbeiten; beide können nach Bestätigung löschen.
 - Kein sichtbarer Audio-ID-Text in Tonie-Kacheln; technische Details im Admin-Editor einklappbar.
 - Bibliotheksdaten und Entitäts-IDs bleiben beim Update erhalten.
-- Neue Ressource `/teddycloud-homeassistant/card-v054.js?v=0.5.5` lädt auf allen Clients.
+- Neue Ressource `/teddycloud-homeassistant/card-v056.js?v=0.5.6` lädt auf allen Clients.
 
 Automatisierte Tests ersetzen diesen Praxistest nicht.
 
 ## Ältere Releases aufräumen
 
-Erst nach erfolgreichem Update auf v0.5.5:
+Erst nach erfolgreichem Update auf v0.5.6:
 
-- v0.5.5 als neuesten Release behalten.
+- v0.5.6 als neuesten Release behalten.
 - Mindestens einen selbst geprüften vorherigen Release als Rückfallversion behalten.
 - Weitere ältere Release-Einträge können gelöscht werden. Ihre Links/Assets und Auswahlmöglichkeiten in HACS entfallen. Installierte Dateien werden dadurch nicht vom Home-Assistant-System entfernt.
 - Git-Tags und Commit-Historie behalten; veröffentlichte Tags niemals auf neue Commits verschieben.

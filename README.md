@@ -164,6 +164,18 @@ type: custom:teddycloud-tonie-library-card
 
 Die Audio-ID wird nicht in den Kacheln angezeigt. Beim Bearbeiten findest du sie unter den eingeklappten **Technischen Details**. Beim manuellen Hinzufügen ist sie ein Pflichtfeld.
 
+### Hörproben direkt im Dashboard
+
+Bei Tonies mit verfügbarer Hörprobe erscheint **▶ Hörprobe**. Die Vorschau spielt direkt in der Bibliothekskarte auf dem Handy, Tablet oder Computer ab, auf dem du das Dashboard geöffnet hast. Der Player bietet Start/Pause und eine Fortschrittsanzeige. Über **Hörprobe beenden** kannst du die Wiedergabe schließen. Beim Start einer anderen Hörprobe oder beim Verlassen des Dashboards endet die bisherige Wiedergabe. Es öffnet sich keine externe Webseite.
+
+Die einzige Quelle für die Zuordnung ist der bereits verwendete [tonies-json-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json). Die genaue Audio-ID bestimmt die Hörprobe und damit auch die Inhaltsfassung und Sprache. Es gibt keine zusätzliche Suche im Shop, bei Suchmaschinen oder anderen Anbietern. Ohne eindeutigen Katalogtreffer und hinterlegten Hörproben-Link erscheint kein Button.
+
+Vorhandene Bibliothekseinträge werden beim Start im Hintergrund ergänzt; neu erkannte Tonies beim Katalogabgleich. Die gemeinsame Katalogaktualisierung läuft alle 24 Stunden und versucht es nach einem Verbindungsfehler erneut. Sehr neue Tonies erhalten eine Probe erst, wenn ihre Audio-ID und der Link im Katalog enthalten sind.
+
+Die Integration speichert ausschließlich den Link. Audiodateien werden nicht heruntergeladen oder in Home Assistant beziehungsweise TeddyCloud abgelegt. Erst nach dem Antippen lädt der Browser die Hörprobe direkt über HTTPS vom Tonies-Anbieter; dabei werden Daten für die Wiedergabe im Browser gepuffert. Eine Internetverbindung ist dafür erforderlich. Ist eine Probe nicht mehr erreichbar, zeigt die Karte eine Meldung an.
+
+Hörproben stehen Administratoren und normalen angemeldeten Nutzern zur Verfügung. Sie verändern weder die Häufigkeit noch die Markierung der zuletzt gehörten Figur und spielen nicht auf der Toniebox.
+
 ### Häufigkeit, letzte Figur und doppelte Einträge
 
 Die häufigsten Tonies stehen oben. Gezählt werden neue Erkennungen/Aufstellungen, keine vollständig gehörten Durchläufe. Zwischengespeicherte MQTT-Meldungen erhöhen den Zähler nicht.
@@ -177,6 +189,7 @@ Audio-IDs, die der Online-Katalog ausdrücklich demselben Inhalt zuordnet, ersch
 | Aktion | Administratoren | Normale angemeldete Nutzer |
 | --- | :---: | :---: |
 | Sammlung ansehen und durchsuchen | ✓ | ✓ |
+| Hörproben im Dashboard abspielen | ✓ | ✓ |
 | Tonies löschen | ✓ | ✓ |
 | Tonies manuell hinzufügen | ✓ | — |
 | Titel, Laufzeit und Bilder bearbeiten | ✓ | — |
@@ -247,7 +260,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v054.js?v=0.5.5
+/teddycloud-homeassistant/card-v056.js?v=0.5.6
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.
