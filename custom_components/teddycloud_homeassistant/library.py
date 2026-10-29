@@ -182,7 +182,7 @@ class TonieLibrary:
         """Allow the same figurine to return after removing it from this box."""
         self._last_ids[box_id] = ""
 
-    async def async_metadata(self, audio_id, title=None, image=None, duration=None, audio_ids=None):
+    async def async_metadata(self, audio_id, title=None, image=None, duration=None, audio_ids=None, preview_url=None):
         """Refresh detected metadata only for items still in the collection."""
         async with self._lock:
             item = self._entries.get(audio_id)
@@ -190,6 +190,9 @@ class TonieLibrary:
                 return
             dirty = item.get('metadata_source') != 'catalog'
             item['metadata_source'] = 'catalog'
+            if item.get('preview_url') != preview_url:
+                item['preview_url'] = preview_url
+                dirty = True
             if audio_ids:
                 known = sorted({str(value) for value in audio_ids if valid_audio_id(str(value))})
                 if audio_id in known and known != item.get("catalog_audio_ids"):
@@ -270,6 +273,7 @@ class TonieLibrary:
             "title": custom.get("title") or entry.get("title") or f"Tonie {audio_id}",
             "image": custom.get("image") or entry.get("image") or "",
             "duration_seconds": custom.get("duration_seconds") or entry.get("duration_seconds"),
+            "preview_url": entry.get("preview_url"),
             "first_seen": entry.get("first_seen"),
             "last_seen": entry.get("last_seen"),
             "times_seen": entry.get("times_seen", 0),
@@ -306,7 +310,7 @@ class TonieLibrary:
                 await self.async_metadata(
                     audio_id, title=result.get("catalog_title"),
                     image=result.get("figure"), duration=result.get("duration_seconds"),
-                    audio_ids=result.get("audio_ids"),
+                    audio_ids=result.get("audio_ids"), preview_url=result.get("preview_url"),
                 )
 
     def public_entries(self):
@@ -328,7 +332,7 @@ class TonieLibrary:
                 other = self._public_entry(key)
                 if not self._entries[visible[0]].get("title") and self._entries[key].get("title"):
                     item["title"] = self._entries[key]["title"]
-                for field in ("image", "duration_seconds"):
+                for field in ("image", "duration_seconds", "preview_url"):
                     if not item.get(field) and other.get(field):
                         item[field] = other[field]
                 for field, value in other["custom"].items():

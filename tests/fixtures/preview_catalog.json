@@ -1,0 +1,233 @@
+[
+  {
+    "article": "01-0013",
+    "data": [
+      {
+        "series": "Benjamin Blümchen",
+        "episode": "Der Zoo-Kindergarten",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/4a12ddaa0a1d805b2730a7961c9c15169f03fc7b0affe8bc41ad01ec/01_hoerprobe_benjamin_zoo_kindergarten_128_kbps.mp3",
+        "web": "https://tonies.com/de-de/tonies/benjamin-bluemchen/der-zoo-kindergarten/",
+        "ids": [
+          {
+            "audio-id": 1490954302,
+            "hash": "de2e96dcaef3c0251104354aae218323bb0d804a",
+            "size": 33815490,
+            "tracks": 9,
+            "confidence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "01-0113",
+    "data": [
+      {
+        "series": "Bibi & Tina",
+        "episode": "Der verschwundene Pokal",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/e3c9b930616e5a5392e18e3c2d537874cf333a1a9ca0b12274ea737b/der_verschwundene_pokal.mp3",
+        "web": "https://tonies.com/de-de/tonies/bibi-tina/der-verschwundene-pokal/",
+        "ids": [
+          {
+            "audio-id": 1506950840,
+            "hash": "d6f0f882eb65d4f71a80cd467b1baa50c223c3ac",
+            "size": 28707887,
+            "tracks": 7,
+            "confidence": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "01-0161",
+    "data": [
+      {
+        "series": "Maus",
+        "episode": "Mit der Maus die Welt entdecken",
+        "language": "de-de",
+        "sample": null,
+        "web": "https://tonies.com/de-de/tonies/maus/mit-der-maus-die-welt-entdecken/",
+        "ids": [
+          {
+            "audio-id": 1553257247,
+            "hash": "6218e017381b9568da112286cff383a1ae648bed",
+            "size": 25014982,
+            "tracks": 14,
+            "confidence": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "10000001",
+    "data": [
+      {
+        "series": "Julia Donaldson",
+        "episode": "The Gruffalo",
+        "language": "en-gb",
+        "sample": "https://cdn.tonies.de/o/audio_samples/7dcd592f796ac9b1e04ab39b705c68e8e809d15b2aff2fda353492c8/hoerprobe_the_grufallo.mp3",
+        "web": "https://tonies.com/en-gb/tonies/julia-donaldson/the-gruffalo/",
+        "ids": [
+          {
+            "audio-id": 1538986377,
+            "hash": "843d8b52f017a517ec15d457d83711b72d84601c",
+            "size": 12729636,
+            "tracks": 2,
+            "confidence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "10000829",
+    "data": [
+      {
+        "series": "Lieblings-Kinderlieder",
+        "episode": "Spiel- und Bewegungslieder",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/f4dcd2b0edb15575e25c74d1be5387825d076841c93df34f28b164d9/hoerprobe_neuauflage_spiel_und_bewegung.mp3",
+        "web": "https://tonies.com/de-de/tonies/lieblings-kinderlieder/bewegungslieder-2021/",
+        "ids": [
+          {
+            "audio-id": 1684759369,
+            "hash": "40454befbc53a076a664e5ff2497760e139b6510",
+            "size": 39338940,
+            "tracks": 24,
+            "confidence": 1
+          },
+          {
+            "audio-id": 1612883610,
+            "hash": "81a32c7d7c098f4110df5589e30cc49e162344a4",
+            "size": 0,
+            "tracks": 0,
+            "confidence": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "10000933",
+    "data": [
+      {
+        "series": "PAW Patrol",
+        "episode": "Marshall - Schneller als die Feuerwehr",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/0e2636f2f9336ffa79488b4ae17b896317cf28ee09a4a593fbfd897d/hoerprobe_10000933_paw_patrol_schneller_als_die_feuerwehr.mp3",
+        "web": "https://tonies.com/de-de/tonies/paw-patrol/schneller-als-die-feuerwehr/",
+        "ids": [
+          {
+            "audio-id": 1643643834,
+            "hash": "9889122edcccf11f1e7ed72e6cbfc176bc7cc4a6",
+            "size": 44057125,
+            "tracks": 17,
+            "confidence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "10001997",
+    "data": [
+      {
+        "series": "Bibi Blocksberg",
+        "episode": "Mami spielt verrückt",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/191375c1476c29154f8a408a555183445dcb11449053eae8e4b998e3/horprobe_bibi_blocksberg_mami.mp3",
+        "web": "https://tonies.com/de-de/tonies/bibi-blocksberg/mami-spielt-verrckt/",
+        "ids": [
+          {
+            "audio-id": 1685704703,
+            "hash": "84d173743c1eb7979024c9eb1b4c50a51cd9b30a",
+            "size": 34145199,
+            "tracks": 1,
+            "confidence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "11000247",
+    "data": [
+      {
+        "series": "PAW Patrol",
+        "episode": "Rocky - Die Hundeschau",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/2fc4dd72e6e78dcd977c01506fdef728912ee19ab62e575ef27e3d28/hoerprobe_11000247_paw_patrol_die_hundeschau.mp3",
+        "web": "https://tonies.com/de-de/tonies/paw-patrol/die-hundeschau/",
+        "ids": [
+          {
+            "audio-id": 1689923167,
+            "hash": "a9f6394d9c4a620915332fda25f97b4197cbe86b",
+            "size": 38457853,
+            "tracks": 16,
+            "confidence": 1
+          },
+          {
+            "audio-id": 1689169650,
+            "hash": "104a3bd65b8448f9ab80a7e12b108c39d714b0bf",
+            "size": 0,
+            "tracks": 0,
+            "confidence": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "11003328",
+    "data": [
+      {
+        "series": "Der Grüffelo",
+        "episode": "Der Grüffelo & Das Grüffelokind (Relaunch 2026)",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/b3dcd2fd2243e9313c1cfa788ca9853ecb6e09ca9c0cb1b9044c9d92/gruffelo_horprobe.wav",
+        "web": "https://tonies.com/de-de/tonies/der-grueffelo/der-grueffelo-das-grueffelokind-relaunch-2026/",
+        "ids": [
+          {
+            "audio-id": 1779314543,
+            "hash": "e298a2c6d0cdba8faf6d55665dcf9e63cff22319",
+            "size": 37992349,
+            "tracks": 10,
+            "confidence": 1
+          },
+          {
+            "audio-id": 1769176823,
+            "hash": "9486c5153240779867740fd8a9b369cbcd6c59de",
+            "size": 37479752,
+            "tracks": 10,
+            "confidence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "article": "11003817",
+    "data": [
+      {
+        "series": "Pokémon",
+        "episode": "Glumanda",
+        "language": "de-de",
+        "sample": "https://cdn.tonies.de/o/audio_samples/8c4521ddfcbee4728130d1f86a12d64702e2d3626295b2fc1ae5bea5/pdp_sample_glumanda.mp3",
+        "web": "https://tonies.com/de-de/tonies/pokemon/glumanda/",
+        "ids": [
+          {
+            "audio-id": 1787090414,
+            "hash": "24f1704383890873a26e9806e25ec072a33c4e77",
+            "size": 55675987,
+            "tracks": 9,
+            "confidence": 1
+          }
+        ]
+      }
+    ]
+  }
+]

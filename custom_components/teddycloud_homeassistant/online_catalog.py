@@ -1,4 +1,4 @@
-"""Non-scraping image lookup against the community Tonies JSON catalog.
+"""Exact metadata and sample-link lookup against the community Tonies JSON catalog.
 
 Exact audio ID matching only: no guessed image for ambiguous titles.
 """
@@ -7,6 +7,7 @@ import logging
 import json
 from datetime import timedelta
 import re
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
@@ -19,6 +20,16 @@ CATALOG_SOURCES = [
 REFRESH = timedelta(hours=24)
 RETRY = timedelta(seconds=20)
 MAX_SIZE = 60 * 1024 * 1024
+
+
+def preview_url(value):
+    """Accept only direct HTTPS samples supplied by the single Tonies catalog."""
+    if isinstance(value, str) and re.fullmatch(
+        r"https://cdn\.tonies\.de/o/audio_samples/[A-Za-z0-9_./%-]+\.(?:mp3|wav|m4a|ogg)", value, re.IGNORECASE
+    ) and "/../" not in value:
+        return value
+    return None
+
 
 def duration_seconds(entry):
     """Read explicit durations only; never guess length from a track list."""
@@ -145,7 +156,7 @@ class OnlineCatalog:
                                             continue
                                         aid = str(ident.get("audio-id") or "").strip()
                                         if aid.isdecimal():
-                                            new_items[aid] = {"figure": pic, "catalog_title": title, "duration_seconds": length, "audio_ids": sorted({str(i.get("audio-id")) for i in entry.get("ids", []) if isinstance(i, dict) and str(i.get("audio-id", "")).isdecimal()})}
+                                            new_items[aid] = {"preview_url": preview_url(entry.get("sample")), "figure": pic, "catalog_title": title, "duration_seconds": length, "audio_ids": sorted({str(i.get("audio-id")) for i in entry.get("ids", []) if isinstance(i, dict) and str(i.get("audio-id", "")).isdecimal()})}
                         else:
                             # Older catalog has artwork but no runtime.
                             for entry in data:
@@ -161,6 +172,7 @@ class OnlineCatalog:
                                     aid = str(ident).strip()
                                     if aid.isdecimal():
                                         new_items[aid] = {
+                                            "preview_url": None,
                                             "figure": pic,
                                             "catalog_title": str(entry.get("title") or ""),
                                             "duration_seconds": None,
