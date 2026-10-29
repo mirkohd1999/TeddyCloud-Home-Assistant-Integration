@@ -47,6 +47,7 @@ jobs:
           cmp custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js www/teddycloud-homeassistant-card.js
           node tests/test_card_layouts.cjs
           node tests/test_card_previews.cjs
+          node tests/test_card_updates.cjs
       - name: Validate package metadata and translations
         run: |
           python3 - <<'PY'
@@ -59,6 +60,7 @@ jobs:
           assert manifest["name"] == "TeddyCloud Home Assistant Integration"
           assert __import__("re").fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", manifest["version"])
           assert f'CARD_VERSION = "{manifest["version"]}"' in (root / "card_registration.py").read_text()
+          assert f"const TEDDY_CARD_VERSION = '{manifest['version']}';" in (root / "teddycloud-homeassistant-card.js").read_text()
           assert manifest["codeowners"] == ["@mirkohd1999"]
           assert (root / "brand" / "icon.png").is_file()
 

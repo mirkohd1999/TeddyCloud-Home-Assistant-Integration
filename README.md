@@ -166,7 +166,7 @@ Die Audio-ID wird nicht in den Kacheln angezeigt. Beim Bearbeiten findest du sie
 
 ### Hörproben direkt im Dashboard
 
-Bei Tonies mit verfügbarer Hörprobe erscheint **▶ Play** direkt in der Kachel. Beim Antippen spielt die Vorschau auf dem Handy, Tablet oder Computer ab, auf dem du das Dashboard geöffnet hast. Der Button wechselt zu **■ Stop**. Stop beendet die Wiedergabe; ein erneutes Play startet die Hörprobe von vorn. Nach dem Ende erscheint wieder Play. Es gibt keinen zusätzlichen Player, Fortschrittsbalken, Zeitangaben oder Menü. Beim Start einer anderen Hörprobe oder beim Verlassen des Dashboards endet die bisherige Wiedergabe. Es öffnet sich keine externe Webseite.
+Bei Tonies mit verfügbarer Hörprobe erscheint **▶ Hörprobe** direkt in der Kachel. Beim Antippen spielt die Vorschau auf dem Handy, Tablet oder Computer ab, auf dem du das Dashboard geöffnet hast. Der Button wechselt zu **■ Stop**. Stop beendet die Wiedergabe; ein erneutes Antippen von Hörprobe startet die Hörprobe von vorn. Nach dem Ende erscheint wieder Hörprobe. Es gibt keinen zusätzlichen Player, Fortschrittsbalken, Zeitangaben oder Menü. Beim Start einer anderen Hörprobe oder beim Verlassen des Dashboards endet die bisherige Wiedergabe. Es öffnet sich keine externe Webseite.
 
 Die einzige Quelle für die Zuordnung ist der bereits verwendete [tonies-json-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json). Die genaue Audio-ID bestimmt die Hörprobe und damit auch die Inhaltsfassung und Sprache. Es gibt keine zusätzliche Suche im Shop, bei Suchmaschinen oder anderen Anbietern. Ohne eindeutigen Katalogtreffer und hinterlegten Hörproben-Link erscheint kein Button.
 
@@ -262,12 +262,20 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v058.js?v=0.5.8
+/teddycloud-homeassistant/card-v059.js?v=0.5.9
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.
 
 Für die Bibliothek lautet der Kartentyp `custom:teddycloud-tonie-library-card`, für die Toniebox `custom:teddycloud-homeassistant-card`.
+
+### Kartendarstellung bleibt nach einem Update alt
+
+Nach dem HACS-Update Home Assistant neu starten. Die Integration aktualisiert ihre Dashboard-Ressourcen automatisch auf die installierte Kartendatei und ergänzt eine Kennung aus deren Inhalt. Eigene Zusätze wie `refresh=2` müssen nicht manuell gepflegt werden.
+
+Die Bibliothek bekommt die aktuelle Kartenversion über ihre bestehende Verbindung mitgeteilt und kann neuere Kartenmodule selbst nachladen. Beim Laden wird auch eine bereits registrierte ältere Bibliothekskarte auf die aktuelle Darstellung umgestellt. Ein alter Hörproben-Player wird dabei beendet und entfernt; gespeichert bleiben die Tonies, eigene Angaben und Berechtigungen.
+
+War vor dem Update noch eine ältere Karte ohne diese Versionsprüfung geöffnet, kann einmaliges Neuöffnen des Dashboards nötig sein, damit das neue Modul überhaupt angefordert wird. Änderungen an Ressourcen oder das Löschen von Bibliothekseinträgen sind dafür nicht erforderlich. Die Hörprobe zeigt ausschließlich **▶ Hörprobe / ■ Stop**, ohne Fortschrittsbalken oder Zeitangaben.
 
 ### Bibliothek bleibt leer
 

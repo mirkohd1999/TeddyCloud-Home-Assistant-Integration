@@ -1,5 +1,7 @@
 """Serve and register the bundled Lovelace card once per Home Assistant runtime."""
 import logging
+import re
+from hashlib import sha256
 from pathlib import Path
 
 from homeassistant.components.http import StaticPathConfig
@@ -19,10 +21,20 @@ PREVIOUS_CARD_PATH = "/teddycloud-homeassistant/card-v050.js"
 OLDER_V054_PATH = "/teddycloud-homeassistant/card-v054.js"
 OLDER_V056_PATH = "/teddycloud-homeassistant/card-v056.js"
 OLDER_V057_PATH = "/teddycloud-homeassistant/card-v057.js"
-CARD_PATH = "/teddycloud-homeassistant/card-v058.js"
-CARD_VERSION = "0.5.8"
-CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
+OLDER_V058_PATH = "/teddycloud-homeassistant/card-v058.js"
+CARD_PATH = "/teddycloud-homeassistant/card-v059.js"
+CARD_VERSION = "0.5.9"
+CARD_BUILD = sha256((Path(__file__).parent / "teddycloud-homeassistant-card.js").read_bytes()).hexdigest()[:12]
+CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}&build={CARD_BUILD}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
+
+
+def is_card_resource(url):
+    """Recognize only this integration-owned route, regardless of old query strings."""
+    return isinstance(url, str) and re.fullmatch(
+        r"/teddycloud-homeassistant/card(?:-v[0-9]+)?\.js",
+        url.split("?", 1)[0].split("#", 1)[0],
+    ) is not None
 
 
 async def async_register_card(hass):
@@ -38,7 +50,7 @@ async def async_register_card(hass):
         # new custom elements. Keep legacy paths available for existing cards.
         for path in (
             LEGACY_CARD_PATH, OLDER_CARD_PATH, OLDER_V035_PATH, OLDER_V036_PATH, OLDER_V037_PATH, OLDER_V038_PATH, OLDER_V040_PATH,
-            PREVIOUS_CARD_PATH, OLDER_V054_PATH, OLDER_V056_PATH, OLDER_V057_PATH, CARD_PATH,
+            PREVIOUS_CARD_PATH, OLDER_V054_PATH, OLDER_V056_PATH, OLDER_V057_PATH, OLDER_V058_PATH, CARD_PATH,
         ):
             try:
                 await hass.http.async_register_static_paths(
@@ -76,11 +88,11 @@ async def async_register_card(hass):
             await resources.async_load()
         existing = [
             item for item in resources.async_items()
-            if item.get("url", "").split("?")[0] in (CARD_PATH, OLDER_V057_PATH, OLDER_V056_PATH, OLDER_V054_PATH, PREVIOUS_CARD_PATH, OLDER_V038_PATH, OLDER_V040_PATH, OLDER_V037_PATH, OLDER_V036_PATH, OLDER_V035_PATH, OLDER_CARD_PATH, LEGACY_CARD_PATH)
+            if is_card_resource(item.get("url"))
         ]
         if existing:
             for item in existing:
-                if item.get("url") != CARD_URL:
+                if item.get("url") != CARD_URL or item.get("res_type") != "module":
                     await resources.async_update_item(
                         item["id"], {"url": CARD_URL, "res_type": "module"}
                     )
