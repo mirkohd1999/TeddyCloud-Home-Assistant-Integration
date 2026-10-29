@@ -16,6 +16,18 @@ def get_library(hass):
     return hass.data.get(DOMAIN, {}).get("library")
 
 
+def library_payload(hass, library):
+    """Report whether missing samples are final or still awaiting the catalog."""
+    catalog = hass.data.get(DOMAIN, {}).get("online_catalog")
+    if catalog is None or (not catalog.fetched_at and not catalog.failed_at):
+        status = "loading"
+    elif catalog.failed_at or getattr(catalog, "loaded_format", None) == "v1":
+        status = "unavailable"
+    else:
+        status = "ready"
+    return {"entries": library.public_entries(), "preview_catalog_status": status}
+
+
 @websocket_api.ws_require_user()
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/library/list",
@@ -26,7 +38,24 @@ async def ws_library_list(hass, connection, msg):
     if library is None:
         connection.send_error(msg["id"], "not_ready", "Tonie-Bibliothek nicht bereit")
         return
-    connection.send_result(msg["id"], {"entries": library.public_entries()})
+    connection.send_result(msg["id"], library_payload(hass, library))
+
+
+@websocket_api.ws_require_user()
+@websocket_api.websocket_command({
+    vol.Required("type"): f"{DOMAIN}/library/refresh",
+})
+@websocket_api.async_response
+async def ws_library_refresh(hass, connection, msg):
+    """Both roles may request a rate-limited refresh of the one shared catalog."""
+    library = get_library(hass)
+    catalog = hass.data.get(DOMAIN, {}).get("online_catalog")
+    if library is None or catalog is None:
+        connection.send_error(msg["id"], "not_ready", "Tonie-Bibliothek nicht bereit")
+        return
+    await catalog.refresh(force=True)
+    await library.async_refresh_catalog(catalog)
+    connection.send_result(msg["id"], library_payload(hass, library))
 
 
 @websocket_api.ws_require_user()
@@ -93,7 +122,7 @@ def ws_library_subscribe(hass, connection, msg):
     @callback
     def updated(_audio_id):
         connection.send_message(websocket_api.event_message(
-            msg["id"], {"entries": library.public_entries()}
+            msg["id"], library_payload(hass, library)
         ))
 
     connection.subscriptions[msg["id"]] = async_dispatcher_connect(
@@ -111,6 +140,7 @@ def register_library_websockets(hass):
         return
     for command in (
         ws_library_list,
+        ws_library_refresh,
         ws_library_save,
         ws_library_delete,
         ws_library_subscribe,

@@ -333,6 +333,7 @@ class BoxPlayer(MediaPlayerEntity):
                     audio_id, title=result.get('catalog_title'),
                     image=result.get('figure'), duration=result.get('duration_seconds'),
                     audio_ids=result.get('audio_ids'), preview_url=result.get('preview_url'),
+                    preview_supported=result.get('preview_supported', True),
                 )
             self._refresh_availability()
             cached = self._archive.lookup(audio_id) if self._archive else None
@@ -348,6 +349,7 @@ class BoxPlayer(MediaPlayerEntity):
                         image=cached or result.get('figure'),
                         duration=result.get('duration_seconds'),
                         audio_ids=result.get('audio_ids'), preview_url=result.get('preview_url'),
+                        preview_supported=result.get('preview_supported', True),
                     )
                 self._refresh_availability()
             return

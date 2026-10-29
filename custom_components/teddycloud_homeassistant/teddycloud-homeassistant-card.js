@@ -132,6 +132,11 @@ const TEDDY_EN = {
   " Min.": " min"
 };
 Object.assign(TEDDY_EN, {
+  "Hörproben aktualisieren": "Refresh audio samples",
+  "Hörproben werden im Katalog geprüft …": "Checking the catalog for audio samples …",
+  "Hörproben-Katalog vorübergehend nicht erreichbar. Ein neuer Versuch folgt automatisch.": "The audio sample catalog is temporarily unavailable. It will be retried automatically.",
+  "Für diese Tonies ist im Katalog derzeit keine zugeordnete Hörprobe verfügbar.": "The catalog currently has no matching audio samples for these Tonies.",
+  "Bitte die Integration in HACS aktualisieren und Home Assistant neu starten.": "Please update the integration in HACS and restart Home Assistant.",
   "Hörprobe": "Audio sample",
   "Hörprobe pausieren": "Pause sample",
   "Hörprobe beenden": "Stop sample",
@@ -749,6 +754,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     this._previewAudio = null;
     this._previewId = null;
     this._previewError = null;
+    this._previewCatalogStatus = "loading";
+    this._refreshingPreviews = false;
     this._listen();
   }
   static getStubConfig() { return {}; }
@@ -789,7 +796,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       if (!button) return;
       const action = button.dataset.action;
       const id = button.dataset.id || '';
-      if (action === 'preview') this._togglePreview(id);
+      if (action === 'refresh-previews') this._refreshPreviews();
+      else if (action === 'preview') this._togglePreview(id);
       else if (action === 'preview-stop') this._stopPreview();
       else if (action === 'edit') this._openEdit(id);
       else if (action === 'add') this._openEdit('');
@@ -833,6 +841,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       data => {
         if (!Array.isArray(data?.entries)) return;
         this._entries = data.entries;
+        this._previewCatalogStatus = data.preview_catalog_status || "unknown";
         if (!this._edit) this.render();
       },
       {type:'teddycloud_homeassistant/library/subscribe'}
@@ -861,6 +870,31 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     return safeURL
       ? '<img class="' + className + '" src="' + this._escape(safeURL) + '" alt="' + this._t("Tonie-Bild") + '" loading="lazy">'
       : '<div class="' + className + ' empty">🧸</div>';
+  }
+  async _refreshPreviews() {
+    if (!this._hass || this._refreshingPreviews) return;
+    this._refreshingPreviews = true;
+    this._error = '';
+    this.render();
+    try {
+      const data = await this._hass.callWS({type:'teddycloud_homeassistant/library/refresh'});
+      if (Array.isArray(data?.entries)) this._entries = data.entries;
+      this._previewCatalogStatus = data?.preview_catalog_status || 'unknown';
+    } catch (error) {
+      this._error = error?.code === 'unknown_command'
+        ? 'Bitte die Integration in HACS aktualisieren und Home Assistant neu starten.'
+        : String(error?.message || error);
+    } finally {
+      this._refreshingPreviews = false;
+      this.render();
+    }
+  }
+  _previewStatus() {
+    if (!this._entries?.length) return '';
+    if (this._refreshingPreviews || this._previewCatalogStatus === 'loading') return 'Hörproben werden im Katalog geprüft …';
+    if (this._previewCatalogStatus === 'unavailable') return 'Hörproben-Katalog vorübergehend nicht erreichbar. Ein neuer Versuch folgt automatisch.';
+    if (this._previewCatalogStatus === 'ready' && !this._entries.some(item => this._safePreview(item.preview_url))) return 'Für diese Tonies ist im Katalog derzeit keine zugeordnete Hörprobe verfügbar.';
+    return '';
   }
   _safePreview(url) {
     return typeof url === 'string' &&
@@ -1051,7 +1085,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
         (this._saving ? ' disabled' : '') + '>' + this._t("Änderungen speichern") + '</button></div></section>';
     })() : (
       '<div class="toolbar"><input id="library-search" aria-label="' + this._t("Tonie suchen") + '" placeholder="🔎 ' + this._t("Tonies suchen …") + '" value="' +
-      e(this._query) + '">' + (this._isAdmin ? '<button class="primary" type="button" data-action="add">+ ' + this._t("Tonie hinzufügen") + '</button>' : '') + '</div>' +
+      e(this._query) + '"><button type="button" data-action="refresh-previews"' + (this._refreshingPreviews ? ' disabled' : '') + '>' + this._t('Hörproben aktualisieren') + '</button>' + (this._isAdmin ? '<button class="primary" type="button" data-action="add">+ ' + this._t("Tonie hinzufügen") + '</button>' : '') + '</div>' +
       (!this._entries ? '<p class="hint">' + this._t("Bibliothek wird geladen …") + '</p>' :
         !entries.length ? '<p class="empty-library">' + this._t("Noch keine Tonies gespeichert. Stelle eine Figur auf die Toniebox, damit sie automatisch hier erscheint.") + '</p>' :
           '<div class="library-grid">' + entries.map(item => {
@@ -1119,6 +1153,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '<p class="subtitle">' + this._t("Deine Figuren – automatisch gesammelt") + '' +
       (this._isAdmin ? this._t(" – Bearbeiten möglich") : '') + '</p>',
       this._error ? '<p class="error" role="alert">' + e(this._t(this._error)) + '</p>' : '',
+      this._previewStatus() ? '<p class="hint" role="status">' + e(this._t(this._previewStatus())) + '</p>' : '',
       previewPanel, view, '</ha-card>'
     ].join('');
     if (this._previewAudio) this.shadowRoot.getElementById('library-preview-player')?.appendChild(this._previewAudio);
