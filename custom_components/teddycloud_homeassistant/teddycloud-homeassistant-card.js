@@ -737,7 +737,7 @@ if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-car
 // A resource URL update can load a new module into an already-open dashboard.
 // Existing custom elements cannot be defined twice: upgrade compatible methods
 // in place, so the old registration cannot retain the previous sample player.
-const TEDDY_CARD_VERSION = '0.5.9';
+const TEDDY_CARD_VERSION = '0.5.10';
 const teddyCardUpdates = new Map();
 function teddyLoadCardUpdate(data, loader = url => import(url)) {
   const version = data?.card_version;
@@ -1147,6 +1147,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
             const rings = recent.map((box, index) => '0 0 0 ' + ((index + 1) * 3) + 'px ' + box.color).join(',');
             const highlight = rings ? ' style="box-shadow:' + rings + '"' : '';
             const recentLabel = recent.length ? '<span class="recent">' + this._t("Zuletzt gehört: ") + e(recent.map(box => box.name).join(', ')) + '</span>' : '';
+            const previewButton = (this._safePreview(item.preview_url) ? '<button class="preview-button" data-action="preview" aria-pressed="false" aria-label="' + e(this._t('Hörprobe') + ': ' + title) + '" data-id="' + e(item.audio_id) + '">▶ ' + this._t('Hörprobe') + '</button>' : '');
             return '<article class="tonie"' + highlight + ' data-library-entry data-search="' +
               e((title + ' ' + item.audio_id).toLocaleLowerCase()) + '">' +
               this._image(item.image) +
@@ -1154,13 +1155,12 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
               (Number(item.times_seen) > 0 ? '<span class="id">' + this._t("Schon ") + e(item.times_seen) + this._t("× erkannt") + '</span>' : '') +
               (item.last_seen ? '<span class="id">' + this._t("Zuletzt erkannt: ") + e(new Date(item.last_seen).toLocaleDateString(teddyLanguage(this._hass) === 'en' ? 'en-US' : 'de-DE')) + '</span>' : '') +
-              (this._safePreview(item.preview_url) ? '<button class="preview-button" data-action="preview" aria-pressed="false" aria-label="' + e(this._t('Hörprobe') + ': ' + title) + '" data-id="' + e(item.audio_id) + '">▶ ' + this._t('Hörprobe') + '</button>' : '') +
               (this._previewError === item.audio_id ? '<span class="error" role="alert">' + this._t('Hörprobe derzeit nicht erreichbar.') + '</span>' : '') +
               (removed ?
                 '<p class="warning">' + this._t("Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.") + '</p>' +
-                '<div class="actions"><button data-action="cancel-delete">' + this._t("Abbrechen") + '</button>' +
+                '<div class="actions">' + previewButton + '<button data-action="cancel-delete">' + this._t("Abbrechen") + '</button>' +
                 '<button class="danger" data-action="confirm-delete" data-id="' + e(item.audio_id) + '">' + this._t("Ja, löschen") + '</button></div>' :
-                '<div class="actions">' + (this._isAdmin ? '<button data-action="edit" data-id="' + e(item.audio_id) +
+                '<div class="actions">' + previewButton + (this._isAdmin ? '<button data-action="edit" data-id="' + e(item.audio_id) +
                 '">✏️ ' + this._t("Bearbeiten") + '</button>' : '') + '<button data-action="delete" data-id="' +
                 e(item.audio_id) + '">' + this._t("Löschen") + '</button></div>') +
               '</div></article>';
@@ -1182,12 +1182,12 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '.cover.empty{display:grid;place-items:center;font-size:52px}',
       '.tonie-body{padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}',
       '.recent{font-size:12px;font-weight:600}',
-      '.preview-button{align-self:flex-start}',
       '.tonie-body strong{font-size:14px;overflow-wrap:anywhere;line-height:1.3}',
       '.duration,.id,.hint{font-size:12px;color:var(--secondary-text-color)}',
       '.id{overflow-wrap:anywhere}',
       '.technical{margin-bottom:15px;font-size:12px;color:var(--secondary-text-color)}.technical summary{cursor:pointer;margin-bottom:8px}',
-      '.actions,.edit-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:auto}',
+      '.actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;margin-top:auto}.actions>button{min-width:0;padding:9px 5px;overflow-wrap:anywhere}',
+      '.edit-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:auto}',
       'button{border:1px solid var(--divider-color,#777);border-radius:9px;padding:9px 12px;background:transparent;color:var(--primary-text-color);font:inherit;font-size:12px;cursor:pointer}',
       'button.primary{background:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff);border-color:transparent;font-weight:600}',
       'button.danger{border-color:var(--error-color,#e53935);color:var(--error-color,#e53935)}',

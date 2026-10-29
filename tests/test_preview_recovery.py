@@ -99,7 +99,7 @@ class TestPreviewRecovery(unittest.IsolatedAsyncioTestCase):
             node.decorator_list = []
         catalog = SimpleNamespace(refresh=AsyncMock(), fetched_at=self.now, failed_at=None, loaded_format='v2')
         lib = SimpleNamespace(public_entries=lambda:[{'audio_id':'123', 'preview_url':SAMPLE}], async_refresh_catalog=AsyncMock())
-        namespace = {'DOMAIN':'teddycloud_homeassistant', 'CARD_VERSION':'0.5.9', 'CARD_URL':'/teddycloud-homeassistant/card-v059.js?v=0.5.9&build=123456abcdef', 'get_library':lambda hass:lib}
+        namespace = {'DOMAIN':'teddycloud_homeassistant', 'CARD_VERSION':'0.5.10', 'CARD_URL':'/teddycloud-homeassistant/card-v0510.js?v=0.5.10&build=123456abcdef', 'get_library':lambda hass:lib}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), 'exec'), namespace)
         hass = SimpleNamespace(data={'teddycloud_homeassistant':{'online_catalog':catalog}})
         for admin in (False, True):
@@ -109,7 +109,7 @@ class TestPreviewRecovery(unittest.IsolatedAsyncioTestCase):
             lib.async_refresh_catalog.assert_awaited_with(catalog)
             result = connection.send_result.call_args.args[1]
             self.assertEqual(result['preview_catalog_status'], 'ready')
-            self.assertEqual(result['card_version'], '0.5.9')
+            self.assertEqual(result['card_version'], '0.5.10')
             self.assertIn('&build=', result['card_url'])
             self.assertEqual(result['entries'][0]['preview_url'], SAMPLE)
             connection.send_error.assert_not_called()

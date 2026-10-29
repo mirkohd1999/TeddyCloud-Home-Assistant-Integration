@@ -72,7 +72,7 @@ async function run() {
   context.document.querySelectorAll = () => [{shadowRoot:{querySelectorAll:()=>[normal, admin, editing]}}];
   evaluate(source);
   assert.equal(components.get('teddycloud-tonie-library-card'), Registered);
-  assert.equal(Registered.teddyCardVersion, '0.5.9');
+  assert.equal(Registered.teddyCardVersion, '0.5.10');
   assert.equal(editing._edit, editState);
   assert.equal(editing.shadowRoot.innerHTML, editingMarkup, 'Do not replace an unsaved admin form');
   assert.equal(oldAudio.paused, true);
@@ -106,14 +106,14 @@ async function run() {
   evaluate(source + '\nwindow.testLoadCardUpdate = teddyLoadCardUpdate;');
   const load = context.window.testLoadCardUpdate;
   const loader = async url => {imports.push(url);};
-  const url = '/teddycloud-homeassistant/card-v0510.js?v=0.5.10&build=123456abcdef';
-  await Promise.all([load({card_version:'0.5.10',card_url:url}, loader), load({card_version:'0.5.10',card_url:url}, loader)]);
+  const url = '/teddycloud-homeassistant/card-v0511.js?v=0.5.11&build=123456abcdef';
+  await Promise.all([load({card_version:'0.5.11',card_url:url}, loader), load({card_version:'0.5.11',card_url:url}, loader)]);
   assert.deepEqual(imports, [url]);
   for (const data of [
-    {card_version:'0.5.9',card_url:url}, {card_version:'0.5.8',card_url:url},
-    {card_version:'0.5.10',card_url:'https://evil.test/a.js'},
-    {card_version:'0.5.10',card_url:'/local/other.js'},
-    {card_version:'0.5.10',card_url:'/teddycloud-homeassistant/card-v058.js?v=0.5.10&build=123456abcdef'},
+    {card_version:'0.5.10',card_url:url}, {card_version:'0.5.8',card_url:url},
+    {card_version:'0.5.11',card_url:'https://evil.test/a.js'},
+    {card_version:'0.5.11',card_url:'/local/other.js'},
+    {card_version:'0.5.11',card_url:'/teddycloud-homeassistant/card-v058.js?v=0.5.11&build=123456abcdef'},
     {card_version:'invalid',card_url:url}, {}
   ]) assert.equal(load(data, loader), undefined);
   assert.equal(imports.length, 1);

@@ -48,8 +48,8 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
     async def test_url_includes_installed_content_fingerprint(self):
         body = (ROOT / 'custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js').read_bytes()
         build = sha256(body).hexdigest()[:12]
-        self.assertEqual(self.ns['CARD_VERSION'], '0.5.9')
-        self.assertEqual(self.ns['CARD_URL'], f'/teddycloud-homeassistant/card-v059.js?v=0.5.9&build={build}')
+        self.assertEqual(self.ns['CARD_VERSION'], '0.5.10')
+        self.assertEqual(self.ns['CARD_URL'], f'/teddycloud-homeassistant/card-v0510.js?v=0.5.10&build={build}')
 
     async def test_migrate_old_and_cache_busting_urls_preserving_other_resources(self):
         urls = ['/teddycloud-homeassistant/card.js',
@@ -85,13 +85,13 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
         await self.register()
         routes = [call.args[0][0] for call in self.hass.http.async_register_static_paths.call_args_list]
         self.assertTrue(any(route.url.endswith('card-v058.js') for route in routes))
-        self.assertTrue(any(route.url.endswith('card-v059.js') for route in routes))
+        self.assertTrue(any(route.url.endswith('card-v0510.js') for route in routes))
         self.assertTrue(all(route.cache is False for route in routes))
 
     async def test_only_our_relative_routes_are_migrated(self):
         match = self.ns['is_card_resource']
         for url in ['/local/custom-card.js', 'https://other.test/teddycloud-homeassistant/card.js',
-                    '/teddycloud-homeassistant/other.js', '/teddycloud-homeassistant/card-v059.js/evil', None]:
+                    '/teddycloud-homeassistant/other.js', '/teddycloud-homeassistant/card-v0510.js/evil', None]:
             self.assertFalse(match(url))
         self.assertTrue(match('/teddycloud-homeassistant/card-v058.js?v=0.5.8&refresh=2'))
 

@@ -61,6 +61,24 @@ function makeCard(admin = false, language = 'de') {
 }
 async function run() {
   const card = makeCard();
+  function checkRow(instance, admin) {
+    const articles = [...instance.shadowRoot.innerHTML.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/g)].map(match => match[0]);
+    const first = articles[0];
+    const actions = first.match(/<div class="actions">([\s\S]*?)<\/div>/)[1];
+    assert.ok(first.indexOf('class="actions"') < first.indexOf('data-action="preview"'), 'Sample button is inside the action row');
+    assert.ok(actions.includes('data-action="preview"') && actions.includes('data-action="delete"'));
+    assert.equal((actions.match(/<button\b/g) || []).length, admin ? 3 : 2);
+    assert.equal(actions.includes('data-action="edit"'), admin);
+    assert.ok(!articles[2].includes('data-action="preview"'), 'No extra column for missing samples');
+    assert.ok(instance.shadowRoot.innerHTML.includes('grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)'));
+  }
+  checkRow(card, false);
+  card._deleteId = 'a'; card.render();
+  const confirmation = card.shadowRoot.innerHTML.match(/<div class="actions">([\s\S]*?)<\/div>/)[1];
+  assert.ok(confirmation.includes('data-action="preview"'));
+  assert.ok(confirmation.includes('data-action="cancel-delete"'));
+  assert.ok(confirmation.includes('data-action="confirm-delete"'));
+  card._deleteId = null; card.render();
   assert.equal(audios.length, 0, 'No media element or preload before a user click');
   assert.equal((card.shadowRoot.innerHTML.match(/data-action="preview"/g) || []).length, 2);
   assert.ok(!card.shadowRoot.innerHTML.includes('href='), 'No navigation to a shop');
@@ -106,6 +124,7 @@ async function run() {
   assert.equal(card._previewAudio.getAttribute('src'), sample('bibi'));
   // Starting a sample in another library card also stops the first card.
   const other = makeCard(true, 'en-GB');
+  checkRow(other, true);
   assert.ok(other.shadowRoot.innerHTML.includes('Audio sample'));
   await other._togglePreview('a');
   assert.equal(card._previewAudio, null);
