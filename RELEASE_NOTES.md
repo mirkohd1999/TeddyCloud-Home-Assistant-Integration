@@ -1,18 +1,17 @@
-# v0.5.7
+# v0.5.8
 
-## Hörproben für vorhandene Tonies nachladen
+## Einfache Play-/Stop-Bedienung für Hörproben
 
-- In der Tonie-Bibliothek gibt es **Hörproben aktualisieren**. Administratoren und normale angemeldete Nutzer können damit alle vorhandenen Einträge erneut anhand ihrer Audio-IDs abgleichen. Die Quelle bleibt ausschließlich `tonies-json`; es werden keine Shop-Seiten oder weiteren Anbieter durchsucht.
-- Die Karte zeigt, ob der Hörproben-Katalog noch geprüft wird, vorübergehend nicht erreichbar ist oder für die Sammlung keine passenden Hörproben enthält.
-- Wird wegen eines Verbindungsproblems nur das ältere Katalogformat geladen, wird das aktuelle Format nach etwa 22 Sekunden erneut versucht. Der Rückfall blockiert Hörproben nicht mehr für 24 Stunden und entfernt keine bereits gespeicherten Vorschau-Links.
-- Bei regionalen Katalogeinträgen desselben Hörspiels mit gleicher Audio-ID bleibt eine vorhandene Hörprobe erhalten, wenn ein späterer Eintrag keinen Link enthält. Abweichende Geschichten oder Inhaltssprachen erhalten keine fremde Hörprobe.
-- Manuelle Aktualisierungen dürfen den Tagescache umgehen; wiederholte Downloads werden mindestens 20 Sekunden begrenzt. Laufende Hörproben werden durch den Abgleich nicht neu gestartet.
-- Audiodateien spielen weiterhin direkt im Dashboard und werden von der Integration nicht gespeichert. Erkennungszähler, letzte Figur und eigene Bearbeitungen bleiben erhalten.
+- Hörproben werden ausschließlich über **▶ Play** und **■ Stop** direkt in der jeweiligen Tonie-Kachel bedient.
+- Der zusätzliche Player mit großem Titel, Fortschrittsbalken, Zeitangaben und Browser-Menü entfällt vollständig.
+- Stop beendet die Wiedergabe und gibt den Audiostream frei. Ein erneutes Play startet die Hörprobe von vorn. Am natürlichen Ende kehrt der Button automatisch zu Play zurück.
+- Der Wechsel zu einer anderen Hörprobe sowie das Verlassen der Karte stoppt die bisherige Wiedergabe. Bibliotheksaktualisierungen unterbrechen eine laufende Probe nicht.
+- Zuordnung, Katalogabgleich, Berechtigungen und direktes Streaming ohne Audiodatei in Home Assistant bleiben erhalten.
 
 ## Update
 
-In HACS auf **v0.5.7** aktualisieren und **Home Assistant neu starten**. Danach das Dashboard neu öffnen. Die automatisch registrierte Ressource lautet `/teddycloud-homeassistant/card-v057.js?v=0.5.7`. Bei fehlenden Buttons **Hörproben aktualisieren** drücken. Tonies müssen dafür weder gelöscht noch erneut aufgestellt werden.
+In HACS auf **v0.5.8** aktualisieren, Home Assistant neu starten und das Dashboard neu öffnen. Die automatisch registrierte Kartenressource lautet `/teddycloud-homeassistant/card-v058.js?v=0.5.8`.
 
 ## Prüfung
 
-66 Python-Tests sowie Dashboard-, Sprach- und Audio-Lebenszyklustests bestanden. Neue Regressionen prüfen den Rückfall vom aktuellen auf das ältere Katalogformat mit anschließender Wiederherstellung, vorhandene Sammlungen, den manuellen Abgleich für beide Rollen, Begrenzung wiederholter Anforderungen und echte doppelte Grüffelo-Katalogeinträge. Die vollständigen aktuellen Katalogdaten wurden zusätzlich gegen die zehn zuvor geprüften Tonies abgeglichen. Kein Zugriff auf die Home-Assistant-Installation des Nutzers und kein Wiedergabetest auf einer physischen Toniebox.
+66 Python-Tests sowie Dashboard-, Sprach- und angepasste Audio-Tests bestanden. Die Audio-Tests prüfen fehlende sichtbare Player-Elemente, Play/Stop-Anzeige, Neustart nach Stop, natürliches Ende, Kartenwechsel, Fehler und beide Benutzerrollen. Audio-Lebenszyklus mit Testobjekt geprüft; kein direkter Test auf dem Endgerät des Nutzers.

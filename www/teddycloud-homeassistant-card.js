@@ -138,8 +138,6 @@ Object.assign(TEDDY_EN, {
   "Für diese Tonies ist im Katalog derzeit keine zugeordnete Hörprobe verfügbar.": "The catalog currently has no matching audio samples for these Tonies.",
   "Bitte die Integration in HACS aktualisieren und Home Assistant neu starten.": "Please update the integration in HACS and restart Home Assistant.",
   "Hörprobe": "Audio sample",
-  "Hörprobe pausieren": "Pause sample",
-  "Hörprobe beenden": "Stop sample",
   "Hörprobe derzeit nicht erreichbar.": "Audio sample is currently unavailable.",
   "Tonie-Bibliothek nicht bereit": "Tonie library is not ready",
   "Nur Administratoren dürfen Tonies hinzufügen oder bearbeiten": "Only administrators can add or edit Tonies",
@@ -798,7 +796,6 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       const id = button.dataset.id || '';
       if (action === 'refresh-previews') this._refreshPreviews();
       else if (action === 'preview') this._togglePreview(id);
-      else if (action === 'preview-stop') this._stopPreview();
       else if (action === 'edit') this._openEdit(id);
       else if (action === 'add') this._openEdit('');
       else if (action === 'cancel') { this._edit = null; this._error = ''; this._upload = null; this.render(); }
@@ -920,12 +917,13 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     if (!url) return;
     this._previewError = null;
     if (this._previewId === id && this._previewAudio?.getAttribute('src') === url) {
-      if (!this._previewAudio.paused) { this._previewAudio.pause(); return; }
-      if (this._previewAudio.ended) this._previewAudio.currentTime = 0;
+      this._stopPreview();
+      return;
     } else {
       this._stopPreview(false);
       const audio = document.createElement('audio');
-      audio.controls = true;
+      // Playback stays detached: only the tile Play/Stop button is visible.
+      audio.controls = false;
       audio.preload = 'none';
       audio.setAttribute('src', url);
       audio.addEventListener('play', () => {
@@ -934,11 +932,9 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
         teddyPreviewOwner = this;
         this._updatePreviewButtons();
       });
-      for (const name of ['pause', 'ended']) {
-        audio.addEventListener(name, () => {
-          if (this._previewAudio === audio) this._updatePreviewButtons();
-        });
-      }
+      audio.addEventListener('ended', () => {
+        if (this._previewAudio === audio) this._stopPreview();
+      });
       audio.addEventListener('error', () => this._previewFailed(audio, id));
       this._previewAudio = audio;
       this._previewId = id;
@@ -962,9 +958,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   }
   _updatePreviewButtons() {
     this.shadowRoot.querySelectorAll('button[data-action="preview"]').forEach(button => {
-      const playing = button.dataset.id === this._previewId &&
-        this._previewAudio && !this._previewAudio.paused && !this._previewAudio.ended;
-      button.textContent = (playing ? '⏸ ' : '▶ ') + this._t(playing ? 'Hörprobe pausieren' : 'Hörprobe');
+      const playing = button.dataset.id === this._previewId && Boolean(this._previewAudio);
+      button.textContent = playing ? '■ Stop' : '▶ Play';
       button.setAttribute('aria-pressed', playing ? 'true' : 'false');
     });
   }
@@ -1055,10 +1050,6 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     const entries = this._entries || [];
     const preview = entries.find(item => item.audio_id === this._previewId);
     if (this._previewAudio && (!preview || this._safePreview(preview.preview_url) !== this._previewAudio.getAttribute('src'))) this._stopPreview(false);
-    // Keep the same audio node across live library updates, preserving position.
-    const previewPanel = this._previewAudio ? '<section class="preview-panel" aria-label="' + this._t('Hörprobe') + '">' +
-      '<div class="preview-heading"><strong>' + e(preview.title) + '</strong><button data-action="preview-stop">' +
-      this._t('Hörprobe beenden') + '</button></div><div id="library-preview-player"></div></section>' : '';
     const view = this._edit && this._isAdmin ? (() => {
       const item = this._edit;
       const editing = Boolean(item.audio_id);
@@ -1102,7 +1093,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
               '<span class="duration">' + e(this._mins(item.duration_seconds)) + '</span>' +
               (Number(item.times_seen) > 0 ? '<span class="id">' + this._t("Schon ") + e(item.times_seen) + this._t("× erkannt") + '</span>' : '') +
               (item.last_seen ? '<span class="id">' + this._t("Zuletzt erkannt: ") + e(new Date(item.last_seen).toLocaleDateString(teddyLanguage(this._hass) === 'en' ? 'en-US' : 'de-DE')) + '</span>' : '') +
-              (this._safePreview(item.preview_url) ? '<button class="preview-button" data-action="preview" aria-pressed="false" data-id="' + e(item.audio_id) + '">▶ ' + this._t('Hörprobe') + '</button>' : '') +
+              (this._safePreview(item.preview_url) ? '<button class="preview-button" data-action="preview" aria-pressed="false" aria-label="' + e(this._t('Hörprobe') + ': ' + title) + '" data-id="' + e(item.audio_id) + '">▶ Play</button>' : '') +
               (this._previewError === item.audio_id ? '<span class="error" role="alert">' + this._t('Hörprobe derzeit nicht erreichbar.') + '</span>' : '') +
               (removed ?
                 '<p class="warning">' + this._t("Tonie wirklich aus deiner Bibliothek löschen? Er wird beim erneuten Auflegen wieder hinzugefügt.") + '</p>' +
@@ -1130,7 +1121,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       '.cover.empty{display:grid;place-items:center;font-size:52px}',
       '.tonie-body{padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}',
       '.recent{font-size:12px;font-weight:600}',
-      '.preview-panel{border:1px solid var(--divider-color,#777);border-radius:12px;padding:12px;margin-bottom:16px}.preview-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.preview-heading strong{font-size:14px;overflow-wrap:anywhere}audio{display:block;width:100%}.preview-button{align-self:flex-start}',
+      '.preview-button{align-self:flex-start}',
       '.tonie-body strong{font-size:14px;overflow-wrap:anywhere;line-height:1.3}',
       '.duration,.id,.hint{font-size:12px;color:var(--secondary-text-color)}',
       '.id{overflow-wrap:anywhere}',
@@ -1154,9 +1145,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       (this._isAdmin ? this._t(" – Bearbeiten möglich") : '') + '</p>',
       this._error ? '<p class="error" role="alert">' + e(this._t(this._error)) + '</p>' : '',
       this._previewStatus() ? '<p class="hint" role="status">' + e(this._t(this._previewStatus())) + '</p>' : '',
-      previewPanel, view, '</ha-card>'
+      view, '</ha-card>'
     ].join('');
-    if (this._previewAudio) this.shadowRoot.getElementById('library-preview-player')?.appendChild(this._previewAudio);
     this._updatePreviewButtons();
     if (!this._edit) this._applySearch();
   }
