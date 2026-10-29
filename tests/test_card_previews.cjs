@@ -23,7 +23,17 @@ class FakeElement {
       innerHTML: '', events: {}, mounted: null,
       addEventListener(name, handler) { this.events[name] = handler; },
       getElementById() { return {appendChild: audio => { this.mounted = audio; }}; },
-      querySelectorAll() { return []; }
+      querySelectorAll(selector) {
+        if (selector !== 'button[data-action="preview"]') return [];
+        if (this.buttonHTML !== this.innerHTML) {
+          this.buttonHTML = this.innerHTML;
+          this.buttons = [...this.innerHTML.matchAll(/<button[^>]*data-action="preview"[^>]*data-id="([^"]+)"[^>]*>([^<]*)<\/button>/g)].map(match => ({
+            dataset:{id:match[1]}, textContent:match[2], attrs:{},
+            setAttribute(key, value) { this.attrs[key] = value; }
+          }));
+        }
+        return this.buttons || [];
+      }
     };
   }
 }
@@ -63,9 +73,13 @@ async function run() {
   await Promise.resolve();
   const first = card._previewAudio;
   assert.equal(first.getAttribute('src'), sample('rocky'));
-  assert.equal(first.controls, true);
+  assert.equal(first.controls, false);
   assert.equal(first.preload, 'none');
-  assert.equal(card.shadowRoot.mounted, first);
+  assert.equal(card.shadowRoot.mounted, null, 'Audio is never attached as a visible player');
+  assert.ok(!card.shadowRoot.innerHTML.includes('preview-panel'));
+  assert.ok(!card.shadowRoot.innerHTML.includes('<audio'));
+  assert.ok(!card.shadowRoot.innerHTML.includes('library-preview-player'));
+  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '■ Stop');
   assert.equal(first.paused, false);
   first.currentTime = 17;
   card.render();
@@ -75,12 +89,16 @@ async function run() {
   assert.equal(first.currentTime, 17);
   await card._togglePreview('a');
   assert.equal(first.paused, true);
+  assert.equal(card._previewAudio, null, 'The second click stops and releases playback');
+  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '▶ Play');
   await card._togglePreview('a');
-  assert.equal(first.paused, false);
-  first.ended = true;
-  first.paused = true;
+  assert.notEqual(card._previewAudio, first, 'Play after Stop starts a fresh sample');
+  assert.equal(card._previewAudio.currentTime, 0);
+  card._previewAudio.ended = true;
+  card._previewAudio.emit('ended');
+  assert.equal(card._previewAudio, null, 'Natural end resets the button to Play');
+  assert.equal(card.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '▶ Play');
   await card._togglePreview('a');
-  assert.equal(first.currentTime, 0, 'Finished samples can replay');
   await card._togglePreview('b');
   assert.equal(first.paused, true);
   assert.equal(first.getAttribute('src'), undefined, 'Previous download is released');
@@ -96,7 +114,8 @@ async function run() {
   other._hass.locale.language = 'de';
   other.render();
   assert.equal(other._previewAudio, beforeLanguageChange);
-  assert.ok(other.shadowRoot.innerHTML.includes('Hörprobe beenden'));
+  assert.ok(!other.shadowRoot.innerHTML.includes('preview-panel'));
+  assert.equal(other.shadowRoot.querySelectorAll('button[data-action="preview"]')[0].textContent, '■ Stop');
   other._previewAudio.emit('error');
   assert.equal(other._previewAudio, null);
   assert.ok(other.shadowRoot.innerHTML.includes('Hörprobe derzeit nicht erreichbar.'));
@@ -131,7 +150,7 @@ async function run() {
   assert.equal(pending._previewAudio, null);
   assert.ok(pending.shadowRoot.innerHTML.includes('Hörprobe derzeit nicht erreichbar.'));
   FakeAudio.prototype.play = originalPlay;
-  // A user pausing an in-flight play request is not a broken sample.
+  // An OS interruption of an in-flight play request is not a broken sample.
   FakeAudio.prototype.play = function () {
     this.paused = true;
     return Promise.reject({name:'AbortError'});
@@ -181,6 +200,6 @@ async function run() {
     await refreshCard._refreshPreviews();
     assert.ok(refreshCard.shadowRoot.innerHTML.includes('restart Home Assistant'));
   }
-  console.log('Inline audio samples: roles, language, direct streaming, switching, lifecycle and errors passed.');
+  console.log('Play/Stop-only audio samples: hidden media, restart after Stop, natural end, roles, language, switching and errors passed.');
 }
 run().catch(error => {console.error(error); process.exitCode = 1;});

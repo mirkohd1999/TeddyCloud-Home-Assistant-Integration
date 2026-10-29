@@ -166,7 +166,7 @@ Die Audio-ID wird nicht in den Kacheln angezeigt. Beim Bearbeiten findest du sie
 
 ### Hörproben direkt im Dashboard
 
-Bei Tonies mit verfügbarer Hörprobe erscheint **▶ Hörprobe**. Die Vorschau spielt direkt in der Bibliothekskarte auf dem Handy, Tablet oder Computer ab, auf dem du das Dashboard geöffnet hast. Der Player bietet Start/Pause und eine Fortschrittsanzeige. Über **Hörprobe beenden** kannst du die Wiedergabe schließen. Beim Start einer anderen Hörprobe oder beim Verlassen des Dashboards endet die bisherige Wiedergabe. Es öffnet sich keine externe Webseite.
+Bei Tonies mit verfügbarer Hörprobe erscheint **▶ Play** direkt in der Kachel. Beim Antippen spielt die Vorschau auf dem Handy, Tablet oder Computer ab, auf dem du das Dashboard geöffnet hast. Der Button wechselt zu **■ Stop**. Stop beendet die Wiedergabe; ein erneutes Play startet die Hörprobe von vorn. Nach dem Ende erscheint wieder Play. Es gibt keinen zusätzlichen Player, Fortschrittsbalken, Zeitangaben oder Menü. Beim Start einer anderen Hörprobe oder beim Verlassen des Dashboards endet die bisherige Wiedergabe. Es öffnet sich keine externe Webseite.
 
 Die einzige Quelle für die Zuordnung ist der bereits verwendete [tonies-json-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json). Die genaue Audio-ID bestimmt die Hörprobe und damit auch die Inhaltsfassung und Sprache. Es gibt keine zusätzliche Suche im Shop, bei Suchmaschinen oder anderen Anbietern. Ohne eindeutigen Katalogtreffer und hinterlegten Hörproben-Link erscheint kein Button.
 
@@ -262,7 +262,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v057.js?v=0.5.7
+/teddycloud-homeassistant/card-v058.js?v=0.5.8
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.
