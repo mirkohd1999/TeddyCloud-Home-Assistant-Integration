@@ -63,7 +63,7 @@ async def _refresh_library_catalog(library, catalog):
     while True:
         await catalog.refresh()
         await library.async_refresh_catalog(catalog)
-        await asyncio.sleep(RETRY.total_seconds() + 2 if catalog.failed_at else REFRESH.total_seconds())
+        await asyncio.sleep(RETRY.total_seconds() + 2 if catalog.failed_at or getattr(catalog, "loaded_format", None) == "v1" else REFRESH.total_seconds())
 
 
 def _stop_library_catalog_if_unused(data):

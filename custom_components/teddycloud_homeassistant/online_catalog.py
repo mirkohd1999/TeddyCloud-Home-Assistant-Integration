@@ -48,7 +48,13 @@ class OnlineCatalog:
         self.items = {}
         self.fetched_at = None
         self.failed_at = None
+        self.loaded_format = None
         self._lock = asyncio.Lock()
+
+    @property
+    def refresh_interval(self):
+        """The legacy fallback must not suppress sample-capable retries all day."""
+        return RETRY if self.loaded_format == "v1" else REFRESH
 
     async def _download_json(self, session, url):
         """Read valid JSON; retry truncated responses using HTTP byte ranges."""
@@ -117,14 +123,14 @@ class OnlineCatalog:
         if not audio_id:
             return None
         now = dt_util.utcnow()
-        if (self.fetched_at is None or now - self.fetched_at > REFRESH) and (self.failed_at is None or now - self.failed_at > RETRY):
+        if (self.fetched_at is None or now - self.fetched_at > self.refresh_interval) and (self.failed_at is None or now - self.failed_at > RETRY):
             await self.refresh()
         return self.items.get(audio_id)
 
-    async def refresh(self):
+    async def refresh(self, force=False):
         async with self._lock:
             now = dt_util.utcnow()
-            if self.fetched_at and now - self.fetched_at < REFRESH:
+            if self.fetched_at and now - self.fetched_at < (RETRY if force else self.refresh_interval):
                 return
             if self.failed_at and now - self.failed_at < RETRY:
                 return
@@ -156,7 +162,17 @@ class OnlineCatalog:
                                             continue
                                         aid = str(ident.get("audio-id") or "").strip()
                                         if aid.isdecimal():
-                                            new_items[aid] = {"preview_url": preview_url(entry.get("sample")), "figure": pic, "catalog_title": title, "duration_seconds": length, "audio_ids": sorted({str(i.get("audio-id")) for i in entry.get("ids", []) if isinstance(i, dict) and str(i.get("audio-id", "")).isdecimal()})}
+                                            previous = new_items.get(aid)
+                                            new_items[aid] = {"preview_supported": True, "preview_url": preview_url(entry.get("sample")), "catalog_language": str(entry.get("language") or "").lower().split("-")[0], "figure": pic, "catalog_title": title, "duration_seconds": length, "audio_ids": sorted({str(i.get("audio-id")) for i in entry.get("ids", []) if isinstance(i, dict) and str(i.get("audio-id", "")).isdecimal()})}
+                                            current = new_items[aid]
+                                            # Regional records can share the same exact recording ID.
+                                            # Keep an available sample only for the same story/language;
+                                            # never transfer one across conflicting catalog titles.
+                                            if (previous and not current["preview_url"]
+                                                and episode and current["catalog_language"]
+                                                and previous.get("catalog_title", "").casefold() == title.casefold()
+                                                and previous.get("catalog_language") == current["catalog_language"]):
+                                                current["preview_url"] = previous.get("preview_url")
                         else:
                             # Older catalog has artwork but no runtime.
                             for entry in data:
@@ -172,6 +188,7 @@ class OnlineCatalog:
                                     aid = str(ident).strip()
                                     if aid.isdecimal():
                                         new_items[aid] = {
+                                            "preview_supported": False,
                                             "preview_url": None,
                                             "figure": pic,
                                             "catalog_title": str(entry.get("title") or ""),
@@ -180,6 +197,7 @@ class OnlineCatalog:
                                         }
                         if not new_items:
                             raise ValueError("Catalog contains no audio IDs")
+                        self.loaded_format = kind
                         self.items = new_items
                         self.fetched_at = dt_util.utcnow()
                         self.failed_at = None

@@ -1,21 +1,18 @@
-# v0.5.6
+# v0.5.7
 
-## Hörproben in der Tonie-Bibliothek
+## Hörproben für vorhandene Tonies nachladen
 
-- Tonies mit einer genau zugeordneten Hörprobe erhalten einen **▶ Hörprobe**-Button. Die Wiedergabe läuft direkt in der Dashboard-Karte mit Start/Pause und Fortschrittsanzeige, ohne Weiterleitung auf eine Webseite.
-- Einzige Quelle ist der bereits verwendete `tonies-json`-Katalog. Die Zuordnung erfolgt anhand der Audio-ID. Keine Suche nach ähnlichen Titeln, kein zusätzlicher Shop- oder Suchmaschinenabruf.
-- Bereits gesammelte und neu erkannte Tonies werden automatisch ergänzt. Der gemeinsame Katalog wird alle 24 Stunden aktualisiert; Verbindungsfehler werden erneut versucht. Ohne eindeutige Zuordnung oder verfügbaren Link bleibt der Button ausgeblendet.
-- Home Assistant und TeddyCloud speichern keine Audiodatei. Gespeichert wird nur der Link; nach einem Klick lädt der Browser die Hörprobe direkt vom Anbieter und puffert die Wiedergabe.
-- Eine andere Hörprobe, ein gelöschter Eintrag oder das Verlassen des Dashboards beendet die bisherige Wiedergabe. Laufende Vorschauen bleiben bei Bibliotheksaktualisierungen erhalten.
-- Für Administratoren und normale angemeldete Benutzer verfügbar. Bedienelemente folgen der deutschen beziehungsweise englischen Home-Assistant-Profilsprache.
-- Abspielzähler, Toniebox-Status und die zuletzt gehörte Figur werden durch Hörproben nicht verändert.
+- In der Tonie-Bibliothek gibt es **Hörproben aktualisieren**. Administratoren und normale angemeldete Nutzer können damit alle vorhandenen Einträge erneut anhand ihrer Audio-IDs abgleichen. Die Quelle bleibt ausschließlich `tonies-json`; es werden keine Shop-Seiten oder weiteren Anbieter durchsucht.
+- Die Karte zeigt, ob der Hörproben-Katalog noch geprüft wird, vorübergehend nicht erreichbar ist oder für die Sammlung keine passenden Hörproben enthält.
+- Wird wegen eines Verbindungsproblems nur das ältere Katalogformat geladen, wird das aktuelle Format nach etwa 22 Sekunden erneut versucht. Der Rückfall blockiert Hörproben nicht mehr für 24 Stunden und entfernt keine bereits gespeicherten Vorschau-Links.
+- Bei regionalen Katalogeinträgen desselben Hörspiels mit gleicher Audio-ID bleibt eine vorhandene Hörprobe erhalten, wenn ein späterer Eintrag keinen Link enthält. Abweichende Geschichten oder Inhaltssprachen erhalten keine fremde Hörprobe.
+- Manuelle Aktualisierungen dürfen den Tagescache umgehen; wiederholte Downloads werden mindestens 20 Sekunden begrenzt. Laufende Hörproben werden durch den Abgleich nicht neu gestartet.
+- Audiodateien spielen weiterhin direkt im Dashboard und werden von der Integration nicht gespeichert. Erkennungszähler, letzte Figur und eigene Bearbeitungen bleiben erhalten.
 
 ## Update
 
-In HACS auf **v0.5.6** aktualisieren und Home Assistant neu starten. Die Dashboard-Ressource wird auf `/teddycloud-homeassistant/card-v056.js?v=0.5.6` umgestellt. Bestehende Tonies erhalten ihre Hörproben nach dem Katalogabgleich, ohne dass jede Figur erneut aufgestellt werden muss.
+In HACS auf **v0.5.7** aktualisieren und **Home Assistant neu starten**. Danach das Dashboard neu öffnen. Die automatisch registrierte Ressource lautet `/teddycloud-homeassistant/card-v057.js?v=0.5.7`. Bei fehlenden Buttons **Hörproben aktualisieren** drücken. Tonies müssen dafür weder gelöscht noch erneut aufgestellt werden.
 
-## Prüfung und Grenzen
+## Prüfung
 
-60 Python-Tests sowie Dashboard-/Sprachtests und neue Audio-Lebenszyklustests bestanden. Zehn echte, festgehaltene Katalogeinträge prüfen die exakte Zuordnung inklusive englischem Inhalt und fehlender Hörprobe. Bei der vorangegangenen Live-Prüfung waren neun verknüpfte Audiodateien erreichbar; bei einem Tonie war keine Hörprobe vorhanden. Wiedergabe, Wechsel, Pause, Fehler, parallele Karten und Aufräumen wurden mit einem Audio-Testobjekt geprüft. Kein Wiedergabetest in einer laufenden Home-Assistant-Installation.
-
-Die Verfügbarkeit hängt von Katalog und Anbieter ab. Neue oder unbekannte Audio-IDs sowie Tonies ohne veröffentlichte Vorschau erhalten keinen Button. Eine englische Dashboard-Oberfläche übersetzt keine Hörspielinhalte; abgespielt wird die zum erkannten Tonie gehörende Sprachfassung.
+66 Python-Tests sowie Dashboard-, Sprach- und Audio-Lebenszyklustests bestanden. Neue Regressionen prüfen den Rückfall vom aktuellen auf das ältere Katalogformat mit anschließender Wiederherstellung, vorhandene Sammlungen, den manuellen Abgleich für beide Rollen, Begrenzung wiederholter Anforderungen und echte doppelte Grüffelo-Katalogeinträge. Die vollständigen aktuellen Katalogdaten wurden zusätzlich gegen die zehn zuvor geprüften Tonies abgeglichen. Kein Zugriff auf die Home-Assistant-Installation des Nutzers und kein Wiedergabetest auf einer physischen Toniebox.

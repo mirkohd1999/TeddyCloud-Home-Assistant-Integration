@@ -182,7 +182,7 @@ class TonieLibrary:
         """Allow the same figurine to return after removing it from this box."""
         self._last_ids[box_id] = ""
 
-    async def async_metadata(self, audio_id, title=None, image=None, duration=None, audio_ids=None, preview_url=None):
+    async def async_metadata(self, audio_id, title=None, image=None, duration=None, audio_ids=None, preview_url=None, preview_supported=True):
         """Refresh detected metadata only for items still in the collection."""
         async with self._lock:
             item = self._entries.get(audio_id)
@@ -190,7 +190,7 @@ class TonieLibrary:
                 return
             dirty = item.get('metadata_source') != 'catalog'
             item['metadata_source'] = 'catalog'
-            if item.get('preview_url') != preview_url:
+            if preview_supported and item.get('preview_url') != preview_url:
                 item['preview_url'] = preview_url
                 dirty = True
             if audio_ids:
@@ -311,7 +311,11 @@ class TonieLibrary:
                     audio_id, title=result.get("catalog_title"),
                     image=result.get("figure"), duration=result.get("duration_seconds"),
                     audio_ids=result.get("audio_ids"), preview_url=result.get("preview_url"),
+                    preview_supported=result.get("preview_supported", True),
                 )
+
+        # Even an empty/no-match refresh must update the dashboard status.
+        self._notify(None)
 
     def public_entries(self):
         combined = []

@@ -172,6 +172,8 @@ Die einzige Quelle für die Zuordnung ist der bereits verwendete [tonies-json-Ka
 
 Vorhandene Bibliothekseinträge werden beim Start im Hintergrund ergänzt; neu erkannte Tonies beim Katalogabgleich. Die gemeinsame Katalogaktualisierung läuft alle 24 Stunden und versucht es nach einem Verbindungsfehler erneut. Sehr neue Tonies erhalten eine Probe erst, wenn ihre Audio-ID und der Link im Katalog enthalten sind.
 
+Mit **Hörproben aktualisieren** kannst du den Abgleich für die gesamte vorhandene Sammlung direkt anstoßen. Das ist auch für normale angemeldete Nutzer möglich. Die Karte zeigt an, ob noch geprüft wird, der Katalog vorübergehend nicht erreichbar ist oder keine passenden Hörproben hinterlegt sind. Wiederholte Anforderungen werden kurz begrenzt; die Quelle bleibt ausschließlich `tonies-json`. Falls vorübergehend nur das ältere Katalogformat erreichbar ist, wird das aktuelle Format nach etwa 22 Sekunden erneut versucht, ohne bereits vorhandene Hörproben-Links zu entfernen.
+
 Die Integration speichert ausschließlich den Link. Audiodateien werden nicht heruntergeladen oder in Home Assistant beziehungsweise TeddyCloud abgelegt. Erst nach dem Antippen lädt der Browser die Hörprobe direkt über HTTPS vom Tonies-Anbieter; dabei werden Daten für die Wiedergabe im Browser gepuffert. Eine Internetverbindung ist dafür erforderlich. Ist eine Probe nicht mehr erreichbar, zeigt die Karte eine Meldung an.
 
 Hörproben stehen Administratoren und normalen angemeldeten Nutzern zur Verfügung. Sie verändern weder die Häufigkeit noch die Markierung der zuletzt gehörten Figur und spielen nicht auf der Toniebox.
@@ -260,7 +262,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v056.js?v=0.5.6
+/teddycloud-homeassistant/card-v057.js?v=0.5.7
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.

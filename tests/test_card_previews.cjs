@@ -141,6 +141,46 @@ async function run() {
   assert.equal(pending._previewId, 'b');
   pending._stopPreview();
   FakeAudio.prototype.play = originalPlay;
+  for (const admin of [false, true]) {
+    const refreshCard = makeCard(admin, 'en');
+    refreshCard._entries = [{audio_id:'a',title:'Rocky',preview_url:null,times_seen:2}];
+    refreshCard._previewCatalogStatus = 'ready';
+    refreshCard.render();
+    assert.ok(refreshCard.shadowRoot.innerHTML.includes('Refresh audio samples'));
+    assert.ok(refreshCard.shadowRoot.innerHTML.includes('no matching audio samples'));
+    let resolveRefresh;
+    let requests = 0;
+    refreshCard._hass.callWS = message => {
+      assert.equal(message.type, 'teddycloud_homeassistant/library/refresh');
+      assert.deepEqual(Object.keys(message), ['type'], 'No user-supplied search source or URL');
+      requests++;
+      return new Promise(resolve => {resolveRefresh = resolve;});
+    };
+    const refresh = refreshCard._refreshPreviews();
+    assert.equal(refreshCard._refreshingPreviews, true);
+    assert.ok(refreshCard.shadowRoot.innerHTML.includes('Checking the catalog'));
+    await refreshCard._refreshPreviews();
+    assert.equal(requests, 1, 'Prevent concurrent refreshes from the same card');
+    resolveRefresh({entries:[{audio_id:'a',title:'Rocky',preview_url:sample('rocky'),times_seen:2}],preview_catalog_status:'ready'});
+    await refresh;
+    assert.equal(refreshCard._refreshingPreviews, false);
+    assert.ok(refreshCard.shadowRoot.innerHTML.includes('data-action="preview"'));
+    assert.equal(refreshCard._entries[0].times_seen, 2);
+    await refreshCard._togglePreview('a');
+    const audio = refreshCard._previewAudio;
+    audio.currentTime = 12;
+    refreshCard._hass.callWS = async () => ({entries:refreshCard._entries,preview_catalog_status:'ready'});
+    await refreshCard._refreshPreviews();
+    assert.equal(refreshCard._previewAudio, audio, 'Refreshing metadata must not restart playback');
+    assert.equal(audio.currentTime, 12);
+    refreshCard._stopPreview();
+    refreshCard._previewCatalogStatus = 'unavailable';
+    refreshCard.render();
+    assert.ok(refreshCard.shadowRoot.innerHTML.includes('temporarily unavailable'));
+    refreshCard._hass.callWS = async () => { throw {code:'unknown_command'}; };
+    await refreshCard._refreshPreviews();
+    assert.ok(refreshCard.shadowRoot.innerHTML.includes('restart Home Assistant'));
+  }
   console.log('Inline audio samples: roles, language, direct streaming, switching, lifecycle and errors passed.');
 }
 run().catch(error => {console.error(error); process.exitCode = 1;});
