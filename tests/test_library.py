@@ -22,6 +22,9 @@ class FakeStore:
     async def async_save(self, value):
         self.saved[self.key] = copy.deepcopy(value)
 
+    async def async_remove(self):
+        self.saved.pop(self.key, None)
+
 
 events = []
 modules = {
@@ -41,6 +44,7 @@ modules["library_unit_pkg.const"].DEFAULT_COLOR = "#8f77c7"
 sys.modules.update(modules)
 
 path = Path(__file__).resolve().parents[1] / "custom_components" / "teddycloud_homeassistant" / "library.py"
+modules["library_unit_pkg"].__path__ = [str(path.parent)]
 spec = importlib.util.spec_from_file_location("library_unit_pkg.library", path)
 library_module = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = library_module
@@ -53,14 +57,20 @@ class TestLibrary(unittest.TestCase):
         events.clear()
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+        async def executor(func, *args):
+            return await asyncio.to_thread(func, *args)
         self.hass = types.SimpleNamespace(
+            async_add_executor_job=executor,
             config=types.SimpleNamespace(
                 path=lambda *parts: str(Path(self.temp.name).joinpath(*parts))
             )
         )
 
     async def load(self):
-        item = library_module.TonieLibrary(self.hass)
+        from library_unit_pkg.image_storage import ImageStorage
+        images = ImageStorage(self.hass)
+        await images.async_initialize()
+        item = library_module.TonieLibrary(self.hass, images)
         await item.async_load()
         return item
 
@@ -226,11 +236,11 @@ class TestLibrary(unittest.TestCase):
     def test_safe_image_upload_and_validation(self):
         async def run():
             lib = await self.load()
-            image = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+            image = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32 + bytes.fromhex("0000000049454e44ae426082")
             encoded = "data:image/png;base64," + base64.b64encode(image).decode()
             item = await lib.async_edit("3456", title="Foto", image_data=encoded)
-            self.assertTrue(item["image"].startswith("/local/teddycloud_homeassistant/library/3456.png"))
-            disk = Path(self.temp.name) / "www/teddycloud_homeassistant/library/3456.png"
+            self.assertTrue(item["image"].startswith("/api/teddycloud_homeassistant/images/library/3456.png"))
+            disk = Path(self.temp.name) / ".storage/teddycloud_homeassistant/images/library/3456.png"
             self.assertEqual(disk.read_bytes(), image)
             for invalid in (
                 "data:image/svg+xml;base64," + base64.b64encode(b"<svg/>").decode(),

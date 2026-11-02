@@ -12,6 +12,7 @@ from .availability import Availability
 from homeassistant.helpers.event import async_call_later
 from .online_catalog import RETRY
 from .artwork_archive import ArtworkArchive
+from .image_storage import image_reference
 from .const import (DOMAIN, CONF_BOX_NAME, CONF_BOX_COLOR, CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_COLOR)
 
 
@@ -30,7 +31,7 @@ def resolved_picture(value, server_url):
     try:
         original = urlsplit(value)
         if original.scheme not in ('http', 'https'):
-            return value if value.startswith('/local/') else None
+            return value if value.startswith(('/local/', '/api/teddycloud_homeassistant/images/')) else None
         if original.hostname not in ('localhost', '127.0.0.1', '::1'):
             return value
         host = urlsplit(server_url.strip().rstrip('/'))
@@ -276,7 +277,7 @@ class BoxPlayer(MediaPlayerEntity):
                     self._refresh_availability()
 
             self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_CHANGED, library_changed))
-        self._archive = self.hass.data.setdefault(DOMAIN, {}).setdefault('artwork_archive', ArtworkArchive(self.hass))
+        self._archive = self.hass.data.setdefault(DOMAIN, {}).setdefault('artwork_archive', ArtworkArchive(self.hass, self.hass.data[DOMAIN]['images']))
         audio_id = self._values.get('ContentAudioId')
         if audio_id:
             self._online_audio_id = audio_id
@@ -328,15 +329,15 @@ class BoxPlayer(MediaPlayerEntity):
 
             self._catalog_status = 'matched' if result else 'audio_id_not_found'
             self._online_result = result
+            cached = self._archive.lookup(audio_id) if self._archive else None
             if self._library and result:
                 await self._library.async_metadata(
                     audio_id, title=result.get('catalog_title'),
-                    image=result.get('figure'), duration=result.get('duration_seconds'),
+                    image=cached or result.get('figure'), duration=result.get('duration_seconds'),
                     audio_ids=result.get('audio_ids'), preview_url=result.get('preview_url'),
                     preview_supported=result.get('preview_supported', True),
                 )
             self._refresh_availability()
-            cached = self._archive.lookup(audio_id) if self._archive else None
             if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
                 cached = await self._archive.store(audio_id, result['figure'])
             if self._online_audio_id == audio_id and generation == self._figure_generation and self.hass is not None:
@@ -401,13 +402,25 @@ class BoxPlayer(MediaPlayerEntity):
         if manual_url:
             valid = resolved_picture(manual_url, self.entry.options.get('teddycloud_url', ''))
             if valid:
-                return valid
+                images = getattr(self._archive, "images", None)
+                return images.private_url(valid) if images else valid
         custom = self._metadata()
         # User-defined figurine photo overrides catalog; exact Audio-ID match
         # preferred over the book/episode cover reported by TeddyCloud.
-        figure = custom.get('figure') or self._local_artwork or ((self._online_result or {}).get('figure') if self.entry.options.get('online_images', True) else None) or (self._archive.lookup(self._values.get('ContentAudioId')) if self._archive else None)
+        figure = custom.get('figure') or self._local_artwork or (self._archive.lookup(self._values.get('ContentAudioId')) if self._archive else None) or ((self._online_result or {}).get('figure') if self.entry.options.get('online_images', True) else None)
         url = figure or custom.get('cover') or (self._library.detected_metadata(self._values.get('ContentAudioId')).get('image') if self._library else None) or self._values.get('ContentPicture') or self.entry.options.get(CONF_FALLBACK_COVER, '')
-        return resolved_picture(url, self.entry.options.get('teddycloud_url', ''))
+        result = resolved_picture(url, self.entry.options.get('teddycloud_url', ''))
+        images = getattr(self._archive, 'images', None)
+        return images.private_url(result) if images else result
+
+    async def async_get_media_image(self):
+        """Support HA's standard media-image proxy without fetching a private URL."""
+        reference = image_reference(self.media_image_url)
+        images = self.hass.data.get(DOMAIN, {}).get("images") if self.hass else None
+        if reference and images:
+            result = await images.async_read(*reference)
+            return result if result else (None, None)
+        return await super().async_get_media_image()
 
     @property
     def extra_state_attributes(self):
@@ -427,6 +440,7 @@ class BoxPlayer(MediaPlayerEntity):
             'tag_valid': self._values.get('TagValid'),
             'last_seen': self._values.get('LastSeen'),
             'cover_url': self.media_image_url,
+            'image_generation': getattr(getattr(self._archive, 'images', None), 'generation', None),
             'catalog_match': bool(self._online_result),
             'catalog_status': self._catalog_status,
             'catalog_audio_id': self._online_audio_id,

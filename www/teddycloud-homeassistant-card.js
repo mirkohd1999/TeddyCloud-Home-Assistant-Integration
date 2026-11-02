@@ -1,3 +1,4 @@
+const TEDDY_CARD_VERSION = '0.6.0';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
   return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
@@ -142,6 +143,7 @@ Object.assign(TEDDY_EN, {
   "Hörprobe derzeit nicht erreichbar.": "Audio sample is currently unavailable.",
   "Tonie-Bibliothek nicht bereit": "Tonie library is not ready",
   "Nur Administratoren dürfen Tonies hinzufügen oder bearbeiten": "Only administrators can add or edit Tonies",
+  "Bildspeicher nicht bereit": "Image storage is not ready",
   "Bild zu groß (maximal 2 MB)": "Image too large (maximum 2 MB)",
   "Bitte ein JPG-, PNG- oder WebP-Bild auswählen": "Please select a JPG, PNG or WebP image",
   "Bilddatei konnte nicht gelesen werden": "Could not read the image file",
@@ -155,6 +157,106 @@ Object.assign(TEDDY_EN, {
 function teddyText(hass, key) {
   return teddyLanguage(hass) === 'en' ? (TEDDY_EN[key] ?? key) : key;
 }
+// Private image URLs are never used as anonymous <img> sources. Sign them
+// through this user's authenticated HA connection and keep signatures in memory.
+function teddyPrivateImagePath(url) {
+  return typeof url === 'string' && /^\/api\/teddycloud_homeassistant\/images\/(figures|library)\/[a-z0-9_-]{1,80}\.(png|jpg|webp)(\?v=[0-9]+)?$/i.test(url);
+}
+class TeddyImageSigner {
+  constructor(owner) {
+    this.owner = owner;
+    this.cache = new Map();
+    this.failures = new Map();
+    this.disposed = false;
+    this.onError = event => {
+      if (this.disposed) return;
+      const source = event.target?.getAttribute?.('src');
+      for (const [path, item] of this.cache) {
+        if (item.signed !== source) continue;
+        // A HA restart invalidates signatures. Retry once immediately, then
+        // rate-limit missing/invalid files instead of looping on img errors.
+        if (Date.now() - (this.failures.get(path) || 0) < 30000) {
+          item.signed = '';
+          item.until = Date.now() + 30000;
+          this.schedule();
+          this.changed();
+          return;
+        }
+        this.failures.set(path, Date.now());
+        this.cache.delete(path);
+        this.changed();
+        break;
+      }
+    };
+    owner.shadowRoot?.addEventListener('error', this.onError, true);
+  }
+  changed() {
+    if (this.queued || this.disposed) return;
+    this.queued = true;
+    Promise.resolve().then(() => {
+      this.queued = false;
+      if (!this.disposed && !this.owner._edit) this.owner.render();
+    });
+  }
+  schedule() {
+    if (this.timer) clearTimeout(this.timer);
+    const times = [...this.cache.values()].map(item => item.until).filter(Boolean);
+    if (!times.length || this.disposed) return;
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      for (const [path, item] of this.cache) if (item.until <= Date.now()) this.cache.delete(path);
+      this.changed();
+    }, Math.max(1, Math.min(...times) - Date.now()));
+  }
+  url(path, hass) {
+    if (this.disposed || !hass?.callWS) return '';
+    if (this.connection !== hass.connection || this.userId !== hass.user?.id) {
+      this.cache.clear();
+      this.failures.clear();
+      this.connection = hass.connection;
+      this.userId = hass.user?.id;
+      if (this.timer) clearTimeout(this.timer);
+    }
+    let item = this.cache.get(path);
+    if (item?.until && item.until <= Date.now()) { this.cache.delete(path); item = null; }
+    if (item) return item.signed || '';
+    item = {};
+    this.cache.set(path, item);
+    Promise.resolve().then(() => hass.callWS({type:'auth/sign_path', path, expires:300})).then(result => {
+      if (this.disposed || this.cache.get(path) !== item) return;
+      const signed = result?.path;
+      if (typeof signed !== 'string' || signed.split('?')[0] !== path.split('?')[0] || !/[?&]authSig=[a-z0-9._~-]+(?:&|$)/i.test(signed)) throw Error('Invalid signed image path');
+      item.signed = signed;
+      item.until = Date.now() + 240000;
+      this.schedule();
+      this.changed();
+    }).catch(() => {
+      if (this.disposed || this.cache.get(path) !== item) return;
+      item.until = Date.now() + 30000;
+      this.schedule();
+    });
+    return '';
+  }
+  dispose() {
+    this.disposed = true;
+    this.owner.shadowRoot?.removeEventListener?.('error', this.onError, true);
+    if (this.timer) clearTimeout(this.timer);
+    this.cache.clear();
+  }
+}
+function teddyImageURL(owner, url) {
+  if (!teddyPrivateImagePath(url)) return typeof url === 'string' && url.startsWith('/api/teddycloud_homeassistant/images/') ? '' : url;
+  const generation = owner._imageGeneration || owner._hass?.states?.[owner.config?.entity]?.attributes?.image_generation;
+  if (owner._imageSigner && owner._imageSigner.generation !== generation) teddyDisposeImages(owner);
+  owner._imageSigner ||= new TeddyImageSigner(owner);
+  owner._imageSigner.generation = generation;
+  return owner._imageSigner.url(url, owner._hass);
+}
+function teddyDisposeImages(owner) {
+  owner._imageSigner?.dispose();
+  owner._imageSigner = null;
+}
+
 /* Dashboard building blocks. Older card configurations keep their original layout. */
 const TEDDY_SECTIONS = [
   ['artwork', '🧸 Tonie-Bild oder Toniebox'],
@@ -215,7 +317,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       if (e?.state === "playing" && Number(e.attributes?.media_duration) > 0) this.render();
     }, 1000);
   }
-  disconnectedCallback() { clearInterval(this._timer); }
+  disconnectedCallback() { clearInterval(this._timer); teddyDisposeImages(this); }
   static getConfigElement() {
     return document.createElement('teddycloud-homeassistant-card-editor');
   }
@@ -278,8 +380,10 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const progress = dur && elapsed !== null ? Math.min(100, elapsed / dur * 100) : 0;
     const safeAttr = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const safeURL = /^(https?:\/\/|\/local\/)/i.test(url) ? safe(url) : '';
-    const safeBoxURL = /^(https?:\/\/|\/local\/)/i.test(boxImage) ? safe(boxImage) : '';
+    const imageURL = teddyImageURL(this, url);
+    const safeURL = /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(imageURL) ? safe(imageURL) : '';
+    const boxURL = teddyImageURL(this, boxImage);
+    const safeBoxURL = /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(boxURL) ? safe(boxURL) : '';
     const showCover = Boolean(url) && (artworkMode === 'cover' || !showFigure);
     const controlRows = [
       ['speaker_entity', 'Lautsprecher-Lautstärkelimit', this._t("Lautsprecher-Limit"), [25,50,75,100], '🔊'],
@@ -724,9 +828,7 @@ if (!customElements.get('teddycloud-homeassistant-card-editor')) {
   customElements.define('teddycloud-homeassistant-card-editor',TeddyCloudHomeAssistantCardEditor);
 }
 
-if (!customElements.get('teddycloud-homeassistant-card')) {
-  customElements.define('teddycloud-homeassistant-card', TeddyCloudNowPlayingCard);
-}
+teddyRegisterLibraryCard(TeddyCloudNowPlayingCard, 'teddycloud-homeassistant-card');
 window.customCards = window.customCards || [];
 if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-card')) {
   window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'TeddyCloud Toniebox · DE / EN', preview:true});
@@ -737,7 +839,6 @@ if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-car
 // A resource URL update can load a new module into an already-open dashboard.
 // Existing custom elements cannot be defined twice: upgrade compatible methods
 // in place, so the old registration cannot retain the previous sample player.
-const TEDDY_CARD_VERSION = '0.5.10';
 const teddyCardUpdates = new Map();
 function teddyLoadCardUpdate(data, loader = url => import(url)) {
   const version = data?.card_version;
@@ -757,8 +858,7 @@ function teddyLoadCardUpdate(data, loader = url => import(url)) {
   }
   return teddyCardUpdates.get(url);
 }
-function teddyRegisterLibraryCard(Card) {
-  const name = 'teddycloud-tonie-library-card';
+function teddyRegisterLibraryCard(Card, name = 'teddycloud-tonie-library-card') {
   const registered = customElements.get(name);
   if (!registered) {
     Card.teddyCardVersion = TEDDY_CARD_VERSION;
@@ -780,7 +880,7 @@ function teddyRegisterLibraryCard(Card) {
   };
   if (typeof document !== 'undefined') visit(document);
   // Release old native players before replacing their lifecycle methods.
-  for (const instance of instances) instance._stopPreview?.(false);
+  for (const instance of instances) { instance._stopPreview?.(false); teddyDisposeImages(instance); }
   for (const key of Object.getOwnPropertyNames(Card.prototype)) {
     if (key !== 'constructor') Object.defineProperty(registered.prototype, key,
       Object.getOwnPropertyDescriptor(Card.prototype, key));
@@ -825,11 +925,13 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   }
   set hass(hass) {
     const wasAdmin = this._isAdmin;
+    const changedConnection = this._hass?.connection !== hass?.connection || this._hass?.user?.id !== hass?.user?.id;
+    if (changedConnection) teddyDisposeImages(this);
     const oldLanguage = teddyLanguage(this._hass);
     this._hass = hass;
     if (!this._isAdmin) { this._edit = null; this._upload = null; }
     this._subscribe();
-    if (wasAdmin !== this._isAdmin || oldLanguage !== teddyLanguage(hass)) this.render();
+    if (wasAdmin !== this._isAdmin || oldLanguage !== teddyLanguage(hass) || changedConnection) this.render();
   }
   connectedCallback() {
     this._connected = true;
@@ -843,6 +945,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       this._unsubscribe = null;
     }
     this._stopPreview(false);
+    teddyDisposeImages(this);
     // A subscription pending during removal is cleaned up when resolved.
   }
   _listen() {
@@ -909,6 +1012,10 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     if (!Array.isArray(data?.entries)) return;
     this._entries = data.entries;
     this._previewCatalogStatus = data.preview_catalog_status || 'unknown';
+    if (data.image_generation && data.image_generation !== this._imageGeneration) {
+      teddyDisposeImages(this);
+      this._imageGeneration = data.image_generation;
+    }
     teddyLoadCardUpdate(data)?.catch(() => {
       this._error = 'Karte konnte nicht aktualisiert werden. Dashboard bitte neu öffnen.';
       this.render();
@@ -922,6 +1029,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   _safeImage(url) {
     if (typeof url !== 'string') return '';
     const value = url.trim();
+    if (teddyPrivateImagePath(value)) return teddyImageURL(this, value);
     return value.startsWith('/local/') || /^https?:\/\/[^/\s]+/i.test(value) ? value : '';
   }
   _image(url, className='cover') {

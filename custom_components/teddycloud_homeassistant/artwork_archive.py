@@ -1,11 +1,10 @@
 """Small persistent artwork archive for recognized Tonies.
 
-Files remain on Home Assistant's local disk after a restart and are served from
-/local/. No bulk redistribution of third-party artwork.
+Files remain in private storage after a restart. Lookup only reads the in-memory
+index; authenticated image reads and writes run in HA's executor.
 """
 import asyncio
 import logging
-from pathlib import Path
 from urllib.parse import urlsplit
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -15,31 +14,10 @@ MAX_IMAGE_BYTES = 3 * 1024 * 1024
 ALLOWED_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 
 
-def valid_image_file(path):
-    """Reject incomplete cached files (especially truncated PNG/JPEG/WebP)."""
-    try:
-        size = path.stat().st_size
-        if not 16 <= size <= MAX_IMAGE_BYTES:
-            return False
-        with path.open("rb") as file:
-            header = file.read(16)
-            file.seek(max(0, size - 16))
-            tail = file.read()
-        if path.name.endswith(".png") or path.name.endswith(".png.tmp"):
-            return header.startswith(bytes.fromhex("89504e470d0a1a0a")) and tail.endswith(bytes.fromhex("0000000049454e44ae426082"))
-        if path.name.endswith(".jpg") or path.name.endswith(".jpg.tmp"):
-            return header.startswith(bytes.fromhex("ffd8")) and tail.endswith(bytes.fromhex("ffd9"))
-        if path.name.endswith(".webp") or path.name.endswith(".webp.tmp"):
-            return header.startswith(b"RIFF") and header[8:12] == b"WEBP" and int.from_bytes(header[4:8], "little") + 8 == size
-    except OSError:
-        return False
-    return False
-
-
 class ArtworkArchive:
-    def __init__(self, hass):
+    def __init__(self, hass, images):
         self.hass = hass
-        self.path = Path(hass.config.path("www", "teddycloud_homeassistant", "figures"))
+        self.images = images
         self._tasks = {}
 
     def lookup(self, audio_id):
@@ -47,11 +25,7 @@ class ArtworkArchive:
         key = str(audio_id or "").strip()
         if not key.isdecimal():
             return None
-        for extension in ALLOWED_TYPES.values():
-            candidate = self.path / f"{key}{extension}"
-            if candidate.is_file() and valid_image_file(candidate):
-                return f"/local/teddycloud_homeassistant/figures/{key}{extension}?v={candidate.stat().st_mtime_ns}"
-        return None
+        return self.images.lookup("figures", key)
 
     async def store(self, audio_id, url):
         """Cache an image by exact audio ID. Never replace an existing image."""
@@ -65,14 +39,14 @@ class ArtworkArchive:
             return None
         # Avoid parallel duplicate downloads for multiple boxes.
         if key in self._tasks:
-            return await self._tasks[key]
+            return await asyncio.shield(self._tasks[key])
         task = self.hass.async_create_task(self._download(key, url))
         self._tasks[key] = task
-        try:
-            return await task
-        finally:
-            if self._tasks.get(key) is task:
+        def finished(completed):
+            if self._tasks.get(key) is completed:
                 self._tasks.pop(key, None)
+        task.add_done_callback(finished)
+        return await asyncio.shield(task)
 
     async def _download(self, key, url):
         try:
@@ -95,19 +69,16 @@ class ArtworkArchive:
                     data = b"".join(chunks)
             if not data:
                 return None
-            await asyncio.to_thread(self._write, key, ext, data)
-            return self.lookup(key)
+            return await self.images.async_write("figures", key, ext, data)
         except Exception as err:
             _LOGGER.debug("Tonie artwork cache unavailable for audio ID %s: %s", key, err)
             return None
 
-    def _write(self, key, ext, data):
-        self.path.mkdir(parents=True, exist_ok=True)
-        target = self.path / f"{key}{ext}"
-        if not valid_image_file(target):
-            temp = target.with_suffix(target.suffix + ".tmp")
-            temp.write_bytes(data)
-            if valid_image_file(temp):
-                temp.replace(target)
-            else:
-                temp.unlink(missing_ok=True)
+
+    async def async_shutdown(self):
+        tasks = list(self._tasks.values())
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+        self._tasks.clear()

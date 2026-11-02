@@ -9,6 +9,8 @@ from .online_catalog import OnlineCatalog, REFRESH, RETRY
 from .card_registration import async_register_card
 from .cleanup import async_remove_owned_data
 from .library import TonieLibrary
+from .image_storage import ImageStorage
+from .image_view import register_image_view
 from .library_websocket import register_library_websockets
 
 FIELDS = {"Playback", "ContentTitle", "ContentAudioId", "VolumeLevel", "VolumedB", "Charger", "TagValid", "LastSeen", "ContentPicture"}
@@ -22,9 +24,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # library only once so no box can overwrite a different instance.
     async with hass.data.setdefault(f"{DOMAIN}_library_init_lock", asyncio.Lock()):
         if "library" not in data:
-            library = TonieLibrary(hass)
+            images = ImageStorage(hass)
+            await images.async_initialize()
+            data["images"] = images
+            library = TonieLibrary(hass, images)
             await library.async_load()
             data["library"] = library
+    register_image_view(hass)
     register_library_websockets(hass)
     from .media_player import BoxPlayer
     catalog = data.setdefault("online_catalog", OnlineCatalog(hass))
