@@ -8,7 +8,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 import voluptuous as vol
 
-from .card_registration import CARD_URL, CARD_VERSION
+from .card_registration import registered_card_url, CARD_VERSION
 from .const import DOMAIN
 from .library import SIGNAL_CHANGED
 
@@ -27,7 +27,8 @@ def library_payload(hass, library):
     else:
         status = "ready"
     return {"entries": library.public_entries(), "preview_catalog_status": status,
-            "card_url": CARD_URL, "card_version": CARD_VERSION}
+            "card_url": registered_card_url(hass), "card_version": CARD_VERSION,
+            "image_generation": getattr(hass.data.get(DOMAIN, {}).get("images"), "generation", None)}
 
 
 @websocket_api.ws_require_user()

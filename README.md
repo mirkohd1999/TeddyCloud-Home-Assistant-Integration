@@ -225,7 +225,13 @@ Für Automationen kannst du auf Änderungen von `press_count` reagieren. Diese S
 
 Die Integration sucht anhand der Audio-ID nach Bildern und Laufzeiten im [Tonies-Katalog](https://github.com/toniebox-reverse-engineering/tonies-json). Fehlt ein Treffer, erscheint ein Ersatzbild oder **„Laufzeit unbekannt“**. Administratoren können die Angaben in der Bibliothek ergänzen.
 
-Heruntergeladene Figurenbilder liegen bei Bedarf unter `/config/www/teddycloud_homeassistant/figures/`. Eigene Bibliotheks-Uploads werden unter `/config/www/teddycloud_homeassistant/library/` gespeichert.
+### Geschützte Bildspeicherung
+
+Figurenbilder und eigene Bibliotheks-Uploads liegen unter `/config/.storage/teddycloud_homeassistant/images/` außerhalb des öffentlich ausgelieferten `www`-Ordners. Die Integration liefert diese Dateien nur über einen authentifizierten Bildendpunkt aus. Die Dashboard-Karten fordern über die angemeldete Home-Assistant-Verbindung kurzlebige signierte Bildadressen an und erneuern sie automatisch. Signaturen werden ausschließlich im Arbeitsspeicher gehalten und nicht in der Bibliothek gespeichert.
+
+Beim Start werden vorhandene, von der Integration erzeugte Bilder aus den bisherigen öffentlichen Verzeichnissen in den privaten Speicher verschoben und die gespeicherten Bildverweise angepasst. Bei Dateikonflikten bleibt die vorhandene private Datei erhalten; die andere Kopie wird privat gesichert. Sammlung, eigene Titel, Häufigkeiten und Zuordnungen bleiben beim Update bestehen. Die Bildsuche für MQTT und Statusanzeigen arbeitet anschließend ausschließlich mit einem Speicherindex; Dateizugriffe laufen im Home-Assistant-Executor.
+
+Bewusst selbst hinterlegte externe Bildadressen oder eigene `/local/`-Dateien außerhalb der integrationsinternen Bildverzeichnisse bleiben unter deiner Kontrolle. Die Integration verschiebt oder löscht solche fremden Dateien nicht.
 
 Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet, prüfe in den Integrationsoptionen die **TeddyCloud-Adresse für Coverbilder**.
 
@@ -262,7 +268,7 @@ Box einschalten oder eine Figur aufstellen. Prüfe, ob MQTT-Meldungen unter dem 
 Home Assistant nach der Installation neu starten und das Dashboard neu laden. Prüfe unter **Einstellungen → Dashboards → Ressourcen**, ob die Kartenressource als **JavaScript-Modul** eingebunden ist:
 
 ```text
-/teddycloud-homeassistant/card-v0510.js?v=0.5.10
+/teddycloud-homeassistant/card-v060.js?v=0.6.0
 ```
 
 Bei YAML-verwalteten Ressourcen muss diese Adresse dort eingetragen werden. Vorhandene Einträge bearbeiten und doppelte Einträge vermeiden.
@@ -293,7 +299,9 @@ Die Regler ändern Lautstärkelimits und LED-Helligkeit. Befehle können erst be
 
 **Aktualisieren:** Die angebotene Version in HACS herunterladen, Home Assistant neu starten und das Dashboard auf allen verwendeten Geräten neu laden.
 
-**Entfernen:** Die Integration unter **Einstellungen → Geräte & Dienste** entfernen. Beim Entfernen der letzten Box werden integrationsinterne Figurenbilder und eindeutig von der Integration angelegte Ressourcen bereinigt. Selbst angelegte Dashboard-Karten und manuelle Ressourcen bleiben bestehen.
+**Vollständig entfernen:** Als Administrator zuerst die TeddyCloud-Integration unter **Einstellungen → Geräte & Dienste** entfernen, danach das Repository in HACS deinstallieren. Beim Entfernen der letzten konfigurierten Box werden die Bibliothek einschließlich eigener Titel und Uploads, das Figurenarchiv, private Migrationssicherungen, Integrations-Metadaten und TeddyCloud-Kartenressourcen im Storage-Modus gelöscht. Laufende Hintergrundaufgaben werden vorher beendet. Sind weitere Boxen eingerichtet, bleiben die gemeinsam benötigten Daten bestehen. Updates und Neustarts löschen die Sammlung nicht.
+
+Persönlich erstellte Dashboard-Konfigurationen werden nicht umgeschrieben; darin verbleibende TeddyCloud-Karten sowie manuelle YAML-Ressourcen gegebenenfalls selbst entfernen. Fremde Bilder und Ressourcen bleiben erhalten. Nur die Dateien über HACS zu löschen führt den Home-Assistant-Entfernungsschritt nicht aus; deshalb die oben genannte Reihenfolge einhalten.
 
 **Fragen und Fehler:** [GitHub-Issue öffnen](https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration/issues). Bitte Home-Assistant-, TeddyCloud- und Integrationsversion sowie relevante Fehlermeldungen nennen. Keine Passwörter oder Tokens veröffentlichen.
 

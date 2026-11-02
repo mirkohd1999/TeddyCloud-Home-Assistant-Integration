@@ -23,11 +23,21 @@ OLDER_V056_PATH = "/teddycloud-homeassistant/card-v056.js"
 OLDER_V057_PATH = "/teddycloud-homeassistant/card-v057.js"
 OLDER_V058_PATH = "/teddycloud-homeassistant/card-v058.js"
 OLDER_V059_PATH = "/teddycloud-homeassistant/card-v059.js"
-CARD_PATH = "/teddycloud-homeassistant/card-v0510.js"
-CARD_VERSION = "0.5.10"
-CARD_BUILD = sha256((Path(__file__).parent / "teddycloud-homeassistant-card.js").read_bytes()).hexdigest()[:12]
-CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}&build={CARD_BUILD}"
+OLDER_V0510_PATH = "/teddycloud-homeassistant/card-v0510.js"
+CARD_PATH = "/teddycloud-homeassistant/card-v060.js"
+CARD_VERSION = "0.6.0"
+CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
+
+
+def card_build(path):
+    """Executor-only fingerprint; never read files during module import."""
+    return sha256(path.read_bytes()).hexdigest()[:12]
+
+
+def registered_card_url(hass):
+    return hass.data.get("teddycloud_homeassistant_card_url", CARD_URL)
+
 
 
 def is_card_resource(url):
@@ -44,14 +54,17 @@ async def async_register_card(hass):
     Never create an item before the resource storage collection has loaded:
     on some Home Assistant versions that could replace existing resources.
     """
+    card_file = Path(__file__).parent / "teddycloud-homeassistant-card.js"
+    build = await hass.async_add_executor_job(card_build, card_file)
+    card_url = f"{CARD_URL}&build={build}"
+    hass.data["teddycloud_homeassistant_card_url"] = card_url
     key = "teddycloud_homeassistant_card_registered"
     if not hass.data.get(key):
-        card_file = Path(__file__).parent / "teddycloud-homeassistant-card.js"
         # The latest URL is always new, so old browser modules cannot mask
         # new custom elements. Keep legacy paths available for existing cards.
         for path in (
             LEGACY_CARD_PATH, OLDER_CARD_PATH, OLDER_V035_PATH, OLDER_V036_PATH, OLDER_V037_PATH, OLDER_V038_PATH, OLDER_V040_PATH,
-            PREVIOUS_CARD_PATH, OLDER_V054_PATH, OLDER_V056_PATH, OLDER_V057_PATH, OLDER_V058_PATH, OLDER_V059_PATH, CARD_PATH,
+            PREVIOUS_CARD_PATH, OLDER_V054_PATH, OLDER_V056_PATH, OLDER_V057_PATH, OLDER_V058_PATH, OLDER_V059_PATH, OLDER_V0510_PATH, CARD_PATH,
         ):
             try:
                 await hass.http.async_register_static_paths(
@@ -93,16 +106,16 @@ async def async_register_card(hass):
         ]
         if existing:
             for item in existing:
-                if item.get("url") != CARD_URL or item.get("res_type") != "module":
+                if item.get("url") != card_url or item.get("res_type") != "module":
                     await resources.async_update_item(
-                        item["id"], {"url": CARD_URL, "res_type": "module"}
+                        item["id"], {"url": card_url, "res_type": "module"}
                     )
         else:
-            created = await resources.async_create_item({"url": CARD_URL, "res_type": "module"})
+            created = await resources.async_create_item({"url": card_url, "res_type": "module"})
             if created and created.get("id"):
                 await Store(hass, 1, BRANDING_STORE).async_save({"resource_id": created["id"]})
     except Exception:
         _LOGGER.exception(
             "Automatic card registration failed. Add %s as a module under Dashboard resources.",
-            CARD_URL,
+            card_url,
         )

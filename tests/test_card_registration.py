@@ -1,5 +1,6 @@
 """Card resources follow the installed file and migrate only our own routes."""
 import ast
+import asyncio
 from hashlib import sha256
 import logging
 from pathlib import Path
@@ -39,7 +40,9 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
         self.resources.async_update_item = AsyncMock(side_effect=update)
         self.resources.async_create_item = AsyncMock(side_effect=create)
         self.lovelace = SimpleNamespace(resources=self.resources, resource_mode='storage')
-        self.hass = SimpleNamespace(data={'lovelace':self.lovelace}, is_running=True,
+        async def executor(func, *args): return await asyncio.to_thread(func, *args)
+        self.url = f"{self.ns['CARD_URL']}&build={sha256((source.parent / 'teddycloud-homeassistant-card.js').read_bytes()).hexdigest()[:12]}"
+        self.hass = SimpleNamespace(async_add_executor_job=executor, data={'lovelace':self.lovelace}, is_running=True,
             http=SimpleNamespace(async_register_static_paths=AsyncMock()),
             bus=SimpleNamespace(async_listen_once=Mock()))
 
@@ -48,8 +51,9 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
     async def test_url_includes_installed_content_fingerprint(self):
         body = (ROOT / 'custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js').read_bytes()
         build = sha256(body).hexdigest()[:12]
-        self.assertEqual(self.ns['CARD_VERSION'], '0.5.10')
-        self.assertEqual(self.ns['CARD_URL'], f'/teddycloud-homeassistant/card-v0510.js?v=0.5.10&build={build}')
+        self.assertEqual(self.ns['CARD_VERSION'], '0.6.0')
+        await self.register()
+        self.assertEqual(self.hass.data['teddycloud_homeassistant_card_url'], f'/teddycloud-homeassistant/card-v060.js?v=0.6.0&build={build}')
 
     async def test_migrate_old_and_cache_busting_urls_preserving_other_resources(self):
         urls = ['/teddycloud-homeassistant/card.js',
@@ -61,7 +65,7 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
         self.items.append(dict(foreign))
         await self.register()
         for item in self.items[:-1]:
-            self.assertEqual(item['url'], self.ns['CARD_URL'])
+            self.assertEqual(item['url'], self.url)
             self.assertEqual(item['res_type'], 'module')
         self.assertEqual(self.items[-1], foreign)
         self.resources.async_create_item.assert_not_awaited()
@@ -77,7 +81,7 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
         self.resources.async_create_item.assert_awaited_once()
 
     async def test_right_url_still_repairs_wrong_resource_type(self):
-        self.items[:] = [{'id':'old','url':self.ns['CARD_URL'],'res_type':'js'}]
+        self.items[:] = [{'id':'old','url':self.url,'res_type':'js'}]
         await self.register()
         self.assertEqual(self.items[0]['res_type'], 'module')
 
@@ -85,7 +89,7 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
         await self.register()
         routes = [call.args[0][0] for call in self.hass.http.async_register_static_paths.call_args_list]
         self.assertTrue(any(route.url.endswith('card-v058.js') for route in routes))
-        self.assertTrue(any(route.url.endswith('card-v0510.js') for route in routes))
+        self.assertTrue(any(route.url.endswith('card-v060.js') for route in routes))
         self.assertTrue(all(route.cache is False for route in routes))
 
     async def test_only_our_relative_routes_are_migrated(self):

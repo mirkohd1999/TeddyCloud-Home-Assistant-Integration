@@ -2,7 +2,7 @@
 
 Projekt: **TeddyCloud Home Assistant Integration**  
 Repository: https://github.com/mirkohd1999/TeddyCloud-Home-Assistant-Integration  
-Stabiler Sammelrelease: **v0.5.10** (Manifest **0.5.10**)  
+Stabiler Sammelrelease: **v0.6.0** (Manifest **0.6.0**)  
 Kategorie: **Integration**, kein Add-on und kein separates Dashboard-Repository.
 
 ## Veröffentlichung
@@ -22,15 +22,19 @@ HACS lädt die Integration aus `custom_components/teddycloud_homeassistant/` am 
 - Bibliothek mit Admin und normalem Nutzer öffnen: Nur Admin sieht Hinzufügen/Bearbeiten; beide können nach Bestätigung löschen.
 - Kein sichtbarer Audio-ID-Text in Tonie-Kacheln; technische Details im Admin-Editor einklappbar.
 - Bibliotheksdaten und Entitäts-IDs bleiben beim Update erhalten.
-- Neue Ressource `/teddycloud-homeassistant/card-v0510.js?v=0.5.10` lädt auf allen Clients.
+- Vorhandene Bilddateien werden aus www in den privaten Speicher migriert; gespeicherte Verweise aktualisiert.
+- Direkter anonymer Abruf des Bildendpunkts wird abgewiesen; Admin und normaler Nutzer können Bilder über signierte Pfade anzeigen.
+- Nach Ablauf/Neustart werden Bildsignaturen automatisch erneuert.
+- Entfernen einer von mehreren Boxen behält die Sammlung. Entfernen der letzten Box löscht eigene Uploads, Bibliothek, Archiv und Ressourcen; fremde Dateien bleiben erhalten.
+- Neue Ressource `/teddycloud-homeassistant/card-v060.js?v=0.6.0` lädt auf allen Clients.
 
 Automatisierte Tests ersetzen diesen Praxistest nicht.
 
 ## Ältere Releases aufräumen
 
-Erst nach erfolgreichem Update auf v0.5.10:
+Erst nach erfolgreichem Update auf v0.6.0:
 
-- v0.5.10 als neuesten Release behalten.
+- v0.6.0 als neuesten Release behalten.
 - Mindestens einen selbst geprüften vorherigen Release als Rückfallversion behalten.
 - Weitere ältere Release-Einträge können gelöscht werden. Ihre Links/Assets und Auswahlmöglichkeiten in HACS entfallen. Installierte Dateien werden dadurch nicht vom Home-Assistant-System entfernt.
 - Git-Tags und Commit-Historie behalten; veröffentlichte Tags niemals auf neue Commits verschieben.

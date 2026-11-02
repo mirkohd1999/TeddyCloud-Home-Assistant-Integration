@@ -8,13 +8,13 @@ import asyncio
 import base64
 import binascii
 from datetime import datetime, timezone
-from pathlib import Path
 import re
 
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, CONF_BOX_COLOR, CONF_BOX_NAME, DEFAULT_COLOR
+from .image_storage import image_reference, IMAGE_PREFIX
 
 STORE_KEY = "teddycloud_homeassistant.tonie_library"
 SIGNAL_CHANGED = f"{DOMAIN}_library_changed"
@@ -70,14 +70,16 @@ def validate_upload(data_url):
 class TonieLibrary:
     """Track once-seen figures, with manual edits persisted in HA storage."""
 
-    def __init__(self, hass):
+    def __init__(self, hass, images=None):
         self.hass = hass
+        self._images = images
         self._store = Store(hass, 1, STORE_KEY)
         self._lock = asyncio.Lock()
         self._entries = {}
         self._hidden = set()
         # A box is considered active until ContentAudioId is cleared or changes.
         self._last_ids = {}
+        self._removed = False
 
     async def async_load(self):
         data = await self._store.async_load() or {}
@@ -88,6 +90,18 @@ class TonieLibrary:
                 key: value for key, value in entries.items()
                 if valid_audio_id(key) and isinstance(value, dict)
             }
+
+        if self._images:
+            changed = False
+            for item in self._entries.values():
+                for record in (item, item.get("custom", {})):
+                    old = record.get("image")
+                    new = self._images.private_url(old)
+                    if new != old:
+                        record["image"] = new
+                        changed = True
+            if changed:
+                await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
 
     def entries(self):
         return sorted(
@@ -112,7 +126,7 @@ class TonieLibrary:
     async def async_mqtt_metadata(self, audio_id, title=None, image=None, is_current=None):
         """Uncorrelated MQTT may fill a blank entry, never rename a known one."""
         async with self._lock:
-            if is_current is not None and not is_current():
+            if self._removed or (is_current is not None and not is_current()):
                 return
             item = self._entries.get(audio_id)
             if item is None or item.get('metadata_source') == 'catalog' or not title:
@@ -144,6 +158,8 @@ class TonieLibrary:
         if not valid_audio_id(audio_id):
             return
         async with self._lock:
+            if self._removed:
+                return
             prev = self._last_ids.get(box_id)
             self._last_ids[box_id] = audio_id
             if prev == audio_id:
@@ -185,6 +201,8 @@ class TonieLibrary:
     async def async_metadata(self, audio_id, title=None, image=None, duration=None, audio_ids=None, preview_url=None, preview_supported=True):
         """Refresh detected metadata only for items still in the collection."""
         async with self._lock:
+            if self._removed:
+                return
             item = self._entries.get(audio_id)
             if item is None:
                 return
@@ -216,7 +234,9 @@ class TonieLibrary:
         if image is not None and (
             not isinstance(image, str) or len(image) > 2048 or
             (image.strip() and not (
-                image.strip().startswith(("https://", "http://", "/local/"))))
+                image.strip().startswith(("https://", "http://", "/local/")) or
+                (image.strip().startswith(IMAGE_PREFIX) and image_reference(image.strip()))
+            ))
         ):
             raise ValueError("Bildadresse muss http(s) oder /local/ verwenden")
         if duration_seconds is not None and (
@@ -226,6 +246,14 @@ class TonieLibrary:
         # Decode before taking the store lock; never fetch remote URLs on server.
         upload = validate_upload(image_data) if image_data else None
         async with self._lock:
+            if self._removed:
+                raise ValueError("Tonie-Bibliothek nicht bereit")
+            uploaded_url = None
+            if upload:
+                if self._images is None:
+                    raise ValueError("Bildspeicher nicht bereit")
+                body, suffix = upload
+                uploaded_url = await self._images.async_write("library", audio_id, suffix, body)
             item = self._entries.get(audio_id)
             if item is None:
                 item = {
@@ -239,24 +267,11 @@ class TonieLibrary:
             if title is not None:
                 custom["title"] = title.strip()
             if image is not None:
-                custom["image"] = image.strip()
+                custom["image"] = self._images.private_url(image.strip()) if self._images else image.strip()
             if duration_seconds is not None:
                 custom["duration_seconds"] = duration_seconds or None
-            if upload:
-                body, suffix = upload
-                directory = Path(self.hass.config.path("www", DOMAIN, "library"))
-                directory.mkdir(parents=True, exist_ok=True)
-                dest = directory / f"{audio_id}{suffix}"
-                await asyncio.to_thread(dest.write_bytes, body)
-                # Changing JPG -> PNG must not leave the obsolete uploaded
-                # image behind. Never remove files outside our own directory.
-                for other_ext in IMAGE_TYPES.values():
-                    if other_ext == suffix:
-                        continue
-                    previous = directory / f"{audio_id}{other_ext}"
-                    if previous.is_file() and not previous.is_symlink():
-                        await asyncio.to_thread(previous.unlink)
-                custom["image"] = f"/local/{DOMAIN}/library/{dest.name}?v={int(datetime.now(timezone.utc).timestamp() * 1000)}"
+            if uploaded_url:
+                custom["image"] = uploaded_url
             for alias in self._group_ids(audio_id):
                 if alias != audio_id:
                     self._entries[alias].setdefault("custom", {}).update(custom)
@@ -309,7 +324,7 @@ class TonieLibrary:
             if result:
                 await self.async_metadata(
                     audio_id, title=result.get("catalog_title"),
-                    image=result.get("figure"), duration=result.get("duration_seconds"),
+                    image=(self._images.lookup("figures", audio_id) if self._images else None) or result.get("figure"), duration=result.get("duration_seconds"),
                     audio_ids=result.get("audio_ids"), preview_url=result.get("preview_url"),
                     preview_supported=result.get("preview_supported", True),
                 )
@@ -369,14 +384,21 @@ class TonieLibrary:
                 return
             old = self._entries.pop(audio_id)
             self._hidden.add(audio_id)
-            # Own uploaded file only, never delete user-supplied /local/ files.
-            image = old.get("custom", {}).get("image", "")
-            local_prefix = f"/local/{DOMAIN}/library/"
-            if image.startswith(local_prefix):
-                filename = image.split("?", 1)[0][len(local_prefix):]
-                if filename in {f"{audio_id}{ext}" for ext in IMAGE_TYPES.values()}:
-                    path = Path(self.hass.config.path("www", DOMAIN, "library", filename))
-                    if path.is_file() and not path.is_symlink():
-                        await asyncio.to_thread(path.unlink)
+            # Delete only an upload belonging to this exact entry, never an
+            # arbitrary /local URL or another figure's manually linked image.
+            reference = image_reference(old.get("custom", {}).get("image", ""))
+            if self._images and reference and reference[0] == "library" and reference[1] in {
+                f"{audio_id}{suffix}" for suffix in IMAGE_TYPES.values()
+            }:
+                await self._images.async_delete("library", audio_id)
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
+
+    async def async_remove(self):
+        """Final integration removal only; prevent late callbacks restoring data."""
+        async with self._lock:
+            self._removed = True
+            await self._store.async_remove()
+            self._entries.clear()
+            self._hidden.clear()
+            self._last_ids.clear()
