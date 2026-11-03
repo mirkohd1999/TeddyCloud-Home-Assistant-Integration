@@ -1,4 +1,4 @@
-const TEDDY_CARD_VERSION = '0.6.0';
+const TEDDY_CARD_VERSION = '0.6.1';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
   return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
@@ -1147,6 +1147,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       title: found?.custom?.title ?? found?.title ?? '',
       image: found?.custom?.image ?? found?.image ?? '',
       duration_seconds: found?.custom?.duration_seconds ?? found?.duration_seconds ?? null,
+      color: found?.custom?.color ?? '',
     };
     this._upload = null;
     this._error = '';
@@ -1177,6 +1178,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       title:get('library-title').trim(),
       image:get('library-image').trim(),
       duration_seconds: seconds,
+      color: get('library-color').trim(),
     };
     if (this._upload) data.image_data = this._upload;
     try {
@@ -1234,6 +1236,9 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
         '<div class="field"><label for="library-duration">' + this._t("Hörspiellänge in Minuten") + '</label>' +
         '<input type="number" id="library-duration" min="0" max="1440" step="0.1" value="' +
         e(minutes) + '" placeholder="' + this._t("z. B. 45") + '"></div>' +
+        '<div class="field"><label for="library-color">' +
+        (this._hass?.language?.startsWith('en') ? 'Figure color (optional)' : 'Figurenfarbe (optional)') +
+        '</label><input id="library-color" maxlength="7" placeholder="#808080" value="' + e(item.color || '') + '"></div>' +
         '<div class="field"><label for="library-image">' + this._t("Figurenbild (Bildadresse, optional)") + '</label>' +
         '<input id="library-image" maxlength="2048" value="' + e(item.image) +
         '" placeholder="' + this._t("https://… oder /local/…") + '"></div>' +

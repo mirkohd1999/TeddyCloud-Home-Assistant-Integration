@@ -24,8 +24,9 @@ OLDER_V057_PATH = "/teddycloud-homeassistant/card-v057.js"
 OLDER_V058_PATH = "/teddycloud-homeassistant/card-v058.js"
 OLDER_V059_PATH = "/teddycloud-homeassistant/card-v059.js"
 OLDER_V0510_PATH = "/teddycloud-homeassistant/card-v0510.js"
-CARD_PATH = "/teddycloud-homeassistant/card-v060.js"
-CARD_VERSION = "0.6.0"
+OLDER_V060_PATH = "/teddycloud-homeassistant/card-v060.js"
+CARD_PATH = "/teddycloud-homeassistant/card-v061.js"
+CARD_VERSION = "0.6.1"
 CARD_URL = f"{CARD_PATH}?v={CARD_VERSION}"
 BRANDING_STORE = "teddycloud_homeassistant.owned_resources"
 
@@ -60,11 +61,15 @@ async def async_register_card(hass):
     hass.data["teddycloud_homeassistant_card_url"] = card_url
     key = "teddycloud_homeassistant_card_registered"
     if not hass.data.get(key):
+        await hass.http.async_register_static_paths([
+            StaticPathConfig("/teddycloud-homeassistant/unknown-tonie.png",
+                             str(card_file.with_name("unknown-tonie.png")), False)
+        ])
         # The latest URL is always new, so old browser modules cannot mask
         # new custom elements. Keep legacy paths available for existing cards.
         for path in (
             LEGACY_CARD_PATH, OLDER_CARD_PATH, OLDER_V035_PATH, OLDER_V036_PATH, OLDER_V037_PATH, OLDER_V038_PATH, OLDER_V040_PATH,
-            PREVIOUS_CARD_PATH, OLDER_V054_PATH, OLDER_V056_PATH, OLDER_V057_PATH, OLDER_V058_PATH, OLDER_V059_PATH, OLDER_V0510_PATH, CARD_PATH,
+            PREVIOUS_CARD_PATH, OLDER_V054_PATH, OLDER_V056_PATH, OLDER_V057_PATH, OLDER_V058_PATH, OLDER_V059_PATH, OLDER_V0510_PATH, OLDER_V060_PATH, CARD_PATH,
         ):
             try:
                 await hass.http.async_register_static_paths(

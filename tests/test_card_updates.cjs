@@ -72,7 +72,7 @@ async function run() {
   context.document.querySelectorAll = () => [{shadowRoot:{querySelectorAll:()=>[normal, admin, editing]}}];
   evaluate(source);
   assert.equal(components.get('teddycloud-tonie-library-card'), Registered);
-  assert.equal(Registered.teddyCardVersion, '0.6.0');
+  assert.equal(Registered.teddyCardVersion, '0.6.1');
   assert.equal(editing._edit, editState);
   assert.equal(editing.shadowRoot.innerHTML, editingMarkup, 'Do not replace an unsaved admin form');
   assert.equal(oldAudio.paused, true);
@@ -106,8 +106,8 @@ async function run() {
   evaluate(source + '\nwindow.testLoadCardUpdate = teddyLoadCardUpdate;');
   const load = context.window.testLoadCardUpdate;
   const loader = async url => {imports.push(url);};
-  const url = '/teddycloud-homeassistant/card-v061.js?v=0.6.1&build=123456abcdef';
-  await Promise.all([load({card_version:'0.6.1',card_url:url}, loader), load({card_version:'0.6.1',card_url:url}, loader)]);
+  const url = '/teddycloud-homeassistant/card-v062.js?v=0.6.2&build=123456abcdef';
+  await Promise.all([load({card_version:'0.6.2',card_url:url}, loader), load({card_version:'0.6.2',card_url:url}, loader)]);
   assert.deepEqual(imports, [url]);
   for (const data of [
     {card_version:'0.6.0',card_url:url}, {card_version:'0.5.8',card_url:url},

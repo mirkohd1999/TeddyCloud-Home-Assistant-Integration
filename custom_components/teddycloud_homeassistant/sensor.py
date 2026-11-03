@@ -10,10 +10,12 @@ from homeassistant.helpers.entity import DeviceInfo
 from .const import DOMAIN, CONF_PREFIX, CONF_BOX_ID, CONF_BOX_NAME
 from .media_player import mqtt_text
 from .ear_events import parse_ear_event
+from .figure_color import FigureColorSensor
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([
+        FigureColorSensor(entry, hass.data[DOMAIN][entry.entry_id]),
         VolumeSensor(entry),
         EarButtonSensor(entry, "VolUp", "Großes Ohr (lauter)"),
         EarButtonSensor(entry, "VolDown", "Kleines Ohr (leiser)"),
