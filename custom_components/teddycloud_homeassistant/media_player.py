@@ -107,6 +107,10 @@ class BoxPlayer(MediaPlayerEntity):
     @callback
     def _refresh_availability(self):
         self._availability.duration = self.media_duration
+        if self.on_figure_presence_changed:
+            self.on_figure_presence_changed()
+        if self.on_figure_artwork_changed:
+            self.on_figure_artwork_changed()
         if self._offline_cancel:
             self._offline_cancel()
             self._offline_cancel = None
@@ -394,6 +398,31 @@ class BoxPlayer(MediaPlayerEntity):
         return None
 
     @property
+    def figure_present(self):
+        return self._figure_present
+
+    @property
+    def figure_generation(self):
+        return self._figure_generation
+
+    @property
+    def figure_color_override(self):
+        if self._library:
+            return self._library.custom_metadata(self._values.get("ContentAudioId")).get("color")
+        return None
+
+    @property
+    def figure_playback_remaining(self):
+        started = self._availability.playback_started
+        duration = self._availability.duration
+        if started is None or duration is None:
+            return None
+        return started + duration - self._availability.clock()
+
+    on_figure_presence_changed = None
+    on_figure_artwork_changed = None
+
+    @property
     def media_image_url(self):
         if self._figure_present is False:
             return None
@@ -410,6 +439,12 @@ class BoxPlayer(MediaPlayerEntity):
         figure = custom.get('figure') or self._local_artwork or (self._archive.lookup(self._values.get('ContentAudioId')) if self._archive else None) or ((self._online_result or {}).get('figure') if self.entry.options.get('online_images', True) else None)
         url = figure or custom.get('cover') or (self._library.detected_metadata(self._values.get('ContentAudioId')).get('image') if self._library else None) or self._values.get('ContentPicture') or self.entry.options.get(CONF_FALLBACK_COVER, '')
         result = resolved_picture(url, self.entry.options.get('teddycloud_url', ''))
+        if self.figure_present and (
+            (result and urlsplit(result).path.endswith("/img_unknown.png"))
+            or (not result and (self._known_media_title() or "").strip().casefold()
+                in {"", "unknown", "unbekannt", "unbekannter tonie"})
+        ):
+            return "/teddycloud-homeassistant/unknown-tonie.png"
         images = getattr(self._archive, 'images', None)
         return images.private_url(result) if images else result
 

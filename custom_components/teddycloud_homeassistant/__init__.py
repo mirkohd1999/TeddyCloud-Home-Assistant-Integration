@@ -14,6 +14,7 @@ from .image_view import register_image_view
 from .library_websocket import register_library_websockets
 
 FIELDS = {"Playback", "ContentTitle", "ContentAudioId", "VolumeLevel", "VolumedB", "Charger", "TagValid", "LastSeen", "ContentPicture"}
+PLATFORMS = ["media_player", "number", "sensor", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not await mqtt.async_wait_for_mqtt_client(hass):
@@ -52,11 +53,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         else:
             player.note_message(retained=getattr(message, "retain", False))
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["media_player", "number", "sensor"])
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     try:
         unsubscribe = await mqtt.async_subscribe(hass, topic, incoming, 0)
     except Exception:
-        await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor"])
+        await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
         hass.data[DOMAIN].pop(entry.entry_id, None)
         _stop_library_catalog_if_unused(hass.data[DOMAIN])
         raise
@@ -89,7 +90,7 @@ async def async_unload_entry(hass, entry):
     unsubscribe = hass.data[DOMAIN].pop(f"{entry.entry_id}_unsubscribe", None)
     if unsubscribe:
         unsubscribe()
-    unloaded = await hass.config_entries.async_unload_platforms(entry, ["media_player", "number", "sensor"])
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         _stop_library_catalog_if_unused(hass.data[DOMAIN])

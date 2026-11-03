@@ -69,6 +69,7 @@ async def ws_library_refresh(hass, connection, msg):
     vol.Optional("image"): str,
     vol.Optional("duration_seconds"): int,
     vol.Optional("image_data"): str,
+    vol.Optional("color"): str,
 })
 @websocket_api.async_response
 async def ws_library_save(hass, connection, msg):
@@ -88,6 +89,7 @@ async def ws_library_save(hass, connection, msg):
             image=msg.get("image"),
             duration_seconds=msg.get("duration_seconds"),
             image_data=msg.get("image_data"),
+            **({"color": msg["color"]} if "color" in msg else {}),
         )
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))

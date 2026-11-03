@@ -225,7 +225,9 @@ class TonieLibrary:
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
 
-    async def async_edit(self, audio_id, title=None, image=None, duration_seconds=None, image_data=None):
+    async def async_edit(self, audio_id, title=None, image=None, duration_seconds=None, image_data=None, color=None):
+        if color is not None and color != "" and not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+            raise ValueError("Farbe muss ein Hexwert wie #808080 sein")
         """Save an explicit manual override, including browser-uploaded pictures."""
         if not valid_audio_id(audio_id):
             raise ValueError("Ungültige Audio-ID")
@@ -264,6 +266,8 @@ class TonieLibrary:
                 self._entries[audio_id] = item
             self._hidden.discard(audio_id)
             custom = item.setdefault("custom", {})
+            if color is not None:
+                custom["color"] = color.upper()
             if title is not None:
                 custom["title"] = title.strip()
             if image is not None:
