@@ -175,6 +175,13 @@ class TeddyCloudOptionsFlow(config_entries.OptionsFlow):
     def _schema(self):
         current = self.config_entry.options
         return vol.Schema({
+            vol.Optional("box_model", default=current.get("box_model", "auto")): vol.In({
+                "auto": "Automatisch nach Boxfarbe",
+                "green": "TB1 - Green", "blue": "TB1 - Light Blue",
+                "red": "TB1 - Red", "pink": "TB1 - Pink",
+                "purple": "TB1 - Purple", "grey": "TB1 - Grey",
+                "disney": "TB1 - Red - Disney 100 Limited Edition",
+            }),
             vol.Required(CONF_BOX_COLOR, default=current.get(CONF_BOX_COLOR, self.config_entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR))): str,
             vol.Required("online_images", default=current.get("online_images", True)): bool,
             vol.Required("offline_timeout", default=current.get("offline_timeout", 5)): vol.All(vol.Coerce(int), vol.Range(min=1, max=120)),

@@ -1,4 +1,4 @@
-const TEDDY_CARD_VERSION = '0.6.2';
+const TEDDY_CARD_VERSION = '0.6.3';
 const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
@@ -365,12 +365,19 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
     const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || TEDDY_UNKNOWN_ART);
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
-    const boxImage = this.config.box_image || '';
+    const models = {red:'#e53935', green:'#9eae22', blue:'#65b7da', pink:'#ee508c', purple:'#a52b78', grey:'#808080'};
+    const rgb = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
+    const nearest = Object.keys(models).reduce((best, key) => {
+      const distance = name => rgb(models[name]).reduce((sum, value, i) => sum + (value-rgb(color)[i]) ** 2, 0);
+      return distance(key) < distance(best) ? key : best;
+    }, 'red');
+    const model = Object.hasOwn(models, attr.box_model) || attr.box_model === 'disney' ? attr.box_model : nearest;
+    const boxImage = this.config.box_image || '/teddycloud-homeassistant/boxes/' + model + '.png';
     const composition = this.config.composition !== false;
     const artworkMode = ['auto','figure','cover'].includes(this.config.artwork_mode) ? this.config.artwork_mode : 'auto';
     // Online catalog images can be covers, not cut-out figurines. In auto,
     // only an explicitly supplied figure image is known to be intended as a figurine.
-    const showFigure = artworkMode === 'figure' || (artworkMode === 'auto' && !!this.config.figure_image);
+    const showFigure = artworkMode !== 'cover';
     const mode = ['all', 'player', 'settings', 'compact', 'artwork', 'status', 'tiles', 'custom'].includes(this.config.mode) ? this.config.mode : 'all';
     const charger = String(attr.charger ?? '').trim().toUpperCase();
     const chargerText = offline ? this._t("Keine aktuellen Meldungen") : ['ON','1','TRUE'].includes(charger) ? '🔌 ' + this._t("Auf Ladestation") + '' : ['OFF','0','FALSE'].includes(charger) ? '🔋 ' + this._t("Nicht auf Ladestation") + '' : '🔋 ' + this._t("Ladestatus unbekannt") + '';
@@ -384,7 +391,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const imageURL = teddyImageURL(this, url);
     const safeURL = imageURL === TEDDY_UNKNOWN_ART || /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(imageURL) ? safe(imageURL) : '';
     const boxURL = teddyImageURL(this, boxImage);
-    const safeBoxURL = /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(boxURL) ? safe(boxURL) : '';
+    const safeBoxURL = /^\/teddycloud-homeassistant\/boxes\/(red|green|blue|pink|purple|grey|disney)\.png$/.test(boxURL) || /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(boxURL) ? safe(boxURL) : '';
     const showCover = Boolean(safeURL) && (artworkMode === 'cover' || !showFigure);
     const controlRows = [
       ['speaker_entity', 'Lautsprecher-Lautstärkelimit', this._t("Lautsprecher-Limit"), [25,50,75,100], '🔊'],
@@ -516,7 +523,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         .ear{position:absolute;top:-24px;width:26px;height:31px;background:#929294;clip-path:polygon(50% 0,100% 100%,0 100%);z-index:1}.ear.left{left:39px}.ear.right{right:34px}
         .speaker{position:absolute;left:28px;top:49px;width:111px;height:80px;opacity:.6;background-image:radial-gradient(#18181a 2.4px,transparent 2.5px);background-size:12px 12px;clip-path:ellipse(50% 49%)}
         .box-photo{position:absolute;inset:4px 0 0;width:100%;height:91%;object-fit:contain}
-        .figure-photo{position:absolute;inset:8px 8px 4px;width:calc(100% - 16px);height:calc(100% - 12px);object-fit:contain;z-index:2}
+        .figure-photo{position:absolute;inset:auto 5% 0 auto;width:48%;height:48%;object-fit:contain;z-index:2}
         .figure-fallback{position:absolute;bottom:8px;left:77px;place-items:center;width:63px;height:76px;font-size:57px;z-index:2}
         .setting{padding:2px 0 4px}.setting-head{display:flex;justify-content:space-between;gap:7px;font-size:12px;margin-bottom:8px}
         .setting input{width:100%;accent-color:${color};cursor:pointer}
@@ -537,7 +544,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .ear{position:absolute;top:-24px;width:26px;height:31px;background:#929294;clip-path:polygon(50% 0,100% 100%,0 100%);z-index:1}.ear.left{left:39px}.ear.right{right:34px}
     .speaker{position:absolute;left:28px;top:49px;width:111px;height:80px;opacity:.6;background-image:radial-gradient(#18181a 2.4px,transparent 2.5px);background-size:12px 12px;clip-path:ellipse(50% 49%)}
     .box-photo{position:absolute;inset:4px 0 0 0;width:100%;height:91%;object-fit:contain}
-    .figure-photo{position:absolute;inset:8px 8px 4px;width:calc(100% - 16px);height:calc(100% - 12px);object-fit:contain;object-position:center;filter:drop-shadow(1px 4px 5px #0006);z-index:2}
+    .figure-photo{position:absolute;inset:auto 5% 0 auto;width:48%;height:48%;object-fit:contain;object-position:center;filter:drop-shadow(1px 4px 5px #0006);z-index:2}
     .figure-fallback{position:absolute;bottom:8px;left:77px;place-items:center;width:63px;height:76px;font-size:57px;z-index:2;filter:drop-shadow(2px 5px 3px #0003)}
     .stage + .detail{min-width:0;flex:1}
     @media(max-width:440px){.flex{flex-direction:column;align-items:stretch}.stage{align-self:center}.title{font-size:19px}}.art{width:122px;height:122px;border-radius:16px;flex-shrink:0;object-fit:contain;object-position:center;background:${color}40}
