@@ -51,7 +51,7 @@ class FigureColorSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        color = self.native_value
+        color = self._attr_native_value
         return {"rgb_color": [int(color[i:i + 2], 16) for i in (1, 3, 5)]} if color else {}
 
     async def async_added_to_hass(self):

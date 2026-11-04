@@ -1,4 +1,5 @@
-const TEDDY_CARD_VERSION = '0.6.1';
+const TEDDY_CARD_VERSION = '0.6.2';
+const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
   return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
@@ -362,7 +363,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const offline = e?.state === 'unavailable' || attr.box_online === false;
     const title = offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Keine Figur aufgestellt") : ((attr.media_title_is_fallback ? this._t('Unbekannter Tonie') : attr.media_title) || (!e ? this._t("Toniebox auswählen") : this._t("Noch keine Titelinformationen")));
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
-    const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || '');
+    const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || TEDDY_UNKNOWN_ART);
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
     const boxImage = this.config.box_image || '';
     const composition = this.config.composition !== false;
@@ -381,10 +382,10 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const safeAttr = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const imageURL = teddyImageURL(this, url);
-    const safeURL = /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(imageURL) ? safe(imageURL) : '';
+    const safeURL = imageURL === TEDDY_UNKNOWN_ART || /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(imageURL) ? safe(imageURL) : '';
     const boxURL = teddyImageURL(this, boxImage);
     const safeBoxURL = /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(boxURL) ? safe(boxURL) : '';
-    const showCover = Boolean(url) && (artworkMode === 'cover' || !showFigure);
+    const showCover = Boolean(safeURL) && (artworkMode === 'cover' || !showFigure);
     const controlRows = [
       ['speaker_entity', 'Lautsprecher-Lautstärkelimit', this._t("Lautsprecher-Limit"), [25,50,75,100], '🔊'],
       ['headphone_entity', 'Kopfhörer-Lautstärkelimit', this._t("Kopfhörer-Limit"), [25,50,75,100], '🎧'],
@@ -400,9 +401,9 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       <div class="ticks">${labels.map(x => `<span>${safe(x)}</span>`).join('')}</div></div>`;
     });
     const controls = controlRows.join('');
-    const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
+    const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
-      ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">` : ''}
+      ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : ''}
       <div class="figure-fallback" style="display:${safeURL?'none':'grid'}">🧸</div>
     </div>` : (safeURL ? `<img class="art" src="${safeURL}" alt="${this._t("Tonie-Bild")}">` : `<div class="art placeholder">🧸</div>`);
 
@@ -1033,10 +1034,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
     return value.startsWith('/local/') || /^https?:\/\/[^/\s]+/i.test(value) ? value : '';
   }
   _image(url, className='cover') {
-    const safeURL = this._safeImage(url);
-    return safeURL
-      ? '<img class="' + className + '" src="' + this._escape(safeURL) + '" alt="' + this._t("Tonie-Bild") + '" loading="lazy">'
-      : '<div class="' + className + ' empty">🧸</div>';
+    const safeURL = this._safeImage(url) || TEDDY_UNKNOWN_ART;
+    return `<img class="${className}" src="${this._escape(safeURL)}" alt="${this._t("Tonie-Bild")}" loading="lazy" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">`;
   }
   async _refreshPreviews() {
     if (!this._hass || this._refreshingPreviews) return;
@@ -1180,6 +1179,8 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       duration_seconds: seconds,
       color: get('library-color').trim(),
     };
+    const duplicateOf = get('library-duplicate');
+    if (duplicateOf) data.duplicate_of = duplicateOf;
     if (this._upload) data.image_data = this._upload;
     try {
       await this._hass.callWS(data);
@@ -1245,6 +1246,12 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
         '<div class="field"><label for="library-upload">' + this._t("Oder Bild direkt vom Gerät auswählen") + '</label>' +
         '<input type="file" id="library-upload" accept="image/png,image/jpeg,image/webp">' +
         '<p class="hint" id="library-upload-label">' + this._t("JPG, PNG oder WebP · maximal 2 MB") + '</p></div>' +
+        (editing ? '<div class="field"><label for="library-duplicate">' +
+          (teddyLanguage(this._hass) === 'en' ? 'Link as duplicate of' : 'Als Duplikat zusammenführen mit') +
+          '</label><select id="library-duplicate"><option value="">—</option>' +
+          (this._entries || []).filter(other => other.audio_id !== item.audio_id).map(other =>
+            '<option value="' + e(other.audio_id) + '">' + e(other.title) + '</option>'
+          ).join('') + '</select></div>' : '') +
         '<div class="edit-actions"><button data-action="cancel" type="button">' + this._t("Abbrechen") + '</button>' +
         '<button class="primary" data-action="save" type="button"' +
         (this._saving ? ' disabled' : '') + '>' + this._t("Änderungen speichern") + '</button></div></section>';

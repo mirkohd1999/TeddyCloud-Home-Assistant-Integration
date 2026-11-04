@@ -70,6 +70,7 @@ async def ws_library_refresh(hass, connection, msg):
     vol.Optional("duration_seconds"): int,
     vol.Optional("image_data"): str,
     vol.Optional("color"): str,
+    vol.Optional("duplicate_of"): str,
 })
 @websocket_api.async_response
 async def ws_library_save(hass, connection, msg):
@@ -83,6 +84,10 @@ async def ws_library_save(hass, connection, msg):
         connection.send_error(msg["id"], "not_ready", "Tonie-Bibliothek nicht bereit")
         return
     try:
+        if msg.get("duplicate_of"):
+            entry = await library.async_link_duplicate(msg["audio_id"], msg["duplicate_of"])
+            connection.send_result(msg["id"], entry)
+            return
         entry = await library.async_edit(
             msg["audio_id"],
             title=msg.get("title"),
