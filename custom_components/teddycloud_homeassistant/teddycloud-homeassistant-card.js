@@ -1,4 +1,4 @@
-const TEDDY_CARD_VERSION = '0.6.4';
+const TEDDY_CARD_VERSION = '0.6.5';
 const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
@@ -363,7 +363,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const offline = e?.state === 'unavailable' || attr.box_online === false;
     const title = offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Keine Figur aufgestellt") : ((attr.media_title_is_fallback ? this._t('Unbekannter Tonie') : attr.media_title) || (!e ? this._t("Toniebox auswählen") : this._t("Noch keine Titelinformationen")));
     const color = /^#[0-9a-f]{6}$/i.test(this.config.color || attr.box_color || '') ? (this.config.color || attr.box_color) : '#8f77c7';
-    const url = attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || TEDDY_UNKNOWN_ART);
+    const url = offline || attr.figure_present === false ? '' : (this.config.figure_image || attr.cover_url || attr.entity_picture || attr.fallback_cover || this.config.fallback_cover || (attr.figure_present === true ? TEDDY_UNKNOWN_ART : ''));
     // Optionally use an actual Toniebox photo, otherwise a themed stylized box.
     const models = {red:'#e53935', green:'#9eae22', blue:'#65b7da', pink:'#ee508c', purple:'#a52b78', grey:'#808080'};
     const rgb = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
@@ -378,7 +378,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     // Online catalog images can be covers, not cut-out figurines. In auto,
     // only an explicitly supplied figure image is known to be intended as a figurine.
     const showFigure = artworkMode !== 'cover';
-    const mode = ['all', 'player', 'settings', 'compact', 'artwork', 'status', 'tiles', 'custom', 'cover_tonie', 'cover_box'].includes(this.config.mode) ? this.config.mode : 'all';
+    const mode = ['cover_tonie', 'cover_box'].includes(this.config.mode) ? 'player' : ['all', 'player', 'settings', 'compact', 'artwork', 'status', 'tiles', 'custom'].includes(this.config.mode) ? this.config.mode : 'all';
     const charger = String(attr.charger ?? '').trim().toUpperCase();
     const chargerText = offline ? this._t("Keine aktuellen Meldungen") : ['ON','1','TRUE'].includes(charger) ? '🔌 ' + this._t("Auf Ladestation") + '' : ['OFF','0','FALSE'].includes(charger) ? '🔋 ' + this._t("Nicht auf Ladestation") + '' : '🔋 ' + this._t("Ladestatus unbekannt") + '';
     const playing = !offline && e?.state === 'playing';
@@ -393,22 +393,6 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const boxURL = teddyImageURL(this, boxImage);
     const safeBoxURL = /^\/teddycloud-homeassistant\/boxes\/(red|green|blue|pink|purple|grey|disney)\.png$/.test(boxURL) || /^(https?:\/\/|\/local\/|\/api\/teddycloud_homeassistant\/images\/)/i.test(boxURL) ? safe(boxURL) : '';
     const showCover = Boolean(safeURL) && (artworkMode === 'cover' || !showFigure);
-    if (mode === 'cover_tonie' || mode === 'cover_box') {
-      const image = safeURL || TEDDY_UNKNOWN_ART;
-      const figure = attr.figure_present === false ? '' :
-        `<img class="figurine" src="${image}" alt="${safe(title)}" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">`;
-      this.shadowRoot.innerHTML = `<style>
-        :host{display:block}ha-card{padding:16px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${color}20,transparent 73%),var(--ha-card-background,var(--card-background-color,#fff))}
-        .cover{position:relative;aspect-ratio:1;overflow:hidden}
-        img{position:absolute;width:100%;height:100%;object-fit:contain}
-        .with-box .figurine{width:85%;height:85%;right:0;bottom:0;z-index:2}
-        .box{width:100%;height:91%;left:0;top:0;z-index:1}
-        .caption{padding:12px 16px;font-size:22px;font-weight:700;overflow-wrap:anywhere}
-      </style><ha-card><div class="cover ${mode === 'cover_box' ? 'with-box' : ''}">
-        ${figure}${mode === 'cover_box' && safeBoxURL ? `<img class="box" src="${safeBoxURL}" alt="Toniebox">` : ''}
-      </div><div class="caption">${safe(title)}</div></ha-card>`;
-      return;
-    }
     const controlRows = [
       ['speaker_entity', 'Lautsprecher-Lautstärkelimit', this._t("Lautsprecher-Limit"), [25,50,75,100], '🔊'],
       ['headphone_entity', 'Kopfhörer-Lautstärkelimit', this._t("Kopfhörer-Limit"), [25,50,75,100], '🎧'],
@@ -426,8 +410,8 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const controls = controlRows.join('');
     const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
-      ${safeURL ? `<img class="figure-photo" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : ''}
-      <div class="figure-fallback" style="display:${safeURL?'none':'grid'}">🧸</div>
+      ${safeURL ? `<img class="figure-photo ${imageURL === TEDDY_UNKNOWN_ART ? 'unknown-figure' : ''}" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.onerror=null;this.classList.add('unknown-figure');this.src='${TEDDY_UNKNOWN_ART}'">` : ''}
+      <div class="figure-fallback" style="display:none">🧸</div>
     </div>` : (safeURL ? `<img class="art" src="${safeURL}" alt="${this._t("Tonie-Bild")}">` : `<div class="art placeholder">🧸</div>`);
 
     // Additional presets and the configurable dashboard builder. Legacy
@@ -540,6 +524,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         .speaker{position:absolute;left:28px;top:49px;width:111px;height:80px;opacity:.6;background-image:radial-gradient(#18181a 2.4px,transparent 2.5px);background-size:12px 12px;clip-path:ellipse(50% 49%)}
         .box-photo{position:absolute;inset:4px 0 0;width:100%;height:91%;object-fit:contain}
         .figure-photo{position:absolute;inset:auto 0 0 auto;width:85%;height:85%;object-fit:contain;z-index:2}
+        .figure-photo.unknown-figure{width:38%;height:38%;right:9%;bottom:8%}
         .figure-fallback{position:absolute;bottom:8px;left:77px;place-items:center;width:63px;height:76px;font-size:57px;z-index:2}
         .setting{padding:2px 0 4px}.setting-head{display:flex;justify-content:space-between;gap:7px;font-size:12px;margin-bottom:8px}
         .setting input{width:100%;accent-color:${color};cursor:pointer}
@@ -561,6 +546,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     .speaker{position:absolute;left:28px;top:49px;width:111px;height:80px;opacity:.6;background-image:radial-gradient(#18181a 2.4px,transparent 2.5px);background-size:12px 12px;clip-path:ellipse(50% 49%)}
     .box-photo{position:absolute;inset:4px 0 0 0;width:100%;height:91%;object-fit:contain}
     .figure-photo{position:absolute;inset:auto 0 0 auto;width:85%;height:85%;object-fit:contain;object-position:center;filter:drop-shadow(1px 4px 5px #0006);z-index:2}
+    .figure-photo.unknown-figure{width:38%;height:38%;right:9%;bottom:8%}
     .figure-fallback{position:absolute;bottom:8px;left:77px;place-items:center;width:63px;height:76px;font-size:57px;z-index:2;filter:drop-shadow(2px 5px 3px #0003)}
     .stage + .detail{min-width:0;flex:1}
     @media(max-width:440px){.flex{flex-direction:column;align-items:stretch}.stage{align-self:center}.title{font-size:19px}}.art{width:122px;height:122px;border-radius:16px;flex-shrink:0;object-fit:contain;object-position:center;background:${color}40}
@@ -662,8 +648,6 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
     const presets = [
       ['all','🧸',this._t("Alles"),this._t("Toniebox und Einstellungen")],
       ['player','🎵',this._t("Musik"),this._t("Bild und Titel")],
-      ['cover_tonie','🖼️',teddyLanguage(this._hass) === 'en' ? 'Cover · figurine' : 'Cover · Tonie',this._t("Bild und Titel")],
-      ['cover_box','🧸',teddyLanguage(this._hass) === 'en' ? 'Cover · box' : 'Cover · Toniebox',teddyLanguage(this._hass) === 'en' ? 'Figurine in front of box' : 'Figur vor der Box'],
       ['compact','▬',this._t("Kompakt"),this._t("Schmale Leiste")],
       ['artwork','🖼️',this._t("Großes Bild"),this._t("Tonie im Mittelpunkt")],
       ['tiles','▦',this._t("Kacheln"),this._t("Übersichtliche Kacheln")],
