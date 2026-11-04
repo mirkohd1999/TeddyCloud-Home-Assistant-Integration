@@ -112,6 +112,8 @@ class BoxPlayer(MediaPlayerEntity):
             self.on_figure_presence_changed()
         if self.on_figure_artwork_changed:
             self.on_figure_artwork_changed()
+        if self.on_figure_title_changed:
+            self.on_figure_title_changed()
         if self._offline_cancel:
             self._offline_cancel()
             self._offline_cancel = None
@@ -426,6 +428,7 @@ class BoxPlayer(MediaPlayerEntity):
 
     on_figure_presence_changed = None
     on_figure_artwork_changed = None
+    on_figure_title_changed = None
 
     @property
     def media_image_url(self):
