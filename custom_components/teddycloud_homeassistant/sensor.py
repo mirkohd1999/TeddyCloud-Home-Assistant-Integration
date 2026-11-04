@@ -15,11 +15,43 @@ from .figure_color import FigureColorSensor
 
 async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([
+        CurrentTonieSensor(entry, hass.data[DOMAIN][entry.entry_id]),
         FigureColorSensor(entry, hass.data[DOMAIN][entry.entry_id]),
         VolumeSensor(entry),
         EarButtonSensor(entry, "VolUp", "Großes Ohr (lauter)"),
         EarButtonSensor(entry, "VolDown", "Kleines Ohr (leiser)"),
     ])
+
+
+class CurrentTonieSensor(SensorEntity):
+    """Expose the current figurine title for dashboards and automations."""
+
+    _attr_should_poll = False
+    _attr_icon = "mdi:teddy-bear"
+
+    def __init__(self, entry, player):
+        self._player = player
+        self._attr_name = f"{entry.data[CONF_BOX_NAME]} Aktueller Tonie"
+        self._attr_unique_id = f"{entry.entry_id}_current_tonie"
+        self._attr_device_info = player.device_info
+
+    @property
+    def available(self):
+        return self._player.available
+
+    @property
+    def native_value(self):
+        if self._player.figure_present is None:
+            return None
+        return self._player.media_title[:255]
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        self._player.on_figure_title_changed = self.async_write_ha_state
+
+    async def async_will_remove_from_hass(self):
+        self._player.on_figure_title_changed = None
+        await super().async_will_remove_from_hass()
 
 
 class VolumeSensor(SensorEntity):
