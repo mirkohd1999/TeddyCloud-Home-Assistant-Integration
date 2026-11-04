@@ -86,6 +86,7 @@ class BoxPlayer(MediaPlayerEntity):
         """Keep static box appearance available when HA omits live attributes."""
         return {
             **(super().capability_attributes or {}),
+            'box_model': self.entry.options.get('box_model', 'auto'),
             'box_color': self.entry.options.get(CONF_BOX_COLOR, self.entry.data.get(CONF_BOX_COLOR, DEFAULT_COLOR)),
         }
 
