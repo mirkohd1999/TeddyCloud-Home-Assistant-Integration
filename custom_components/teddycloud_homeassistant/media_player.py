@@ -395,6 +395,10 @@ class BoxPlayer(MediaPlayerEntity):
             duration = (self._online_result or {}).get('duration_seconds')
             if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 0 < duration <= 86400:
                 return int(duration)
+        if self._library:
+            duration = self._library.detected_metadata(self._values.get('ContentAudioId')).get('duration_seconds')
+            if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 0 < duration <= 86400:
+                return int(duration)
         return None
 
     @property

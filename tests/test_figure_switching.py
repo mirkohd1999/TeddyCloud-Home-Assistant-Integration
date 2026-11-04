@@ -73,6 +73,16 @@ class TestFigureSwitching(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(self.lib.detected_metadata('222')['image'])
         self.assertEqual(self.player.media_title, 'Unbekannter Tonie')
 
+    async def test_confirmed_duplicate_reuses_known_figure(self):
+        await self.rocky()
+        await self.send(('TagValid', '-1'), ('ContentAudioId', '222'))
+        await self.lib.async_link_duplicate('222', '111')
+        entries = self.lib.public_entries()
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]['times_seen'], 2)
+        self.assertEqual(self.player.media_title, 'Rocky')
+        self.assertEqual(self.player.media_image_url, 'https://example.test/rocky.png')
+
     async def test_late_old_title_and_picture_do_not_create_duplicate(self):
         await self.rocky()
         await self.send(('TagValid', '-1'), ('ContentAudioId', '222'),

@@ -119,9 +119,13 @@ class TonieLibrary:
         return result
 
     def detected_metadata(self, audio_id):
-        """Metadata already associated with this exact ID; never infer by title."""
-        item = self._entries.get(audio_id, {})
-        return {key: item.get(key) for key in ('title', 'image', 'duration_seconds')}
+        """Metadata for the ID and its explicitly linked aliases."""
+        candidates = [audio_id, *self._group_ids(audio_id)]
+        return {
+            field: next((self._entries.get(key, {}).get(field) for key in candidates
+                         if self._entries.get(key, {}).get(field)), None)
+            for field in ("title", "image", "duration_seconds")
+        }
 
     async def async_mqtt_metadata(self, audio_id, title=None, image=None, is_current=None):
         """Uncorrelated MQTT may fill a blank entry, never rename a known one."""
@@ -299,6 +303,19 @@ class TonieLibrary:
             "custom": dict(custom),
         }
 
+    async def async_link_duplicate(self, audio_id, target_id):
+        """Link two existing records after an administrator confirms identity."""
+        async with self._lock:
+            if self._removed or audio_id not in self._entries or target_id not in self._entries:
+                raise ValueError("Beide Tonies müssen in der Bibliothek vorhanden sein")
+            if audio_id != target_id and target_id not in self._group_ids(audio_id):
+                links = self._entries[audio_id].setdefault("confirmed_audio_ids", [])
+                links.append(target_id)
+                await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
+        self._notify(audio_id)
+        self._notify(target_id)
+        return self._public_entry(target_id)
+
     def _groups(self):
         parents = {key: key for key in self._entries}
 
@@ -309,7 +326,7 @@ class TonieLibrary:
             return key
 
         for key, item in self._entries.items():
-            for alias in item.get("catalog_audio_ids", []):
+            for alias in [*item.get("catalog_audio_ids", []), *item.get("confirmed_audio_ids", [])]:
                 if alias in parents:
                     a, b = find(key), find(alias)
                     parents[max(a, b)] = min(a, b)
