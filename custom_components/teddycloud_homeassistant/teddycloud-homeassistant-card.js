@@ -1,4 +1,4 @@
-const TEDDY_CARD_VERSION = '0.6.5';
+const TEDDY_CARD_VERSION = '0.6.6';
 const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
@@ -411,7 +411,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
       ${safeURL ? `<img class="figure-photo ${imageURL === TEDDY_UNKNOWN_ART ? 'unknown-figure' : ''}" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.onerror=null;this.classList.add('unknown-figure');this.src='${TEDDY_UNKNOWN_ART}'">` : ''}
-      <div class="figure-fallback" style="display:none">🧸</div>
+      <div class="figure-fallback" style="display:${offline || attr.figure_present === false ? 'grid' : 'none'}">🧸</div>
     </div>` : (safeURL ? `<img class="art" src="${safeURL}" alt="${this._t("Tonie-Bild")}">` : `<div class="art placeholder">🧸</div>`);
 
     // Additional presets and the configurable dashboard builder. Legacy
@@ -431,10 +431,9 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       };
       const earRow = (suffix, label) => {
         const state = resolveEar(suffix);
-        const count = state?.attributes?.press_count;
-        const labelText = {'pressed':this._t("Einfach"),'double-pressed':this._t("Doppelt"),'triple-pressed':this._t("Dreifach")}[state?.state] || this._t("Noch kein Tastendruck");
+        const labelText = state?.state === 'pressed' ? (teddyLanguage(this._hass) === 'en' ? 'Pressed' : 'Gedrückt') : (teddyLanguage(this._hass) === 'en' ? 'Released' : 'Nicht gedrückt');
         return '<div class="ear-row"><span>' + safe(this._t(label)) + '</span><span>' +
-          safe(labelText) + (Number.isInteger(count) ? ' · ' + safe(count) + '×' : '') + '</span></div>';
+          safe(labelText) + '</span></div>';
       };
       const smallArt = safeURL
         ? '<img class="small-art" src="' + safeURL + '" alt="' + this._t("Tonie-Bild") + '" loading="lazy">'

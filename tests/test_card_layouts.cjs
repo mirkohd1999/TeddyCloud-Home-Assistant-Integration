@@ -74,7 +74,7 @@ custom.hass = hass;
 const html = custom.shadowRoot.innerHTML;
 assert.ok(html.includes('--board-cols:3'));
 assert.ok(html.indexOf('Mein Tonie') < html.indexOf('Großes Ohr'));
-assert.ok(html.includes('Doppelt') && html.includes('Einfach'));
+assert.ok(html.includes('Gedrückt') && html.includes('Nicht gedrückt'));
 assert.ok(!html.includes('Toniebox-Einstellungen'));
 const empty = new Card();
 empty.setConfig({entity:'media_player.test',mode:'custom',sections:[]});

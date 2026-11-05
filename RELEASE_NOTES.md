@@ -1,8 +1,7 @@
-# v0.6.5
+# v0.6.6
 
-- Bei einer offline gemeldeten Toniebox wird die Box ohne Figur oder Fragezeichen dargestellt.
-- Das Fragezeichen für unbekannte Figuren erscheint kleiner vor der Box.
-- Die zusätzlichen Vorlagen „Cover · Tonie“ und „Cover · Toniebox“ wurden entfernt. Bereits damit angelegte Karten verwenden die Musikansicht.
-- Beide Cover-Darstellungen ließen sich bereits zuvor über „Selbst gestalten“ im Karteneditor aus Bild- und Titelbausteinen zusammenstellen. Diese Möglichkeiten stehen weiterhin zur Verfügung.
+- Der Teddy erscheint vor der Box, wenn sie offline ist oder keine Figur aufliegt. Unbekannte Figuren werden weiterhin durch das kleine Fragezeichen dargestellt.
+- Die bestehenden Ohrtasten-Sensoren zeigen einen kurzen Tastendruck und wechseln nach einer Sekunde wieder auf released. Zähler, Zeitstempel und Doppel-/Dreifachklick-Anzeigen entfallen. Es werden keine Lichtautomationen eingerichtet.
+- Bestehende Automationen, die press_count, last_pressed oder Mehrfachklick-Zustände verwenden, müssen angepasst werden. Die Entitäts-IDs bleiben erhalten.
 
 In HACS aktualisieren und Home Assistant neu starten.

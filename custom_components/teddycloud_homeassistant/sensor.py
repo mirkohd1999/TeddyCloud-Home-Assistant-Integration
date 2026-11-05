@@ -1,11 +1,11 @@
 """Read-only Toniebox volume and physical ear-button MQTT sensors."""
-from datetime import datetime, timezone
 
 from homeassistant.core import callback
 from homeassistant.components import mqtt
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_call_later
 
 from .const import DOMAIN, CONF_PREFIX, CONF_BOX_ID, CONF_BOX_NAME
 from .media_player import mqtt_text
@@ -93,11 +93,7 @@ class VolumeSensor(SensorEntity):
 
 
 class EarButtonSensor(SensorEntity):
-    """Show the most recent physical ear press on this Toniebox.
-
-    Repeated identical events still update press_count and last_pressed,
-    so state-change automations can detect repeated presses.
-    """
+    """Show a one-second press pulse for either physical ear."""
 
     _attr_should_poll = False
     _attr_icon = "mdi:ear-hearing"
@@ -106,13 +102,8 @@ class EarButtonSensor(SensorEntity):
     def __init__(self, entry, topic_name, friendly_name):
         self._attr_name = f"{entry.data[CONF_BOX_NAME]} {friendly_name}"
         self._attr_unique_id = f"{entry.entry_id}_ear_{topic_name.lower()}"
-        self._attr_native_value = None
-        self._press_count = 0
-        self._last_pressed = None
-        self._attr_extra_state_attributes = {
-            "last_pressed": None,
-            "press_count": 0,
-        }
+        self._attr_native_value = "released"
+        self._cancel_release = None
         prefix = entry.data[CONF_PREFIX].strip("/")
         box = entry.data[CONF_BOX_ID].strip("/")
         self._topic = f"{prefix}/box/{box}/{topic_name}"
@@ -135,15 +126,24 @@ class EarButtonSensor(SensorEntity):
             event_type = parse_ear_event(message.payload)
             if event_type is None:
                 return
-            self._press_count += 1
-            self._last_pressed = datetime.now(timezone.utc).isoformat()
-            self._attr_native_value = event_type
-            self._attr_extra_state_attributes = {
-                "last_pressed": self._last_pressed,
-                "press_count": self._press_count,
-            }
+            self._attr_native_value = "pressed"
+            if self._cancel_release:
+                self._cancel_release()
+            self._cancel_release = async_call_later(self.hass, 1, self._release)
             self.async_write_ha_state()
 
         self.async_on_remove(
             await mqtt.async_subscribe(self.hass, self._topic, received, 0)
         )
+
+    @callback
+    def _release(self, _now):
+        self._cancel_release = None
+        self._attr_native_value = "released"
+        self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self):
+        if self._cancel_release:
+            self._cancel_release()
+            self._cancel_release = None
+        await super().async_will_remove_from_hass()
