@@ -69,6 +69,20 @@ class RoomLightTests(unittest.IsolatedAsyncioTestCase):
         await self.controller.async_sync()
         self.assertEqual([s for _,s,_ in self.calls], ['turn_off']*3)
 
+    async def test_new_figure_color_reaches_lamp_while_presence_stays_on(self):
+        self.controller.async_start()
+        await asyncio.sleep(0)
+        self.calls.clear()
+        old = self.states['sensor.bedroom_tonie_color']
+        self.state('sensor.bedroom_tonie_color','#CF3326',rgb_color=[207,51,38])
+        self.listeners[0](SimpleNamespace(data={
+            'entity_id':'sensor.bedroom_tonie_color', 'old_state':old,
+            'new_state':self.states['sensor.bedroom_tonie_color']}))
+        await asyncio.sleep(0)
+        self.assertEqual(self.calls[0], ('light','turn_on',{'entity_id':'light.color','rgb_color':[207,51,38]}))
+        self.assertNotIn('brightness',self.calls[0][2])
+        self.controller.async_stop()
+
     async def test_unknown_presence_does_not_control_lights(self):
         for value in ('unknown','unavailable'):
             self.state('binary_sensor.bedroom_tonie_present',value)

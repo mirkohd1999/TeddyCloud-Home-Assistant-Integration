@@ -14,7 +14,7 @@ Zeige Wiedergabestatus, Figurenbilder und Laufzeiten an, verwalte Lautstärkelim
 - [Funktionen](#funktionen)
 - [Installation](#installation)
 - [Dashboard](#dashboard)
-- [Zimmerlicht](#zimmerlicht)
+- [Licht](#licht)
 - [Selbst gestalten](#selbst-gestalten)
 - [Tonie-Bibliothek](#tonie-bibliothek)
 - [MQTT und Ohrtasten](#mqtt-und-ohrtasten)
@@ -31,7 +31,7 @@ Zeige Wiedergabestatus, Figurenbilder und Laufzeiten an, verwalte Lautstärkelim
 | Offline-Status | Ausbleibende Box-Aktivität erkennen und laufende Hörspiele anhand ihrer Laufzeit berücksichtigen |
 | Lautstärke | Aktuelle Lautstärke ablesen sowie Lautsprecher- und Kopfhörerlimits einstellen |
 | LED | Helligkeit auf aus, gedimmt oder an stellen |
-| Zimmerlicht | Lampen im Dashboard ein-/ausschalten und dimmen; optional Tonie-Farbe und Aufgelegt-Sensor folgen |
+| Licht | Lampen im Dashboard ein-/ausschalten und dimmen; optional Tonie-Farbe und Aufgelegt-Sensor folgen |
 | Status | Ladestationsstatus und Ohrtasten-Ereignisse anzeigen |
 | Dashboard | Acht Vorlagen, Live-Vorschau und frei gestaltbare Bausteine |
 | Bibliothek | Tonies automatisch sammeln, durchsuchen, sortieren und gemeinsam verwalten |
@@ -113,24 +113,28 @@ Anzeigename, Boxfarbe, Bilddarstellung und eine manuelle Entitäts-ID findest du
 
 Die Player-Karte, die Tonie-Bibliothek und die Karteneditoren folgen der Sprache des Home-Assistant-Benutzerprofils. Bei einem englischen Profil erscheinen die Bedienelemente auf Englisch; andernfalls wird Deutsch verwendet. Hörspieltitel, Figurennamen und selbst vergebene Boxnamen werden nicht übersetzt.
 
-## Zimmerlicht
+## Licht
 
 1. Öffne **Einstellungen → Geräte & Dienste → TeddyCloud Home Assistant Integration → Konfigurieren**.
-2. Wähle unter **Zimmerlicht** eine oder mehrere vorhandene Home-Assistant-Lampen aus und speichere.
-3. Im Dashboard erscheinen **Licht ein-/ausschalten** und ein **Helligkeitsregler**. Der Dimmer steuert nur Lampen mit Helligkeitsfunktion; bei 0 % werden sie ausgeschaltet.
-4. Aktiviere bei Bedarf **Tonie-Lichtautomatik** im Dashboard oder über den gleichnamigen Schalter am Toniebox-Gerät.
+2. Wähle unter **Licht** eine oder mehrere vorhandene Home-Assistant-Lampen aus und speichere.
+3. Öffne dein Dashboard und wähle **Bearbeiten → Karte hinzufügen → TeddyCloud Licht**.
+4. Wähle die zugehörige Toniebox aus. Die separate Lichtkarte bietet Ein-/Aus-Button, Helligkeitsregler und den Schalter für die Tonie-Lichtautomatik.
 
-Die Automatik ist zunächst aus. Ihr Schalterzustand bleibt nach Neustarts erhalten. Sie nutzt die bestehenden Sensoren **Tonie aufgelegt** und **Tonie-Farbe**: Eine aufgelegte Figur schaltet das Licht ein, eine bekannte Farbe wird übernommen. Beim Figurenwechsel bleibt die Helligkeit erhalten. Beim Abnehmen oder Ablauf der geschätzten Spielzeit schaltet das Licht aus. Das gilt auch, sobald die Box als offline gemeldet wird; die normale Offline-Verzögerung bleibt bestehen.
+Die Lichtbedienung befindet sich ausschließlich auf dieser eigenen Karte. Die Toniebox-Karten enthalten keine Lichtsteuerung. Der Dimmer steuert nur Lampen mit Helligkeitsfunktion; bei 0 % werden sie ausgeschaltet.
+
+Die Automatik ist zunächst aus. Aktiviere sie mit **Automatik einschalten**; ihr Zustand bleibt nach Neustarts erhalten. Sie nutzt die bestehenden Sensoren **Tonie aufgelegt** und **Tonie-Farbe**: Eine aufgelegte Figur schaltet das Licht ein. Beim Abnehmen oder Ablauf der geschätzten Spielzeit schaltet das Licht aus. Das gilt auch, sobald die Box als offline gemeldet wird; die normale Offline-Verzögerung bleibt bestehen.
+
+Der vorhandene Tonie-Farbe-Sensor bevorzugt eine deutlich farbige Stelle der Figur. Einfarbige Bildhintergründe am Bildrand werden bei dieser Lichtfarberkennung ausgeblendet. So wird beispielsweise bei Benjamin eine Farbe seiner Kleidung verwendet, statt Grau als weißes Lampenlicht darzustellen. Die Karte zeigt die verwendete Lichtfarbe und den Automatik-Status. Bei Figuren ohne farbige Flächen kann die Lichtfarbe weiterhin neutral sein.
+
+Der Tonie-Farbe-Sensor und sein Attribut `rgb_color` liefern dieselbe verbesserte Farbe, die auch das Licht verwendet. Es ist kein weiterer Sensor erforderlich. Bei Farbwechseln bleibt die Lampenhelligkeit erhalten.
 
 Ohne gültige Figurenfarbe wird die bisherige Lichtfarbe beibehalten. Lampen ohne Farbfunktion können weiterhin ein-/ausgeschaltet und, sofern unterstützt, gedimmt werden. Manuelle Lichtbedienung funktioniert auch bei offline gemeldeter Toniebox. Bei ausgeschalteter Automatik steuern Tonie-Wechsel das Licht nicht.
-
-In den Standardansichten wird die Lichtsteuerung nach der Lampenauswahl automatisch angezeigt. Unter **Selbst gestalten** kannst du den Baustein **Zimmerlicht** hinzufügen und anordnen.
 
 ## Selbst gestalten
 
 Wähle im Karteneditor **Selbst gestalten**. Aktiviere die gewünschten Bausteine und sortiere sie mit **↑ / ↓**.
 
-Verfügbar sind Bild/Toniebox, Titel und Boxname, Wiedergabestatus, Ladestation, Laufzeit/Fortschritt, aktuelle Lautstärke, Lautsprecherlimit, Kopfhörerlimit, LED-Helligkeit, Ohrtasten und Zimmerlicht.
+Verfügbar sind Bild/Toniebox, Titel und Boxname, Wiedergabestatus, Ladestation, Laufzeit/Fortschritt, aktuelle Lautstärke, Lautsprecherlimit, Kopfhörerlimit, LED-Helligkeit und Ohrtasten.
 
 Für unterschiedliche Breiten:
 
@@ -166,7 +170,7 @@ section_widths:
   led: 2
 ```
 
-Ersetze die Beispiel-Entität durch deine tatsächliche ID unter **Einstellungen → Geräte & Dienste → Entitäten**. Weitere Baustein-Kennungen sind `progress`, `volume`, `speaker`, `headphone`, `ears` und `room_light`.
+Ersetze die Beispiel-Entität durch deine tatsächliche ID unter **Einstellungen → Geräte & Dienste → Entitäten**. Weitere Baustein-Kennungen sind `progress`, `volume`, `speaker`, `headphone` und `ears`.
 
 </details>
 

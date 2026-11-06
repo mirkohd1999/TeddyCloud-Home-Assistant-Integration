@@ -393,17 +393,21 @@ assert.ok(controlsEn.shadowRoot.innerHTML.includes('Speaker limit'));
 
 // Room controls use the configured lights even when the Toniebox is offline.
 (async () => {
-  const room = new Card();
+  const RoomCard = components.get('teddycloud-room-light-card');
+  assert.ok(RoomCard);
+  assert.ok(components.get('teddycloud-room-light-editor'));
+  const room = new RoomCard();
   const calls = [];
   const roomHass = {language:'de',callService:async (...args) => calls.push(args),states:{
-    'media_player.test':{state:'unavailable',attributes:{room_lights:['light.rgb','light.simple','light.missing'],room_light_auto_entity:'switch.auto'}},
+    'media_player.test':{state:'unavailable',attributes:{room_lights:['light.rgb','light.simple','light.missing'],room_light_auto_entity:'switch.auto',room_light_color_entity:'sensor.color'}},
+    'sensor.color':{state:'#c02030',attributes:{rgb_color:[192,32,48]}},
     'light.rgb':{state:'on',attributes:{supported_color_modes:['rgb'],brightness:128}},
     'light.simple':{state:'off',attributes:{supported_color_modes:['onoff']}},
     'switch.auto':{state:'off',attributes:{}}
   }};
   room.setConfig({entity:'media_player.test'});room.hass=roomHass;
   // A resource update must also install handlers on an already-open old card.
-  const upgradedRoom = new Card();
+  const upgradedRoom = new RoomCard();
   upgradedRoom.attachShadow();upgradedRoom._controlListenerInstalled=true;
   upgradedRoom.config={entity:'media_player.test'};upgradedRoom.hass=roomHass;
   assert.equal(upgradedRoom.shadowRoot.listeners.click.length,1);
@@ -416,6 +420,8 @@ assert.ok(controlsEn.shadowRoot.innerHTML.includes('Speaker limit'));
   assert.ok(room.shadowRoot.innerHTML.includes('Licht ausschalten'));
   assert.ok(room.shadowRoot.innerHTML.includes('data-room-brightness'));
   assert.ok(room.shadowRoot.innerHTML.includes('Automatik einschalten'));
+  assert.ok(room.shadowRoot.innerHTML.includes('Automatik ist aus'));
+  assert.ok(room.shadowRoot.innerHTML.includes('#C02030'));
   await room._roomLightAction('toggle');
   assert.equal(JSON.stringify(calls.pop()),JSON.stringify(['light','turn_off',{entity_id:['light.rgb','light.simple']}]));
   await room._roomLightAction('brightness',25);
@@ -426,19 +432,21 @@ assert.ok(controlsEn.shadowRoot.innerHTML.includes('Speaker limit'));
   assert.equal(calls.length,0);
   await room._roomLightAction('auto');
   assert.equal(JSON.stringify(calls.pop()),JSON.stringify(['switch','turn_on',{entity_id:'switch.auto'}]));
-  for (const mode of ['all','player','settings','compact','artwork','status','tiles']) {
-    room.setConfig({entity:'media_player.test',mode});room.hass=roomHass;
-    assert.ok(room.shadowRoot.innerHTML.includes('data-room-action="toggle"'),mode);
-    room.hass={...roomHass,language:'en'};
-    assert.ok(room.shadowRoot.innerHTML.includes('Turn light off'),mode);
-    assert.ok(!room.shadowRoot.innerHTML.includes('Helligkeit'),mode);
+  for (const mode of ['all','player','settings','compact','artwork','status','tiles','custom']) {
+    const player = new Card();player.setConfig({entity:'media_player.test',mode});player.hass=roomHass;
+    assert.ok(!player.shadowRoot.innerHTML.includes('data-room-action="toggle"'),mode);
   }
-  room.setConfig({entity:'media_player.test',mode:'custom',sections:['room_light']});room.hass=roomHass;
+  room.hass={...roomHass,language:'en'};
+  assert.ok(room.shadowRoot.innerHTML.includes('Turn light off'));
+  assert.ok(room.shadowRoot.innerHTML.includes('Automatic lighting is off'));
+  assert.ok(!room.shadowRoot.innerHTML.includes('Helligkeit'));
+  room.hass=roomHass;
   assert.ok(room.shadowRoot.innerHTML.includes('data-room-brightness'));
   room.hass={...roomHass,states:{...roomHass.states,'light.rgb':{state:'unavailable',attributes:{}}}};
   assert.ok(room.shadowRoot.innerHTML.includes('data-room-brightness'));
   assert.ok(room.shadowRoot.innerHTML.match(/data-room-brightness[^>]+disabled/));
   room.setConfig({entity:'media_player.test'});room.hass={states:{'media_player.test':{state:'idle',attributes:{}}}};
   assert.ok(!room.shadowRoot.innerHTML.includes('data-room-action="toggle"'));
-  console.log('Room lights: dashboard toggle, dimming, automatics, offline box, unavailable lamps, custom layouts and English labels passed.');
+  assert.ok(room.shadowRoot.innerHTML.includes('Licht in den Integrationseinstellungen auswählen'));
+  console.log('Separate room-light card: toggle, dimming, color/status diagnostics, offline box, unavailable lamps and English labels passed.');
 })().catch(err => {console.error(err);process.exitCode=1;});

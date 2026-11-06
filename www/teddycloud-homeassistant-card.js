@@ -1,11 +1,18 @@
-const TEDDY_CARD_VERSION = '0.6.7';
+const TEDDY_CARD_VERSION = '0.6.8';
 const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
   return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
 }
 const TEDDY_EN = {
-  "Zimmerlicht": "Room light",
+  "Licht": "Light",
+  "Tonie-Farbe": "Tonie color",
+  "Lichtfarbe": "Light color",
+  "Noch keine Tonie-Farbe verfügbar": "No Tonie color available yet",
+  "Automatik ist aus – die Tonie-Farbe wird nicht übernommen": "Automatic lighting is off – Tonie colors are not applied",
+  "Automatik ist eingeschaltet": "Automatic lighting is enabled",
+  "Die ausgewählten Lampen unterstützen keine Farben": "The selected lights do not support colors",
+  "Lichtautomatik nicht erreichbar": "Automatic lighting unavailable",
   "Licht einschalten": "Turn light on",
   "Licht ausschalten": "Turn light off",
   "Helligkeit": "Brightness",
@@ -14,7 +21,7 @@ const TEDDY_EN = {
   "Automatik ausschalten": "Disable automatic lighting",
   "Licht nicht erreichbar": "Light unavailable",
   "Keine dimmbare Lampe ausgewählt": "No dimmable light selected",
-  "Zimmerlicht in den Integrationseinstellungen auswählen": "Select room lights in the integration settings",
+  "Licht in den Integrationseinstellungen auswählen": "Select lights in the integration settings",
   "Lichtsteuerung fehlgeschlagen": "Light control failed",
   "Tonie-Bild oder Toniebox": "Tonie image or Toniebox",
   "Titel und Boxname": "Title and box name",
@@ -280,8 +287,7 @@ const TEDDY_SECTIONS = [
   ['speaker', '🔊 Lautsprecher-Limit'],
   ['headphone', '🎧 Kopfhörer-Limit'],
   ['led', '💡 LED-Helligkeit'],
-  ['ears', '👂 Ohrtasten-Ereignisse'],
-  ['room_light', '💡 Zimmerlicht']
+  ['ears', '👂 Ohrtasten-Ereignisse']
 ];
 for (const [, label] of TEDDY_SECTIONS) {
   const text = label.slice(label.indexOf(' ') + 1);
@@ -379,7 +385,11 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     const brightness = Number.isFinite(raw) ? Math.round(raw / 255 * 100) : 100;
     const autoId = typeof attr.room_light_auto_entity === 'string' && attr.room_light_auto_entity.startsWith('switch.') ? attr.room_light_auto_entity : null;
     const autoState = autoId ? this._hass?.states?.[autoId]?.state : null;
-    return {ids, lights, dimmable, on, brightness, autoId, autoState};
+    const colorId = attr.room_light_color_entity;
+    const colorState = typeof colorId === 'string' && colorId.startsWith('sensor.') ? this._hass?.states?.[colorId] : null;
+    const color = /^#[0-9a-f]{6}$/i.test(colorState?.state || '') ? colorState.state.toUpperCase() : '';
+    const colorCapable = lights.some(([, s]) => (s.attributes?.supported_color_modes || []).some(mode => ['hs','xy','rgb','rgbw','rgbww'].includes(mode)));
+    return {ids, lights, dimmable, on, brightness, autoId, autoState, color, colorCapable};
   }
   _installRoomLightControls() {
     if (this._roomLightListenerInstalled) return;
@@ -419,19 +429,21 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
   }
   _roomLightMarkup() {
     const info = this._roomLightInfo();
-    if (!info.ids.length) return '';
+    if (!info.ids.length) return '<p>' + this._t('Licht in den Integrationseinstellungen auswählen') + '</p>';
     const t = key => this._t(key);
-    return `<div class="room-light"><div class="setting-head"><strong>💡 ${t('Zimmerlicht')}</strong>
+    return `<div class="room-light"><div class="setting-head"><strong>💡 ${t('Licht')}</strong>
       <button type="button" data-room-action="toggle" aria-pressed="${info.on}" ${info.lights.length ? '' : 'disabled'}>${t(info.on ? 'Licht ausschalten' : 'Licht einschalten')}</button></div>
       <div class="setting"><label class="setting-head"><span>${t('Helligkeit')}</span><strong>${info.on ? info.brightness : 0} %</strong></label>
       <input type="range" data-room-brightness aria-label="${t('Helligkeit')}" min="0" max="100" step="1" value="${info.on ? info.brightness : 0}" ${info.dimmable.length ? '' : 'disabled'}>
       ${!info.lights.length ? `<div class="foot">${t('Licht nicht erreichbar')}</div>` : !info.dimmable.length ? `<div class="foot">${t('Keine dimmbare Lampe ausgewählt')}</div>` : ''}</div>
       ${['on','off'].includes(info.autoState) ? `<button type="button" data-room-action="auto" aria-pressed="${info.autoState === 'on'}">${t(info.autoState === 'on' ? 'Automatik ausschalten' : 'Automatik einschalten')}</button>` : ''}
+      <div class="light-status">${t(info.autoState === 'on' ? 'Automatik ist eingeschaltet' : info.autoState === 'off' ? 'Automatik ist aus – die Tonie-Farbe wird nicht übernommen' : 'Lichtautomatik nicht erreichbar')}</div>
+      <div class="light-color">${info.color ? `<span class="color-swatch" style="background:${info.color}" aria-hidden="true"></span>${t('Lichtfarbe')}: ${info.color}` : t('Noch keine Tonie-Farbe verfügbar')}</div>
+      ${info.lights.length && !info.colorCapable ? `<div class="light-status">${t('Die ausgewählten Lampen unterstützen keine Farben')}</div>` : ''}
       ${this._roomLightError ? `<div role="alert">${t('Lichtsteuerung fehlgeschlagen')}</div>` : ''}</div>`;
   }
   render() {
     if (!this.shadowRoot || !this.config) return;
-    this._installRoomLightControls();
     const e = this._hass?.states?.[this.config.entity];
     const attr = e?.attributes || {};
     const offline = e?.state === 'unavailable' || attr.box_online === false;
@@ -482,8 +494,6 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       <div class="ticks">${labels.map(x => `<span>${safe(x)}</span>`).join('')}</div></div>`;
     });
     const controls = controlRows.join('');
-    const roomLight = this._roomLightMarkup();
-    const roomLightCSS = '.room-light{padding:14px 0;margin-top:12px;border-top:1px solid var(--divider-color,#ddd)}.room-light .setting-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.room-light input{width:100%;accent-color:var(--primary-color,#8f77c7)}.room-light button{font:inherit;color:var(--primary-text-color);background:var(--secondary-background-color,#8882);border:1px solid var(--divider-color,#888);border-radius:12px;padding:10px 14px;cursor:pointer}.room-light button[aria-pressed="true"]{border-color:var(--primary-color,#8f77c7)}.room-light button:disabled,.room-light input:disabled{opacity:.45;cursor:not-allowed}.room-light .setting{padding:14px 0}';
     const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
       ${safeURL ? `<img class="figure-photo ${imageURL === TEDDY_UNKNOWN_ART ? 'unknown-figure' : ''}" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.onerror=null;this.classList.add('unknown-figure');this.src='${TEDDY_UNKNOWN_ART}'">` : ''}
@@ -524,7 +534,6 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
           '</span><span>' + this.fmt(dur) + '</span></div><div class="board-note">' + this._t("Fortschritt geschätzt") + '</div>'
         : '<div class="board-note">' + this._t("Laufzeit unbekannt") + '</div>';
       const modules = {
-        room_light: roomLight || '<div class="board-note">' + this._t('Zimmerlicht in den Integrationseinstellungen auswählen') + '</div>',
         artwork: mode === 'compact' ? smallArt : '<div class="board-artwork-media">' + artBlock + '</div>',
         title: titleMarkup,
         playback: '<div class="board-value"><span class="board-dot"></span>' + safe(playText) + '</div>',
@@ -562,7 +571,6 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
           '>' + labelHtml + modules[id] + '</section>';
       }).join('');
       this.shadowRoot.innerHTML = `<style>
-        ${roomLightCSS}
         :host{display:block}
         ha-card{padding:16px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${color}20,transparent 73%),var(--ha-card-background,var(--card-background-color,#fff))}
         .board{display:grid;gap:12px;min-width:0}
@@ -610,11 +618,10 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         @media(max-width:640px){.board.grid{grid-template-columns:1fr}.board.grid .board-section{grid-column:1/-1}}
         @media(max-width:370px){ha-card{padding:9px}.board-section{padding:9px}.board-track{font-size:16px}}
       </style><ha-card><div class="board ${layout}" style="--board-cols:${cols}">${items ||
-        '<div class="board-note">' + this._t("Keine Bausteine ausgewählt – im Karteneditor auswählen.") + '</div>'}</div>${mode === 'custom' ? '' : roomLight}</ha-card>`;
+        '<div class="board-note">' + this._t("Keine Bausteine ausgewählt – im Karteneditor auswählen.") + '</div>'}</div></ha-card>`;
       return;
     }
     this.shadowRoot.innerHTML = `<style>
-    ${roomLightCSS}
     :host{display:block}ha-card{padding:20px;background:linear-gradient(135deg,${color}24,transparent 70%),var(--ha-card-background,var(--card-background-color,#fff));border-radius:18px}
     .flex{display:flex;gap:16px;align-items:center}
     .stage{position:relative;width:205px;height:210px;flex:0 0 205px;overflow:hidden;border-radius:16px;background:radial-gradient(circle at 45% 37%,#ffffff15,transparent 70%)}
@@ -647,7 +654,6 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud Home Assistant Integration')}</div><div class="title">${safe(title)}</div>
     <div class="state"><i class="dot"></i>${offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Figur abgenommen") : playing?this._t("Wiedergabe gemeldet"):this._t("Keine Wiedergabe gemeldet")}</div><div class="state">${chargerText}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ ${this._t("Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert")}</div>` : `<div class="foot duration-foot">${this._t("Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.")}</div>`}
-    ${roomLight}
     <div class="panel"><div class="panel-title">⚙️ ${this._t("Toniebox-Einstellungen")}</div>${controls}</div>
     <div class="foot status-foot">${this._t("Aktuelle Lautstärke")}: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : this._t("unbekannt")} · ${attr.charger === 'ON' || attr.charger === '1' ? this._t("Auf Ladestation") : 'Toniebox'}</div>
     </ha-card>`;
@@ -913,12 +919,66 @@ class TeddyCloudHomeAssistantCardEditor extends HTMLElement {
   }
 }
 
+class TeddyCloudRoomLightCard extends TeddyCloudNowPlayingCard {
+  static getConfigElement() {
+    return document.createElement('teddycloud-room-light-editor');
+  }
+  static getStubConfig(hass) {
+    return {entity: TeddyCloudNowPlayingCard.getStubConfig(hass).entity};
+  }
+  getCardSize() { return 3; }
+  connectedCallback() {}
+  render() {
+    if (!this.shadowRoot || !this.config) return;
+    this._installRoomLightControls();
+    const escape = value => String(value ?? '').replace(/[&<>"']/g,
+      c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const name = this.config.name || this._hass?.states?.[this.config.entity]?.attributes?.friendly_name || this._t('Toniebox auswählen');
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block}ha-card{display:block;padding:20px;border-radius:18px;color:var(--primary-text-color);background:var(--ha-card-background,var(--card-background-color,#fff))}
+      .box-name{font-size:12px;opacity:.7;margin-bottom:14px;overflow-wrap:anywhere}
+      .setting-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+      .setting{padding:20px 0}.setting label{margin-bottom:12px;font-size:14px}
+      input{width:100%;accent-color:var(--primary-color,#03a9f4);cursor:pointer}
+      button{font:inherit;color:inherit;background:var(--secondary-background-color,#8882);border:1px solid var(--divider-color,#888);border-radius:12px;padding:10px 14px;cursor:pointer}
+      button[aria-pressed="true"]{border-color:var(--primary-color,#03a9f4)}button:disabled,input:disabled{opacity:.45;cursor:not-allowed}
+      .light-status,.light-color,.foot{font-size:12px;line-height:1.5;margin-top:12px;opacity:.8;overflow-wrap:anywhere}
+      .light-color{display:flex;align-items:center;gap:8px}.color-swatch{width:20px;height:20px;border-radius:50%;border:1px solid var(--divider-color,#888);flex:none}
+      [role=alert]{margin-top:12px;color:var(--error-color,#db4437)}
+    </style><ha-card><div class="box-name">${escape(name)}</div>${this._roomLightMarkup()}</ha-card>`;
+  }
+}
+
+class TeddyCloudRoomLightEditor extends TeddyCloudHomeAssistantCardEditor {
+  render() {
+    if (!this.shadowRoot || !this._config) return;
+    const escape = value => String(value ?? '').replace(/[&<>"']/g,
+      c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const box = this._config.entity || '';
+    const options = this._availableBoxes().map(([id, state]) => `<option value="${escape(id)}" ${id === box ? 'selected' : ''}>${escape(state.attributes?.friendly_name || id)}</option>`).join('');
+    this.shadowRoot.innerHTML = `<style>:host{display:block}select,input{box-sizing:border-box;width:100%;padding:12px;margin:8px 0 16px;border:1px solid var(--divider-color,#888);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit}p{font-size:13px;line-height:1.5}</style>
+      <label for="entity">${this._t('Toniebox auswählen')}</label><select id="entity"><option value="">– ${this._t('Toniebox auswählen')} –</option>${options}</select>
+      <label for="manual">${this._t('Entitäts-ID manuell eingeben (nur bei Bedarf)')}</label><input id="manual" value="${escape(box)}" placeholder="media_player.meine_toniebox">
+      <p>${this._t('Licht in den Integrationseinstellungen auswählen')}</p>`;
+    this.shadowRoot.getElementById('entity')?.addEventListener('change', event => this.change('entity', event.target.value));
+    this.shadowRoot.getElementById('manual')?.addEventListener('change', event => this.change('entity', event.target.value.trim()));
+  }
+}
+
+if (!customElements.get('teddycloud-room-light-editor')) {
+  customElements.define('teddycloud-room-light-editor', TeddyCloudRoomLightEditor);
+}
+teddyRegisterLibraryCard(TeddyCloudRoomLightCard, 'teddycloud-room-light-card');
+
 if (!customElements.get('teddycloud-homeassistant-card-editor')) {
   customElements.define('teddycloud-homeassistant-card-editor',TeddyCloudHomeAssistantCardEditor);
 }
 
 teddyRegisterLibraryCard(TeddyCloudNowPlayingCard, 'teddycloud-homeassistant-card');
 window.customCards = window.customCards || [];
+if (!window.customCards.some(item => item.type === 'teddycloud-room-light-card')) {
+  window.customCards.push({type:'teddycloud-room-light-card',name:'TeddyCloud Licht',description:'Separate light controls · DE / EN',preview:true});
+}
 if (!window.customCards.some(item => item.type === 'teddycloud-homeassistant-card')) {
   window.customCards.push({type:'teddycloud-homeassistant-card',name:'TeddyCloud Home Assistant Integration',description:'TeddyCloud Toniebox · DE / EN', preview:true});
 }

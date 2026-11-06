@@ -92,7 +92,7 @@ class RoomLightController:
                     continue
                 data = {"entity_id": entity_id}
                 service = "turn_on" if placed else "turn_off"
-                if service == "turn_on" and valid_rgb and COLOR_MODES.intersection(light.attributes.get("supported_color_modes", [])):
+                if service == "turn_on" and valid_rgb and COLOR_MODES.intersection(light.attributes.get("supported_color_modes") or []):
                     data["rgb_color"] = list(rgb)
                 try:
                     # No brightness argument: preserve the lamp's own dimming.

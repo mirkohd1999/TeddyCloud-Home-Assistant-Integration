@@ -41,8 +41,8 @@ jobs:
           python-version: "3.12"
       - name: Python syntax
         run: python3 -m compileall -q custom_components/teddycloud_homeassistant
-      - name: Install HTTP test dependency
-        run: python3 -m pip install "aiohttp>=3.10,<4"
+      - name: Install test dependencies
+        run: python3 -m pip install "aiohttp>=3.10,<4" "Pillow>=10,<14"
       - name: Ear-button MQTT payload tests
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Lovelace JavaScript syntax
