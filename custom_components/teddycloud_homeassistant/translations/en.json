@@ -58,7 +58,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Customize display",
+        "title": "Toniebox and room lights",
         "data": {
           "box_color": "Toniebox color (hex, editable later)",
           "fallback_cover": "Fallback cover URL",
@@ -66,8 +66,10 @@
           "teddycloud_url": "TeddyCloud address for cover images",
           "online_images": "Automatically find figurine images online",
           "offline_timeout": "Offline after no box activity (minutes, 1–120)",
-          "box_model": "Toniebox model"
-        }
+          "box_model": "Toniebox model",
+          "room_lights": "Room lights (optional, one or more lights)"
+        },
+        "description": "Select room lights here. Enable automatic Tonie lighting using the switch on the device or in the dashboard. The existing presence sensor switches the lights off when the figurine is removed or its estimated duration ends. Brightness stays unchanged on color changes."
       }
     },
     "error": {

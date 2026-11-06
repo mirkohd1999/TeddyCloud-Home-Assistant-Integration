@@ -51,9 +51,9 @@ class TestCardRegistration(unittest.IsolatedAsyncioTestCase):
     async def test_url_includes_installed_content_fingerprint(self):
         body = (ROOT / 'custom_components/teddycloud_homeassistant/teddycloud-homeassistant-card.js').read_bytes()
         build = sha256(body).hexdigest()[:12]
-        self.assertEqual(self.ns['CARD_VERSION'], '0.6.6')
+        self.assertEqual(self.ns['CARD_VERSION'], '0.6.7')
         await self.register()
-        self.assertEqual(self.hass.data['teddycloud_homeassistant_card_url'], f'/teddycloud-homeassistant/card-v066.js?v=0.6.6&build={build}')
+        self.assertEqual(self.hass.data['teddycloud_homeassistant_card_url'], f'/teddycloud-homeassistant/card-v067.js?v=0.6.7&build={build}')
 
     async def test_migrate_old_and_cache_busting_urls_preserving_other_resources(self):
         urls = ['/teddycloud-homeassistant/card.js',

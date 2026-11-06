@@ -12,9 +12,10 @@ from .library import TonieLibrary
 from .image_storage import ImageStorage
 from .image_view import register_image_view
 from .library_websocket import register_library_websockets
+from .room_light import RoomLightController
 
 FIELDS = {"Playback", "ContentTitle", "ContentAudioId", "VolumeLevel", "VolumedB", "Charger", "TagValid", "LastSeen", "ContentPicture"}
-PLATFORMS = ["media_player", "number", "sensor", "binary_sensor"]
+PLATFORMS = ["media_player", "number", "sensor", "binary_sensor", "switch"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not await mqtt.async_wait_for_mqtt_client(hass):
@@ -40,6 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _refresh_library_catalog(data["library"], catalog), "TeddyCloud library catalog refresh"
         )
     player = BoxPlayer(entry, catalog)
+    player._room_light_controller = RoomLightController(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = player
     prefix = entry.data[CONF_PREFIX].strip('/')
     box = entry.data[CONF_BOX_ID].strip('/')
@@ -62,6 +64,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _stop_library_catalog_if_unused(hass.data[DOMAIN])
         raise
     hass.data[DOMAIN][f"{entry.entry_id}_unsubscribe"] = unsubscribe
+    player._room_light_controller.async_start()
+    player.async_write_ha_state()
     entry.async_on_unload(entry.add_update_listener(_update_options))
     return True
 
@@ -92,6 +96,7 @@ async def async_unload_entry(hass, entry):
         unsubscribe()
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
+        hass.data[DOMAIN][entry.entry_id]._room_light_controller.async_stop()
         hass.data[DOMAIN].pop(entry.entry_id, None)
         _stop_library_catalog_if_unused(hass.data[DOMAIN])
     return unloaded

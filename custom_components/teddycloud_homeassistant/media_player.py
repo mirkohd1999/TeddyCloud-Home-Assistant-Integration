@@ -468,6 +468,8 @@ class BoxPlayer(MediaPlayerEntity):
     @property
     def extra_state_attributes(self):
         return {
+            'room_lights': self.entry.options.get('room_lights', []),
+            'room_light_auto_entity': self._room_light_controller.switch_entity_id if getattr(self, '_room_light_controller', None) else None,
             'content_audio_id': self._values.get('ContentAudioId'),
             'media_title_is_fallback': self._figure_present is not False and not bool(self._known_media_title()),
             'box_online': self.available,
