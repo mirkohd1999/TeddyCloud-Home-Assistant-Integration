@@ -58,7 +58,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Toniebox und Zimmerlicht",
+        "title": "Toniebox und Licht",
         "data": {
           "box_color": "Boxfarbe (Hex, auch nachträglich änderbar)",
           "fallback_cover": "Standard-Cover-URL",
@@ -67,9 +67,9 @@
           "online_images": "Figurenbilder automatisch online suchen",
           "offline_timeout": "Offline nach ausbleibender Box-Aktivität (Minuten, 1–120)",
           "box_model": "Toniebox-Modell",
-          "room_lights": "Zimmerlicht (optional, eine oder mehrere Lampen)"
+          "room_lights": "Licht (optional, eine oder mehrere Lampen)"
         },
-        "description": "Wähle hier dein Zimmerlicht aus. Aktiviere die Tonie-Lichtautomatik über den Schalter am Gerät oder im Dashboard. Der vorhandene Sensor „Tonie aufgelegt“ schaltet das Licht beim Abnehmen oder am geschätzten Laufzeitende aus. Bei Farbwechseln bleibt die Helligkeit erhalten."
+        "description": "Wähle hier dein Licht aus. Aktiviere die Tonie-Lichtautomatik über den Schalter am Gerät oder im Dashboard. Der vorhandene Sensor „Tonie aufgelegt“ schaltet das Licht beim Abnehmen oder am geschätzten Laufzeitende aus. Bei Farbwechseln bleibt die Helligkeit erhalten."
       }
     },
     "error": {

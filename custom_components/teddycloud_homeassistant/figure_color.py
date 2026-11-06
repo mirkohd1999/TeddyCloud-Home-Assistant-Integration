@@ -11,7 +11,7 @@ from .const import CONF_BOX_NAME
 
 
 def dominant_color(data):
-    """Group visible pixels into similar colors before selecting the largest group."""
+    """Find a foreground color without treating studio backdrops as the figure."""
     from PIL import Image
 
     if not data or len(data) > 8_000_000:
@@ -21,10 +21,50 @@ def dominant_color(data):
             return None
         image = source.convert("RGBA")
         image.thumbnail((96, 96))
+        width, height = image.size
+        pixels = list(image.getdata())
+        # Catalog pictures can be transparent cutouts or opaque studio photos.
+        # Remove only a near-uniform background connected to the image border.
+        # Never remove an interior white/grey part merely because it is neutral.
+        border = set(range(width)) | set(range((height - 1) * width, height * width))
+        border.update(y * width for y in range(height))
+        border.update(y * width + width - 1 for y in range(height))
+        opaque_border = [pixels[i] for i in border if pixels[i][3] >= 128]
+        background = set()
+        if len(opaque_border) >= len(border) * .8:
+            buckets = {}
+            for r, g, b, _ in opaque_border:
+                key = (r // 24, g // 24, b // 24)
+                buckets.setdefault(key, []).append((r, g, b))
+            common = max(buckets.values(), key=len)
+            if len(common) >= len(opaque_border) * .65:
+                reference = tuple(sum(rgb[c] for rgb in common) / len(common) for c in range(3))
+                def matches(index):
+                    return pixels[index][3] >= 128 and max(abs(pixels[index][c] - reference[c]) for c in range(3)) <= 36
+                pending = [i for i in border if matches(i)]
+                background.update(pending)
+                while pending:
+                    i = pending.pop()
+                    x, y = i % width, i // width
+                    neighbors = []
+                    if x: neighbors.append(i - 1)
+                    if x + 1 < width: neighbors.append(i + 1)
+                    if y: neighbors.append(i - width)
+                    if y + 1 < height: neighbors.append(i + width)
+                    for neighbor in neighbors:
+                        if neighbor not in background and matches(neighbor):
+                            background.add(neighbor)
+                            pending.append(neighbor)
+        visible = [(r, g, b) for i, (r, g, b, a) in enumerate(pixels) if a >= 128 and i not in background]
+        if not visible:
+            # A uniformly colored image still has a meaningful color.
+            visible = [(r, g, b) for r, g, b, a in pixels if a >= 128]
+        colorful = [(r, g, b) for r, g, b in visible if max(r, g, b) - min(r, g, b) >= 35 and max(r, g, b) >= 65]
+        # Prefer a substantial colored part to neutral highlights and shadows.
+        # Fully white/grey figurines retain their actual neutral color.
+        selected = colorful if len(colorful) >= max(8, len(visible) * .08) else visible
         groups = {}
-        for red, green, blue, alpha in image.getdata():
-            if alpha < 128:
-                continue
+        for red, green, blue in selected:
             bucket = (red // 32, green // 32, blue // 32)
             count, r, g, b = groups.get(bucket, (0, 0, 0, 0))
             groups[bucket] = count + 1, r + red, g + green, b + blue
