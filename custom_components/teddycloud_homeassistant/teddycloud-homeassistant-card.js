@@ -1,10 +1,21 @@
-const TEDDY_CARD_VERSION = '0.6.6';
+const TEDDY_CARD_VERSION = '0.6.7';
 const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
   return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
 }
 const TEDDY_EN = {
+  "Zimmerlicht": "Room light",
+  "Licht einschalten": "Turn light on",
+  "Licht ausschalten": "Turn light off",
+  "Helligkeit": "Brightness",
+  "Tonie-Lichtautomatik": "Automatic Tonie lighting",
+  "Automatik einschalten": "Enable automatic lighting",
+  "Automatik ausschalten": "Disable automatic lighting",
+  "Licht nicht erreichbar": "Light unavailable",
+  "Keine dimmbare Lampe ausgewählt": "No dimmable light selected",
+  "Zimmerlicht in den Integrationseinstellungen auswählen": "Select room lights in the integration settings",
+  "Lichtsteuerung fehlgeschlagen": "Light control failed",
   "Tonie-Bild oder Toniebox": "Tonie image or Toniebox",
   "Titel und Boxname": "Title and box name",
   "Wiedergabestatus": "Playback status",
@@ -269,7 +280,8 @@ const TEDDY_SECTIONS = [
   ['speaker', '🔊 Lautsprecher-Limit'],
   ['headphone', '🎧 Kopfhörer-Limit'],
   ['led', '💡 LED-Helligkeit'],
-  ['ears', '👂 Ohrtasten-Ereignisse']
+  ['ears', '👂 Ohrtasten-Ereignisse'],
+  ['room_light', '💡 Zimmerlicht']
 ];
 for (const [, label] of TEDDY_SECTIONS) {
   const text = label.slice(label.indexOf(' ') + 1);
@@ -356,8 +368,70 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       return id.startsWith('number.') && e.attributes?.friendly_name === boxName + ' ' + nameSuffix;
     }) || null;
   }
+  _roomLightInfo() {
+    const attr = this._hass?.states?.[this.config?.entity]?.attributes || {};
+    const ids = Array.isArray(attr.room_lights) ? [...new Set(attr.room_lights.filter(id => typeof id === 'string' && id.startsWith('light.')))] : [];
+    const lights = ids.map(id => [id, this._hass?.states?.[id]]).filter(([, s]) => s && !['unknown', 'unavailable'].includes(s.state));
+    const dimmable = lights.filter(([, s]) => (s.attributes?.supported_color_modes || []).some(mode => !['onoff','unknown'].includes(mode)));
+    const on = lights.some(([, s]) => s.state === 'on');
+    const brightnessState = dimmable.find(([, s]) => s.state === 'on')?.[1] || dimmable[0]?.[1];
+    const raw = brightnessState?.attributes?.brightness;
+    const brightness = Number.isFinite(raw) ? Math.round(raw / 255 * 100) : 100;
+    const autoId = typeof attr.room_light_auto_entity === 'string' && attr.room_light_auto_entity.startsWith('switch.') ? attr.room_light_auto_entity : null;
+    const autoState = autoId ? this._hass?.states?.[autoId]?.state : null;
+    return {ids, lights, dimmable, on, brightness, autoId, autoState};
+  }
+  _installRoomLightControls() {
+    if (this._roomLightListenerInstalled) return;
+    this._roomLightListenerInstalled = true;
+    this.shadowRoot.addEventListener('change', event => {
+      if (event.target.matches?.('input[data-room-brightness]')) {
+        this._roomLightAction('brightness', Number(event.target.value));
+      }
+    });
+    this.shadowRoot.addEventListener('click', event => {
+      const button = event.target.closest?.('button[data-room-action]');
+      if (button && !button.disabled) this._roomLightAction(button.dataset.roomAction);
+    });
+  }
+  async _roomLightAction(action, value) {
+    if (!this._hass) return;
+    const info = this._roomLightInfo();
+    let domain = 'light', service, data;
+    if (action === 'auto' && ['on','off'].includes(info.autoState)) {
+      domain = 'switch'; service = info.autoState === 'on' ? 'turn_off' : 'turn_on';
+      data = {entity_id: info.autoId};
+    } else if (action === 'toggle' && info.lights.length) {
+      service = info.on ? 'turn_off' : 'turn_on'; data = {entity_id: info.lights.map(([id]) => id)};
+    } else if (action === 'brightness' && info.dimmable.length && Number.isFinite(value) && value >= 0 && value <= 100) {
+      service = value === 0 ? 'turn_off' : 'turn_on';
+      data = {entity_id: info.dimmable.map(([id]) => id)};
+      if (value > 0) data.brightness_pct = Math.round(value);
+    } else return;
+    try {
+      await this._hass.callService(domain, service, data);
+      this._roomLightError = false;
+    } catch (err) {
+      this._roomLightError = true;
+      console.error('TeddyCloud room light', err);
+    }
+    this.render();
+  }
+  _roomLightMarkup() {
+    const info = this._roomLightInfo();
+    if (!info.ids.length) return '';
+    const t = key => this._t(key);
+    return `<div class="room-light"><div class="setting-head"><strong>💡 ${t('Zimmerlicht')}</strong>
+      <button type="button" data-room-action="toggle" aria-pressed="${info.on}" ${info.lights.length ? '' : 'disabled'}>${t(info.on ? 'Licht ausschalten' : 'Licht einschalten')}</button></div>
+      <div class="setting"><label class="setting-head"><span>${t('Helligkeit')}</span><strong>${info.on ? info.brightness : 0} %</strong></label>
+      <input type="range" data-room-brightness aria-label="${t('Helligkeit')}" min="0" max="100" step="1" value="${info.on ? info.brightness : 0}" ${info.dimmable.length ? '' : 'disabled'}>
+      ${!info.lights.length ? `<div class="foot">${t('Licht nicht erreichbar')}</div>` : !info.dimmable.length ? `<div class="foot">${t('Keine dimmbare Lampe ausgewählt')}</div>` : ''}</div>
+      ${['on','off'].includes(info.autoState) ? `<button type="button" data-room-action="auto" aria-pressed="${info.autoState === 'on'}">${t(info.autoState === 'on' ? 'Automatik ausschalten' : 'Automatik einschalten')}</button>` : ''}
+      ${this._roomLightError ? `<div role="alert">${t('Lichtsteuerung fehlgeschlagen')}</div>` : ''}</div>`;
+  }
   render() {
     if (!this.shadowRoot || !this.config) return;
+    this._installRoomLightControls();
     const e = this._hass?.states?.[this.config.entity];
     const attr = e?.attributes || {};
     const offline = e?.state === 'unavailable' || attr.box_online === false;
@@ -408,6 +482,8 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
       <div class="ticks">${labels.map(x => `<span>${safe(x)}</span>`).join('')}</div></div>`;
     });
     const controls = controlRows.join('');
+    const roomLight = this._roomLightMarkup();
+    const roomLightCSS = '.room-light{padding:14px 0;margin-top:12px;border-top:1px solid var(--divider-color,#ddd)}.room-light .setting-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.room-light input{width:100%;accent-color:var(--primary-color,#8f77c7)}.room-light button{font:inherit;color:var(--primary-text-color);background:var(--secondary-background-color,#8882);border:1px solid var(--divider-color,#888);border-radius:12px;padding:10px 14px;cursor:pointer}.room-light button[aria-pressed="true"]{border-color:var(--primary-color,#8f77c7)}.room-light button:disabled,.room-light input:disabled{opacity:.45;cursor:not-allowed}.room-light .setting{padding:14px 0}';
     const artBlock = showCover ? `<img class="art cover-art" src="${safeURL}" alt="${this._t("Tonie-Cover")}" loading="eager" onerror="this.onerror=null;this.src='${TEDDY_UNKNOWN_ART}'">` : composition ? `<div class="stage" aria-label="${this._t("Toniebox mit Tonie-Figur")}">
       ${safeBoxURL ? `<img class="box-photo" src="${safeBoxURL}" alt="Toniebox" loading="lazy">` : `<div class="toy-box" style="--box-color:${color}"><div class="ear left"></div><div class="ear right"></div><div class="speaker"></div></div>`}
       ${safeURL ? `<img class="figure-photo ${imageURL === TEDDY_UNKNOWN_ART ? 'unknown-figure' : ''}" src="${safeURL}" alt="${this._t("Erkanntes Tonie-Bild")}" loading="eager" onerror="this.onerror=null;this.classList.add('unknown-figure');this.src='${TEDDY_UNKNOWN_ART}'">` : ''}
@@ -448,6 +524,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
           '</span><span>' + this.fmt(dur) + '</span></div><div class="board-note">' + this._t("Fortschritt geschätzt") + '</div>'
         : '<div class="board-note">' + this._t("Laufzeit unbekannt") + '</div>';
       const modules = {
+        room_light: roomLight || '<div class="board-note">' + this._t('Zimmerlicht in den Integrationseinstellungen auswählen') + '</div>',
         artwork: mode === 'compact' ? smallArt : '<div class="board-artwork-media">' + artBlock + '</div>',
         title: titleMarkup,
         playback: '<div class="board-value"><span class="board-dot"></span>' + safe(playText) + '</div>',
@@ -485,6 +562,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
           '>' + labelHtml + modules[id] + '</section>';
       }).join('');
       this.shadowRoot.innerHTML = `<style>
+        ${roomLightCSS}
         :host{display:block}
         ha-card{padding:16px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${color}20,transparent 73%),var(--ha-card-background,var(--card-background-color,#fff))}
         .board{display:grid;gap:12px;min-width:0}
@@ -532,10 +610,11 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
         @media(max-width:640px){.board.grid{grid-template-columns:1fr}.board.grid .board-section{grid-column:1/-1}}
         @media(max-width:370px){ha-card{padding:9px}.board-section{padding:9px}.board-track{font-size:16px}}
       </style><ha-card><div class="board ${layout}" style="--board-cols:${cols}">${items ||
-        '<div class="board-note">' + this._t("Keine Bausteine ausgewählt – im Karteneditor auswählen.") + '</div>'}</div></ha-card>`;
+        '<div class="board-note">' + this._t("Keine Bausteine ausgewählt – im Karteneditor auswählen.") + '</div>'}</div>${mode === 'custom' ? '' : roomLight}</ha-card>`;
       return;
     }
     this.shadowRoot.innerHTML = `<style>
+    ${roomLightCSS}
     :host{display:block}ha-card{padding:20px;background:linear-gradient(135deg,${color}24,transparent 70%),var(--ha-card-background,var(--card-background-color,#fff));border-radius:18px}
     .flex{display:flex;gap:16px;align-items:center}
     .stage{position:relative;width:205px;height:210px;flex:0 0 205px;overflow:hidden;border-radius:16px;background:radial-gradient(circle at 45% 37%,#ffffff15,transparent 70%)}
@@ -568,6 +647,7 @@ class TeddyCloudNowPlayingCard extends HTMLElement {
     <div class="detail"><div class="eyebrow">${safe(this.config.name || e?.attributes?.friendly_name || 'TeddyCloud Home Assistant Integration')}</div><div class="title">${safe(title)}</div>
     <div class="state"><i class="dot"></i>${offline ? this._t("Toniebox offline") : attr.figure_present === false ? this._t("Figur abgenommen") : playing?this._t("Wiedergabe gemeldet"):this._t("Keine Wiedergabe gemeldet")}</div><div class="state">${chargerText}</div></div></div>
     ${dur ? `<div class="bar"><div class="fill"></div></div><div class="times"><span>${elapsed===null?'–':this.fmt(Math.min(elapsed,dur))}</span><span>${this.fmt(dur)}</span></div><div class="foot duration-foot">⚠︎ ${this._t("Laufzeitfortschritt geschätzt ab MQTT-Ereignis, kein echter Abspielpositionswert")}</div>` : `<div class="foot duration-foot">${this._t("Laufzeit unbekannt – kann im Figurenkatalog ergänzt werden.")}</div>`}
+    ${roomLight}
     <div class="panel"><div class="panel-title">⚙️ ${this._t("Toniebox-Einstellungen")}</div>${controls}</div>
     <div class="foot status-foot">${this._t("Aktuelle Lautstärke")}: ${Number.isInteger(Number(attr.volume_level_raw)) && attr.volume_level_raw !== null && attr.volume_level_raw !== undefined && String(attr.volume_level_raw).trim() !== '' && Number(attr.volume_level_raw)>=0 && Number(attr.volume_level_raw)<=16 ? Math.round(Number(attr.volume_level_raw)*100/16)+' %' : this._t("unbekannt")} · ${attr.charger === 'ON' || attr.charger === '1' ? this._t("Auf Ladestation") : 'Toniebox'}</div>
     </ha-card>`;

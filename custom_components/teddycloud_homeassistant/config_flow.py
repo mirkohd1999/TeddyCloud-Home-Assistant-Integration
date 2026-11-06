@@ -6,6 +6,7 @@ from homeassistant.components import mqtt
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 from .const import (
     DOMAIN, CONF_PREFIX, CONF_BOX_ID, CONF_BOX_NAME, CONF_BOX_COLOR,
     CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_PREFIX, DEFAULT_COLOR,
@@ -175,6 +176,9 @@ class TeddyCloudOptionsFlow(config_entries.OptionsFlow):
     def _schema(self):
         current = self.config_entry.options
         return vol.Schema({
+            vol.Optional("room_lights", default=current.get("room_lights", [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)
+            ),
             vol.Optional("box_model", default=current.get("box_model", "auto")): vol.In({
                 "auto": "Automatisch nach Boxfarbe",
                 "green": "TB1 - Green", "blue": "TB1 - Light Blue",

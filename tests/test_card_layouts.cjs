@@ -8,7 +8,8 @@ class FakeElement {
   attachShadow() {
     const root = {
       innerHTML: '',
-      addEventListener() {},
+      listeners: {},
+      addEventListener(type, handler) { (this.listeners[type] ||= []).push(handler); },
       getElementById() { return {addEventListener() {}}; },
       querySelectorAll() { return []; }
     };
@@ -389,3 +390,55 @@ const controlsEn = new Card();controlsEn.setConfig({entity:'media_player.test',m
 controlsEn.hass = {...enHass,states:{...hass.states,'number.speaker':{state:'50',attributes:{friendly_name:'Kinderzimmer Lautsprecher-Lautstärkelimit'}}}};
 assert.ok(controlsEn.shadowRoot.innerHTML.includes('data-entity="number.speaker"'));
 assert.ok(controlsEn.shadowRoot.innerHTML.includes('Speaker limit'));
+
+// Room controls use the configured lights even when the Toniebox is offline.
+(async () => {
+  const room = new Card();
+  const calls = [];
+  const roomHass = {language:'de',callService:async (...args) => calls.push(args),states:{
+    'media_player.test':{state:'unavailable',attributes:{room_lights:['light.rgb','light.simple','light.missing'],room_light_auto_entity:'switch.auto'}},
+    'light.rgb':{state:'on',attributes:{supported_color_modes:['rgb'],brightness:128}},
+    'light.simple':{state:'off',attributes:{supported_color_modes:['onoff']}},
+    'switch.auto':{state:'off',attributes:{}}
+  }};
+  room.setConfig({entity:'media_player.test'});room.hass=roomHass;
+  // A resource update must also install handlers on an already-open old card.
+  const upgradedRoom = new Card();
+  upgradedRoom.attachShadow();upgradedRoom._controlListenerInstalled=true;
+  upgradedRoom.config={entity:'media_player.test'};upgradedRoom.hass=roomHass;
+  assert.equal(upgradedRoom.shadowRoot.listeners.click.length,1);
+  upgradedRoom.shadowRoot.listeners.click[0]({target:{closest:()=>({dataset:{roomAction:'toggle'}})}});
+  await Promise.resolve();
+  assert.equal(calls.pop()[1],'turn_off');
+  upgradedRoom.shadowRoot.listeners.change[0]({target:{matches:()=>true,value:'42'}});
+  await Promise.resolve();
+  assert.equal(calls.pop()[2].brightness_pct,42);
+  assert.ok(room.shadowRoot.innerHTML.includes('Licht ausschalten'));
+  assert.ok(room.shadowRoot.innerHTML.includes('data-room-brightness'));
+  assert.ok(room.shadowRoot.innerHTML.includes('Automatik einschalten'));
+  await room._roomLightAction('toggle');
+  assert.equal(JSON.stringify(calls.pop()),JSON.stringify(['light','turn_off',{entity_id:['light.rgb','light.simple']}]));
+  await room._roomLightAction('brightness',25);
+  assert.equal(JSON.stringify(calls.pop()),JSON.stringify(['light','turn_on',{entity_id:['light.rgb'],brightness_pct:25}]));
+  await room._roomLightAction('brightness',0);
+  assert.equal(calls.pop()[1],'turn_off');
+  await room._roomLightAction('brightness',101);
+  assert.equal(calls.length,0);
+  await room._roomLightAction('auto');
+  assert.equal(JSON.stringify(calls.pop()),JSON.stringify(['switch','turn_on',{entity_id:'switch.auto'}]));
+  for (const mode of ['all','player','settings','compact','artwork','status','tiles']) {
+    room.setConfig({entity:'media_player.test',mode});room.hass=roomHass;
+    assert.ok(room.shadowRoot.innerHTML.includes('data-room-action="toggle"'),mode);
+    room.hass={...roomHass,language:'en'};
+    assert.ok(room.shadowRoot.innerHTML.includes('Turn light off'),mode);
+    assert.ok(!room.shadowRoot.innerHTML.includes('Helligkeit'),mode);
+  }
+  room.setConfig({entity:'media_player.test',mode:'custom',sections:['room_light']});room.hass=roomHass;
+  assert.ok(room.shadowRoot.innerHTML.includes('data-room-brightness'));
+  room.hass={...roomHass,states:{...roomHass.states,'light.rgb':{state:'unavailable',attributes:{}}}};
+  assert.ok(room.shadowRoot.innerHTML.includes('data-room-brightness'));
+  assert.ok(room.shadowRoot.innerHTML.match(/data-room-brightness[^>]+disabled/));
+  room.setConfig({entity:'media_player.test'});room.hass={states:{'media_player.test':{state:'idle',attributes:{}}}};
+  assert.ok(!room.shadowRoot.innerHTML.includes('data-room-action="toggle"'));
+  console.log('Room lights: dashboard toggle, dimming, automatics, offline box, unavailable lamps, custom layouts and English labels passed.');
+})().catch(err => {console.error(err);process.exitCode=1;});
