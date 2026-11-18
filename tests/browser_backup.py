@@ -26,6 +26,9 @@ async def run():
   await page.goto('http://teddycloud.test/')
   await page.add_script_tag(content=source)
   await page.evaluate('''() => {
+   customElements.define('ha-card',class extends HTMLElement {
+    constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:#242424}</style><slot></slot>';}
+   });
    const card=document.createElement('teddycloud-tonie-library-card');
    card._entries=[];card.setConfig({});
    card.hass={user:{id:'admin',is_admin:true},language:'de',connection:{subscribeMessage:()=>Promise.resolve(()=>{})},fetchWithAuth:(url,init)=>fetch(url,init)};
