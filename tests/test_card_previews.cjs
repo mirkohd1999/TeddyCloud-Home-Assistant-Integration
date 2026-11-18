@@ -21,7 +21,7 @@ class FakeElement {
   attachShadow() {
     this.shadowRoot = {
       innerHTML: '', events: {}, mounted: null,
-      addEventListener(name, handler) { this.events[name] = handler; },
+      addEventListener(name, handler) { const previous=this.events[name]; this.events[name]=event=>{previous?.(event);handler(event);}; },
       getElementById() { return {appendChild: audio => { this.mounted = audio; }}; },
       querySelectorAll(selector) {
         if (selector !== 'button[data-action="preview"]') return [];

@@ -58,6 +58,13 @@
   "options": {
     "step": {
       "init": {
+        "title": "TeddyCloud-Einstellungen",
+        "menu_options": {
+          "settings": "Toniebox und Licht einstellen",
+          "connection": "Verbindung prüfen"
+        }
+      },
+      "settings": {
         "title": "Toniebox und Licht",
         "data": {
           "box_color": "Boxfarbe (Hex, auch nachträglich änderbar)",
@@ -70,6 +77,10 @@
           "room_lights": "Licht (optional, eine oder mehrere Lampen)"
         },
         "description": "Wähle hier dein Licht aus. Aktiviere die Tonie-Lichtautomatik über den Schalter am Gerät oder im Dashboard. Der vorhandene Sensor „Tonie aufgelegt“ schaltet das Licht beim Abnehmen oder am geschätzten Laufzeitende aus. Bei Farbwechseln bleibt die Helligkeit erhalten."
+      },
+      "connection": {
+        "title": "Verbindungscheck",
+        "description": "**MQTT:** {mqtt}\n\n**Box:** {box} · Letzte frische Meldung vor {box_age} s\n\n**Katalog:** {catalog} · Letzter erfolgreicher Abruf vor {catalog_age} s\n\n**Aktuelles Bild:** {image}\n\n✓ Verfügbar · ✕ Nicht verfügbar · ? Kein bestätigter Status / externes Bild nicht geprüft\n\nBei einem MQTT-Fehler die MQTT-Integration prüfen. Bei verbundenem MQTT ohne frischen Boxstatus die Box einschalten oder eine Figur aufstellen. Eine schlafende Box ist kein Brokerfehler. Bei Katalogproblemen den Internetzugang prüfen. Die Prüfung liest aktuelle Zustände und gespeicherte Bilder; sie weckt oder steuert die Box nicht. Details ohne sensible Angaben findest du unter Diagnose herunterladen."
       }
     },
     "error": {

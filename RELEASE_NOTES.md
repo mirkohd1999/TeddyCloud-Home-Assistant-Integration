@@ -1,8 +1,9 @@
-# v0.6.8
+# v0.6.9
 
-- Die Lichtsteuerung hat eine eigene Dashboard-Karte „TeddyCloud Licht“ mit Ein-/Aus-Button, Dimmer und Automatikschalter. Sie wird nicht mehr in Toniebox-Karten eingeblendet.
-- Die Farberkennung für das Licht blendet einfarbige Bildhintergründe aus und bevorzugt deutlich farbige Teile der Figur gegenüber grauen Flächen und Schatten. Beim geprüften Benjamin-Bild wird so Rot (#CF3326) statt Grau als Lampenfarbe verwendet.
-- Der vorhandene Tonie-Farbe-Sensor und sein rgb_color-Attribut verwenden die verbesserte Farberkennung ebenfalls. Sensor und Licht erhalten damit dieselbe Farbe; Entitäts-IDs bleiben erhalten.
-- Die Lichtkarte zeigt die erkannte Lichtfarbe, einen klaren Automatik-Status und Hinweise auf fehlende Farbdaten beziehungsweise Lampen ohne Farbfunktion. Für automatische Farbwechsel muss „Automatik einschalten“ aktiviert sein.
+- Figurenerkennung gegen schnelle Wechsel, verspätete Antworten, zwei gleichzeitig aktive Boxen und Neustarts mit gespeicherten MQTT-Meldungen abgesichert. Ein fehlgeschlagener Speichervorgang blockiert nachfolgende Figuren nicht mehr; überholte Bildabfragen werden nach Wartephasen erneut geprüft.
+- Neuer Verbindungscheck unter Konfigurieren → Verbindung prüfen: MQTT, Boxaktivität, Katalog und gespeichertes Bild werden getrennt angezeigt. Die normalen Optionen liegen unter Toniebox und Licht einstellen.
+- Native Home-Assistant-Diagnose zum Herunterladen, ohne Namen, Audio-IDs, URLs, MQTT-Topics oder Zugangsdaten.
+- Administratoren können die Bibliothek samt eigenen Angaben, gespeicherten Bildern und bestätigten Audio-ID-Zuordnungen als ZIP exportieren und importieren. Der Import zeigt zuerst eine Vorschau und behält vorhandene Angaben standardmäßig bei. Überschreiben erfordert eine ausdrückliche Auswahl.
+- ZIP-Dateien und Bilddaten werden vor dem Import begrenzt und geprüft. Bei zwischenzeitlichen Bibliotheksänderungen muss die Vorschau erneuert werden. Bilder bleiben privat; das neue Bibliotheksabbild wird erst nach erfolgreichem Speichern veröffentlicht. Wiederholte Importe verdoppeln keine Zähler.
 
-In HACS aktualisieren, Home Assistant neu starten und das Dashboard neu laden. Unter Dashboard bearbeiten → Karte hinzufügen → TeddyCloud Licht eine separate Lichtkarte hinzufügen und die Toniebox auswählen. Die Lampenauswahl bleibt unter Einstellungen → Geräte & Dienste → TeddyCloud → Konfigurieren → Licht.
+In HACS aktualisieren, Home Assistant neu starten und das Dashboard neu laden. Sicherung und Import befinden sich unten in der Tonie-Bibliothekskarte im Bereich Bibliothek sichern und wiederherstellen und sind nur für Administratoren sichtbar.

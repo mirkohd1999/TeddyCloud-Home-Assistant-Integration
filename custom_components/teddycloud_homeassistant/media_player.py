@@ -1,6 +1,7 @@
 """TeddyCloud MQTT media player (read only)."""
 import json
 import asyncio
+import logging
 from datetime import datetime, timezone
 from urllib.parse import urlsplit, urlunsplit
 from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerEntityFeature, MediaPlayerState
@@ -14,6 +15,8 @@ from .online_catalog import RETRY
 from .artwork_archive import ArtworkArchive
 from .image_storage import image_reference
 from .const import (DOMAIN, CONF_BOX_NAME, CONF_BOX_COLOR, CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_COLOR)
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def mqtt_text(payload):
@@ -137,7 +140,11 @@ class BoxPlayer(MediaPlayerEntity):
         library = self._library
         async def record():
             if previous is not None:
-                await asyncio.shield(previous)
+                try:
+                    await asyncio.shield(previous)
+                except Exception:
+                    # A failed save must not poison every later figure's queue.
+                    _LOGGER.warning('Previous Tonie observation failed; continuing with the next figure')
             if audio_id:
                 await library.async_seen(
                     self.entry.entry_id, audio_id, retained=retained,
@@ -280,7 +287,7 @@ class BoxPlayer(MediaPlayerEntity):
         if self._library:
             @callback
             def library_changed(audio_id):
-                if self._values.get('ContentAudioId') == audio_id:
+                if audio_id is None or self._values.get('ContentAudioId') == audio_id:
                     self._refresh_availability()
 
             self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_CHANGED, library_changed))
@@ -308,11 +315,11 @@ class BoxPlayer(MediaPlayerEntity):
 
     async def _lookup_image(self, audio_id, observation=None):
         """Wait for collection, then publish metadata before downloading artwork."""
+        generation = self._figure_generation
         if observation is not None:
             # A cached catalog hit can finish before async_seen has acquired the
             # library lock. Cancelling a lookup must not cancel collection itself.
             await asyncio.shield(observation)
-        generation = self._figure_generation
         while self._online_audio_id == audio_id and generation == self._figure_generation and self.hass is not None:
             try:
                 result = await self._online_catalog.find(audio_id)
@@ -344,6 +351,8 @@ class BoxPlayer(MediaPlayerEntity):
                     audio_ids=result.get('audio_ids'), preview_url=result.get('preview_url'),
                     preview_supported=result.get('preview_supported', True),
                 )
+            if self._online_audio_id != audio_id or generation != self._figure_generation:
+                return
             self._refresh_availability()
             if not cached and result and result.get('figure') and self._archive and self.entry.options.get('online_images', True):
                 cached = await self._archive.store(audio_id, result['figure'])

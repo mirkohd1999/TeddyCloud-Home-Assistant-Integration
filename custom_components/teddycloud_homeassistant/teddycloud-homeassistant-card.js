@@ -1,10 +1,26 @@
-const TEDDY_CARD_VERSION = '0.6.8';
+const TEDDY_CARD_VERSION = '0.6.9';
 const TEDDY_UNKNOWN_ART = '/teddycloud-homeassistant/unknown-tonie.png';
 function teddyLanguage(hass) {
   const language = hass?.locale?.language || hass?.language || 'de';
   return /^en(?:[-_]|$)/i.test(language) ? 'en' : 'de';
 }
 const TEDDY_EN = {
+  "Bibliothek sichern und wiederherstellen": "Back up and restore library",
+  "ZIP mit Figuren, eigenen Angaben und gespeicherten Bildern. Maximal 32 MB. Vorhandene Angaben bleiben standardmäßig erhalten.": "ZIP with figures, custom metadata and stored images. Maximum 32 MB. Existing data is kept by default.",
+  "Sicherung herunterladen": "Download backup",
+  "Sicherung importieren": "Import backup",
+  "Sicherung wird verarbeitet …": "Processing backup…",
+  "Import-Vorschau": "Import preview",
+  "neu": "new",
+  "vorhanden": "existing",
+  "Konflikte": "conflicts",
+  "Bilder": "images",
+  "Bisher wurde nichts verändert. Ohne Überschreiben werden nur neue Figuren und fehlende Angaben ergänzt.": "Nothing has been changed. Without overwriting, only new figures and missing fields are added.",
+  "Vorhandene Angaben ausdrücklich mit der Sicherung überschreiben": "Explicitly overwrite existing fields with the backup",
+  "Import jetzt anwenden": "Apply import now",
+  "Erneut prüfen": "Check again",
+  "Sicherung erfolgreich importiert": "Backup imported successfully",
+
   "Licht": "Light",
   "Tonie-Farbe": "Tonie color",
   "Lichtfarbe": "Light color",
@@ -173,7 +189,9 @@ Object.assign(TEDDY_EN, {
   "Bildadresse muss http(s) oder /local/ verwenden": "Image URL must use http(s) or /local/",
   "Laufzeit muss zwischen 0 und 86400 Sekunden liegen": "Duration must be between 0 and 86400 seconds"
 });
+const TEDDY_BACKUP_ERRORS = {"invalid_backup": ["Ungültige oder beschädigte Sicherung. Bitte eine TeddyCloud-ZIP-Sicherung auswählen.", "Invalid or damaged backup. Select a TeddyCloud ZIP backup."], "backup_too_large": ["Sicherung zu groß. Maximal 32 MB ZIP und 64 MB entpackte Daten.", "Backup too large. Maximum 32 MB ZIP and 64 MB expanded data."], "backup_image_missing": ["Ein gespeichertes Bild fehlt. Bitte den betroffenen Bildeintrag korrigieren und erneut sichern.", "A stored image is missing. Correct the affected image entry and retry the backup."], "backup_busy": ["Zu viele Vorschauen. Bitte später erneut versuchen.", "Too many previews. Please try again later."], "backup_preview_expired": ["Vorschau abgelaufen. Sicherung erneut prüfen.", "Preview expired. Check the backup again."], "backup_library_changed": ["Die Bibliothek wurde seit der Vorschau geändert. Bitte erneut prüfen.", "The library changed after the preview. Please check again."], "not_ready": ["Bibliothek noch nicht bereit. Bitte erneut versuchen.", "Library not ready yet. Please retry."], "backup_not_available": ["Sicherung erfordert eine aktuelle Administrator-Sitzung.", "Backup requires a current administrator session."], "backup_failed": ["Sicherung fehlgeschlagen. Bitte die Protokolle prüfen.", "Backup failed. Please check the logs."]};
 function teddyText(hass, key) {
+  if (Object.hasOwn(TEDDY_BACKUP_ERRORS, key)) return TEDDY_BACKUP_ERRORS[key][teddyLanguage(hass) === 'en' ? 1 : 0];
   return teddyLanguage(hass) === 'en' ? (TEDDY_EN[key] ?? key) : key;
 }
 // Private image URLs are never used as anonymous <img> sources. Sign them
@@ -1075,10 +1093,10 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   set hass(hass) {
     const wasAdmin = this._isAdmin;
     const changedConnection = this._hass?.connection !== hass?.connection || this._hass?.user?.id !== hass?.user?.id;
-    if (changedConnection) teddyDisposeImages(this);
+    if (changedConnection) { teddyDisposeImages(this); this._backupPreview = null; this._backupFile = null; }
     const oldLanguage = teddyLanguage(this._hass);
     this._hass = hass;
-    if (!this._isAdmin) { this._edit = null; this._upload = null; }
+    if (!this._isAdmin) { this._edit = null; this._upload = null; this._backupPreview = null; this._backupFile = null; }
     this._subscribe();
     if (wasAdmin !== this._isAdmin || oldLanguage !== teddyLanguage(hass) || changedConnection) this.render();
   }
@@ -1137,6 +1155,88 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       reader.onerror = () => { this._error = "Bild konnte nicht geladen werden"; this.render(); };
       reader.readAsDataURL(file);
     });
+  }
+  _installBackupControls() {
+    if (this._backupControlsInstalled) return;
+    this._backupControlsInstalled = true;
+    this.shadowRoot.addEventListener('click', event => {
+      const action = event.target.closest?.('button[data-backup-action]')?.dataset.backupAction;
+      if (!action || !this._isAdmin || this._backupBusy) return;
+      if (action === 'export') this._exportBackup();
+      if (action === 'apply') this._applyBackup();
+      if (action === 'retry') this._previewBackup(this._backupFile);
+      if (action === 'cancel') { this._backupPreview = null; this._backupFile = null; this._backupError = ''; this.render(); }
+    });
+    this.shadowRoot.addEventListener('change', event => {
+      if (event.target.id === 'library-backup-file' && this._isAdmin && !this._backupBusy) this._previewBackup(event.target.files?.[0]);
+    });
+  }
+  async _backupRequest(action, file, headers={}) {
+    if (!this._isAdmin || !this._hass?.fetchWithAuth) throw Error('backup_not_available');
+    const connection = this._hass.connection, user = this._hass.user?.id;
+    const response = await this._hass.fetchWithAuth('/api/teddycloud_homeassistant/library/backup' + (action ? '?action=' + action : ''),
+      file ? {method:'POST', body:file, headers:{'Content-Type':'application/zip',...headers}} : {method:'GET'});
+    if (!this._isAdmin || this._hass.connection !== connection || this._hass.user?.id !== user) throw Error('backup_not_available');
+    if (!response.ok) {
+      let code = 'backup_failed';
+      try { code = (await response.json()).error || code; } catch (_) {}
+      throw Error(code);
+    }
+    return response;
+  }
+  async _exportBackup() {
+    if (this._backupBusy || !this._isAdmin) return;
+    this._backupBusy = true; this._backupError = ''; this.render();
+    try {
+      const response = await this._backupRequest('');
+      const blob = await response.blob();
+      if (!this._isAdmin) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'teddycloud-library.zip';
+      a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) { this._backupError = Object.hasOwn(TEDDY_BACKUP_ERRORS, err.message) ? err.message : 'backup_failed'; }
+    finally { this._backupBusy = false; this.render(); }
+  }
+  async _previewBackup(file) {
+    if (this._backupBusy || !this._isAdmin || !file) return;
+    this._backupPreview = null; this._backupError = '';
+    if (!file.size || file.size > 33554432) { this._backupError = 'backup_too_large'; this.render(); return; }
+    this._backupBusy = true; this._backupFile = file; this.render();
+    try {
+      const response = await this._backupRequest('preview', file);
+      const result = await response.json();
+      if (this._isAdmin) this._backupPreview = result;
+    } catch (err) { this._backupError = Object.hasOwn(TEDDY_BACKUP_ERRORS, err.message) ? err.message : 'backup_failed'; }
+    finally { this._backupBusy = false; this.render(); }
+  }
+  async _applyBackup() {
+    if (this._backupBusy || !this._isAdmin || !this._backupFile || !this._backupPreview) return;
+    const overwrite = this.shadowRoot.getElementById('backup-overwrite')?.checked === true;
+    const headers = {'X-TeddyCloud-Preview':this._backupPreview.token,'X-TeddyCloud-Mode':overwrite?'overwrite':'merge'};
+    this._backupBusy = true; this._backupError = ''; this._backupSuccess = false; this.render();
+    try {
+      await this._backupRequest('import', this._backupFile, headers);
+      this._backupFile = null; this._backupPreview = null; this._backupSuccess = true;
+    } catch (err) { this._backupError = Object.hasOwn(TEDDY_BACKUP_ERRORS, err.message) ? err.message : 'backup_failed'; }
+    finally { this._backupBusy = false; this.render(); }
+  }
+  _backupMarkup() {
+    if (!this._isAdmin || this._edit) return '';
+    const e = value => this._escape(value), t = key => this._t(key), preview = this._backupPreview;
+    return '<details class="library-backup"' + (preview || this._backupBusy || this._backupError || this._backupSuccess ? ' open' : '') + '><summary>' + t('Bibliothek sichern und wiederherstellen') + '</summary>' +
+      '<p class="hint">' + t('ZIP mit Figuren, eigenen Angaben und gespeicherten Bildern. Maximal 32 MB. Vorhandene Angaben bleiben standardmäßig erhalten.') + '</p>' +
+      '<button type="button" data-backup-action="export"' + (this._backupBusy?' disabled':'') + '>' + t('Sicherung herunterladen') + '</button>' +
+      '<label class="field">' + t('Sicherung importieren') + '<input id="library-backup-file" type="file" accept=".zip,application/zip"' + (this._backupBusy?' disabled':'') + '></label>' +
+      (this._backupBusy ? '<p role="status">' + t('Sicherung wird verarbeitet …') + '</p>' : '') +
+      (preview ? '<section class="backup-preview"><strong>' + t('Import-Vorschau') + '</strong><p>' +
+        e(preview.new) + ' ' + t('neu') + ' · ' + e(preview.existing) + ' ' + t('vorhanden') + ' · ' + e(preview.conflicts.length) + ' ' + t('Konflikte') + ' · ' + e(preview.images) + ' ' + t('Bilder') + '</p>' +
+        '<ul>' + preview.conflicts.slice(0,20).map(item => '<li>' + e(item.title) + '</li>').join('') + '</ul>' +
+        '<p class="hint">' + t('Bisher wurde nichts verändert. Ohne Überschreiben werden nur neue Figuren und fehlende Angaben ergänzt.') + '</p>' +
+        '<label><input id="backup-overwrite" type="checkbox"> ' + t('Vorhandene Angaben ausdrücklich mit der Sicherung überschreiben') + '</label>' +
+        '<p><button type="button" data-backup-action="apply"' + (this._backupBusy?' disabled':'') + '>' + t('Import jetzt anwenden') + '</button> ' +
+        '<button type="button" data-backup-action="cancel"' + (this._backupBusy?' disabled':'') + '>' + t('Abbrechen') + '</button></p></section>' : '') +
+      (this._backupError ? '<p class="error" role="alert">' + e(t(this._backupError)) + '</p>' + (this._backupFile ? '<button type="button" data-backup-action="retry">' + t('Erneut prüfen') + '</button>' : '') : '') +
+      (this._backupSuccess ? '<p role="status">' + t('Sicherung erfolgreich importiert') + '</p>' : '') + '</details>';
   }
   _subscribe() {
     if (!this._hass || this._subscribePromise || this._unsubscribe) return;
@@ -1366,6 +1466,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
   }
   render() {
     if (!this.shadowRoot || !this._config) return;
+    this._installBackupControls();
     const e = value => this._escape(value);
     const entries = this._entries || [];
     const preview = entries.find(item => item.audio_id === this._previewId);
@@ -1463,6 +1564,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       'input{box-sizing:border-box;border:1px solid var(--divider-color,#777);border-radius:9px;padding:10px;background:var(--card-background-color,#222);color:var(--primary-text-color);font:inherit;width:100%}',
       'input[readonly]{opacity:.65}',
       '.form-panel{max-width:560px}.field{margin:0 0 15px}',
+      '.library-backup{margin-top:20px;border-top:1px solid var(--divider-color,#777);padding-top:14px}.library-backup summary{cursor:pointer;font-weight:600}.library-backup .field{display:block;margin-top:14px}.library-backup input[type=checkbox]{width:auto}.backup-preview{margin-top:14px;padding:14px;border:1px solid var(--divider-color,#777);border-radius:12px}',
       '.field label{display:block;margin-bottom:6px;font-size:13px;font-weight:600}',
       '.warning,.error{font-size:12px;color:var(--error-color,#e53935)}',
       '.empty-library{font-size:14px;opacity:.8;text-align:center;padding:26px 10px}',
@@ -1474,7 +1576,7 @@ class TeddyCloudTonieLibraryCard extends HTMLElement {
       (this._isAdmin ? this._t(" – Bearbeiten möglich") : '') + '</p>',
       this._error ? '<p class="error" role="alert">' + e(this._t(this._error)) + '</p>' : '',
       this._previewStatus() ? '<p class="hint" role="status">' + e(this._t(this._previewStatus())) + '</p>' : '',
-      view, '</ha-card>'
+      view, this._backupMarkup(), '</ha-card>'
     ].join('');
     this._updatePreviewButtons();
     if (!this._edit) this._applySearch();

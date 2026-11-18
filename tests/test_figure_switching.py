@@ -175,3 +175,58 @@ class TestFigureSwitching(unittest.IsolatedAsyncioTestCase):
         await self.send(('ContentAudioId','111'),('ContentTitle','Rocky'),flush=False)
         await self.send(('ContentAudioId','222'))
         self.assertEqual(self.titles(), {'111':'Tonie 111','222':'Tonie 222'})
+
+    async def test_ten_figures_mixed_order_then_a_b_a_without_wrong_images(self):
+        for i in range(10):
+            aid=str(100+i);self.catalog[aid]={'catalog_title':f'Figure {i}','figure':f'https://example.test/{aid}.png','audio_ids':[aid]}
+        for i in [*range(10),0,1,0]:
+            aid=str(100+i)
+            events=[('TagValid','-1'),('ContentAudioId',aid),('ContentTitle',f'Figure {i}'),('ContentPicture',f'https://example.test/{aid}.png')]
+            if i%2:events[1],events[2]=events[2],events[1]
+            await self.send(*events)
+            self.assertEqual(self.player.media_title,f'Figure {i}')
+            self.assertEqual(self.player.media_image_url,f'https://example.test/{aid}.png')
+        self.assertEqual(len(self.lib.public_entries()),10)
+        self.assertEqual(self.lib._entries['100']['times_seen'],3)
+        self.assertEqual(self.lib._entries['101']['times_seen'],2)
+
+    async def test_two_boxes_can_switch_independently_in_shared_library(self):
+        other,_,_=test_availability.TestAvailability().make_player()
+        other.entry.entry_id='second-box';other.hass=self.player.hass;other._library=self.lib;other._online_catalog=self.player._online_catalog
+        self.catalog.update({'111':{'catalog_title':'Rocky','figure':'https://example.test/rocky.png'},'222':{'catalog_title':'Bibi','figure':'https://example.test/bibi.png'}})
+        self.player.receive('ContentAudioId','111');other.receive('ContentAudioId','222')
+        await self.settle()
+        self.assertEqual(self.player.media_title,'Rocky');self.assertEqual(other.media_title,'Bibi')
+        self.player.receive('TagValid','-1');self.player.receive('ContentAudioId','222')
+        other.receive('TagValid','-1');other.receive('ContentAudioId','111')
+        await self.settle()
+        self.assertEqual(self.player.media_title,'Bibi');self.assertEqual(other.media_title,'Rocky')
+        self.assertEqual(len(self.lib.public_entries()),2)
+
+    async def test_restart_retained_replay_preserves_titles_and_counts(self):
+        await self.rocky();before=self.lib._entries['111']['times_seen']
+        restarted,_,_=test_availability.TestAvailability().make_player()
+        restarted.hass=self.player.hass;restarted._online_catalog=self.player._online_catalog
+        reloaded=test_library.library_module.TonieLibrary(self.player.hass);await reloaded.async_load();restarted._library=reloaded
+        restarted.receive('ContentAudioId','111',retained=True)
+        restarted.receive('ContentTitle','Stale Bibi',retained=True)
+        await self.settle()
+        self.assertEqual(restarted.media_title,'Rocky')
+        self.assertEqual(reloaded._entries['111']['times_seen'],before)
+        restarted.receive('TagValid','-1');restarted.receive('ContentAudioId','111')
+        await self.settle()
+        self.assertEqual(reloaded._entries['111']['times_seen'],before+1)
+
+    async def test_failed_observation_does_not_block_future_figure(self):
+        real=self.lib.async_seen
+        async def seen(box,aid,**kwargs):
+            if aid=='111':raise OSError('simulated failed write')
+            await real(box,aid,**kwargs)
+        self.lib.async_seen=seen
+        self.player.receive('ContentAudioId','111')
+        tasks,self.tasks=self.tasks,[]
+        results=await asyncio.gather(*tasks,return_exceptions=True)
+        self.assertTrue(any(isinstance(x,OSError) for x in results))
+        with self.assertLogs(level='WARNING'):
+            self.player.receive('ContentAudioId','222');await self.settle()
+        self.assertIn('222',self.lib._entries)

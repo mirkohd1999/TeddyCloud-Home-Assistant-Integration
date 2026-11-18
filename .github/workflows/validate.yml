@@ -13,6 +13,21 @@ permissions:
   contents: read
 
 jobs:
+  browser-checks:
+    name: Mobile and desktop backup controls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install browser test dependencies
+        run: |
+          python3 -m pip install "playwright>=1.50,<2"
+          python3 -m playwright install --with-deps chromium
+      - name: Test backup controls in Chromium
+        run: python3 tests/browser_backup.py
+
   hacs:
     name: HACS validation
     runs-on: ubuntu-latest
@@ -54,6 +69,7 @@ jobs:
           node tests/test_card_previews.cjs
           node tests/test_card_updates.cjs
           node tests/test_signed_images.cjs
+          node tests/test_card_backup.cjs
       - name: Validate package metadata and translations
         run: |
           python3 - <<'PY'

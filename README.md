@@ -222,6 +222,16 @@ Der zuletzt erkannte Tonie jeder Box erhält einen Rahmen in der eingestellten B
 
 Audio-IDs, die der Katalog eindeutig demselben Inhalt zuordnet, werden als eine Karte dargestellt. Zähler werden zusammengeführt und eigene Angaben bevorzugt. Gleiche Titel allein reichen nicht zum Zusammenführen, damit unterschiedliche Folgen getrennt bleiben.
 
+### Bibliothek sichern und wiederherstellen
+
+Administratoren finden unten in der Bibliothekskarte **Bibliothek sichern und wiederherstellen**.
+
+- **Sicherung herunterladen** erstellt eine ZIP-Datei mit Figuren, eigenen Titeln, Laufzeiten, Farben, bestätigten Audio-ID-Zuordnungen, Zählern und gespeicherten Figurenbildern. Externe Bildadressen und Hörproben bleiben Links; Audiodateien werden nicht gespeichert. Box-IDs und aktuelle Wiedergabezustände werden nicht übertragen.
+- **Sicherung importieren** prüft die Datei und zeigt zuerst die Zahl neuer und vorhandener Einträge, Bilder und Konflikte. Bis dahin wird die Bibliothek nicht verändert.
+- **Import jetzt anwenden** ergänzt standardmäßig neue Einträge und fehlende Angaben. Vorhandene eigene Angaben bleiben erhalten. Zum Ersetzen muss **Vorhandene Angaben ausdrücklich mit der Sicherung überschreiben** aktiviert werden. Erkennungszähler werden beim wiederholten Import nicht addiert.
+
+Die Vorschau gilt zehn Minuten und ist an die Administrator-Sitzung sowie den geprüften Bibliotheksstand gebunden. Bei zwischenzeitlichen Änderungen bitte **Erneut prüfen** wählen. Maximal unterstützt werden 32 MB ZIP, 64 MB entpackte Daten und 5.000 Einträge. Gespeicherte Bilder werden beim Import in den privaten Bildspeicher übernommen. Das ZIP-Format ist eine portable Bibliothekssicherung und ergänzt Home Assistants vollständige Systemsicherung.
+
 ### Berechtigungen
 
 | Aktion | Administratoren | Normale angemeldete Nutzer |
@@ -230,6 +240,7 @@ Audio-IDs, die der Katalog eindeutig demselben Inhalt zuordnet, werden als eine 
 | Hörproben im Dashboard abspielen | ✓ | ✓ |
 | Tonies löschen | ✓ | ✓ |
 | Tonies manuell hinzufügen | ✓ | — |
+| Bibliothek exportieren und importieren | ✓ | — |
 | Titel, Laufzeit und Bilder bearbeiten | ✓ | — |
 
 Alle angemeldeten Nutzer sehen dieselbe gemeinsame Sammlung. Änderungen gelten für das gesamte Home-Assistant-System. Bearbeitungsrechte werden serverseitig geprüft; anonyme Nutzer haben keinen Zugriff.
@@ -270,6 +281,14 @@ Bewusst hinterlegte externe Bildadressen und eigene `/local/`-Dateien außerhalb
 Wenn TeddyCloud nicht erreichbare Bildadressen wie `http://localhost/...` meldet, prüfe in den Integrationsoptionen die **TeddyCloud-Adresse für Coverbilder**.
 
 ## Fehlerbehebung
+
+### Verbindung prüfen und Diagnose herunterladen
+
+Öffne **Einstellungen → Geräte & Dienste → TeddyCloud → Konfigurieren → Verbindung prüfen**. Die Prüfung zeigt den aktuellen MQTT-Verbindungszustand, frische Boxmeldungen, Katalogstatus und die Verfügbarkeit des gespeicherten Figurenbildes getrennt an. Eine schlafende Box wird nicht als Brokerfehler behandelt. Externe Bildadressen werden als nicht geprüft gekennzeichnet und nicht probeweise heruntergeladen.
+
+Für die Fehlersuche steht außerdem **Diagnose herunterladen** im Menü des Integrationseintrags zur Verfügung. Die Diagnose enthält Versionsnummern, technische Statuswerte und Bibliotheksgrößen. Sie enthält keine Boxnamen, Audio-IDs, Hörspieltitel, Serveradressen, MQTT-Topics, Zugangsdaten oder signierten Bildadressen.
+
+Die normalen Einstellungen findest du unter **Konfigurieren → Toniebox und Licht einstellen**.
 
 ### Erkennung beim Figurenwechsel
 
