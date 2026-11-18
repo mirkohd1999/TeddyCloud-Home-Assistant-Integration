@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 import importlib.util
 import json
+import logging
 from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
 from types import SimpleNamespace
@@ -50,7 +51,7 @@ class TestAvailability(unittest.TestCase):
             return lambda: timer.update(cancelled=True)
         source = ast.parse((ROOT / 'media_player.py').read_text())
         nodes = [n for n in source.body if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
-        ns = {'MediaPlayerEntity':Entity, 'MediaPlayerEntityFeature':int,
+        ns = {'_LOGGER':logging.getLogger(__name__), 'MediaPlayerEntity':Entity, 'MediaPlayerEntityFeature':int,
               'callback':lambda fn: fn, 'Availability':availability.Availability,
               'async_call_later':schedule, 'datetime':datetime, 'timezone':timezone,
               'CONF_FALLBACK_COVER':'fallback_cover', 'urlsplit':urlsplit, 'urlunsplit':urlunsplit, 'asyncio':asyncio, 'json':json, 'CONF_CATALOG':'catalog', 'CONF_BOX_NAME':'box_name', 'CONF_BOX_COLOR':'box_color', 'DEFAULT_COLOR':'#8f77c7',

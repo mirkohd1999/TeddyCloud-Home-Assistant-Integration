@@ -412,6 +412,14 @@ class TonieLibrary:
                 f"{audio_id}{suffix}" for suffix in IMAGE_TYPES.values()
             }:
                 await self._images.async_delete("library", audio_id)
+            # Imported images use fresh immutable filenames and may be shared.
+            if self._images:
+                references = {image_reference(record.get('image')) for item in self._entries.values()
+                              for record in (item, item.get('custom', {}))}
+                for record in (old, old.get('custom', {})):
+                    imported = image_reference(record.get('image'))
+                    if imported and imported[0] == 'library' and imported[1].startswith('restore_') and imported not in references:
+                        await self._images.async_delete('library', imported[1].rsplit('.', 1)[0])
             await self._store.async_save({"entries": self._entries, "hidden": sorted(self._hidden)})
         self._notify(audio_id)
 

@@ -13,6 +13,7 @@ from .image_storage import ImageStorage
 from .image_view import register_image_view
 from .library_websocket import register_library_websockets
 from .room_light import RoomLightController
+from .backup_view import register_backup_view
 
 FIELDS = {"Playback", "ContentTitle", "ContentAudioId", "VolumeLevel", "VolumedB", "Charger", "TagValid", "LastSeen", "ContentPicture"}
 PLATFORMS = ["media_player", "number", "sensor", "binary_sensor", "switch"]
@@ -33,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await library.async_load()
             data["library"] = library
     register_image_view(hass)
+    register_backup_view(hass)
     register_library_websockets(hass)
     from .media_player import BoxPlayer
     catalog = data.setdefault("online_catalog", OnlineCatalog(hass))

@@ -58,6 +58,13 @@
   "options": {
     "step": {
       "init": {
+        "title": "TeddyCloud options",
+        "menu_options": {
+          "settings": "Toniebox and light settings",
+          "connection": "Check connection"
+        }
+      },
+      "settings": {
         "title": "Toniebox and lights",
         "data": {
           "box_color": "Toniebox color (hex, editable later)",
@@ -70,6 +77,10 @@
           "room_lights": "Lights (optional, one or more lights)"
         },
         "description": "Select lights here. Enable automatic Tonie lighting using the switch on the device or in the dashboard. The existing presence sensor switches the lights off when the figurine is removed or its estimated duration ends. Brightness stays unchanged on color changes."
+      },
+      "connection": {
+        "title": "Connection check",
+        "description": "**MQTT:** {mqtt}\n\n**Box:** {box} · Last fresh message: {box_age} s ago\n\n**Catalog:** {catalog} · Last successful download: {catalog_age} s ago\n\n**Current image:** {image}\n\n✓ Available · ✕ Unavailable · ? No confirmed status / external image not checked\n\nIf MQTT is unavailable, check the MQTT integration. If MQTT is connected but the box has no fresh status, wake the box or place a figurine. A sleeping box is not a broker error. For catalog problems, check Internet access. This check reads current status and cached images; it does not wake or control the box. Detailed, redacted information is available via Download diagnostics."
       }
     },
     "error": {

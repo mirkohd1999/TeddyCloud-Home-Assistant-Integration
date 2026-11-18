@@ -7,6 +7,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
+from .health import async_connection_report
 from .const import (
     DOMAIN, CONF_PREFIX, CONF_BOX_ID, CONF_BOX_NAME, CONF_BOX_COLOR,
     CONF_CATALOG, CONF_FALLBACK_COVER, DEFAULT_PREFIX, DEFAULT_COLOR,
@@ -166,12 +167,28 @@ class TeddyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class TeddyCloudOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         if user_input is not None:
+            return await self.async_step_settings(user_input)
+        return self.async_show_menu(step_id="init", menu_options=["settings", "connection"])
+
+    async def async_step_connection(self, user_input=None):
+        if user_input is not None:
+            return await self.async_step_init()
+        report = await async_connection_report(self.hass, self.config_entry)
+        symbols = {'connected':'✓', 'online':'✓', 'ready':'✓', 'available':'✓',
+                   'disconnected':'✕', 'mqtt_disconnected':'✕', 'unavailable':'✕', 'missing':'✕'}
+        values = {key:symbols.get(value['status'], '?') for key,value in report.items()}
+        values['box_age'] = str(report['box']['last_message_age_seconds']) if report['box']['last_message_age_seconds'] is not None else '—'
+        values['catalog_age'] = str(report['catalog']['last_success_age_seconds']) if report['catalog']['last_success_age_seconds'] is not None else '—'
+        return self.async_show_form(step_id="connection", data_schema=vol.Schema({}), description_placeholders=values)
+
+    async def async_step_settings(self, user_input=None):
+        if user_input is not None:
             try:
                 valid_catalog(user_input[CONF_CATALOG])
             except vol.Invalid:
-                return self.async_show_form(step_id="init", data_schema=self._schema(), errors={CONF_CATALOG: "invalid_catalog"})
+                return self.async_show_form(step_id="settings", data_schema=self._schema(), errors={CONF_CATALOG: "invalid_catalog"})
             return self.async_create_entry(title="", data=user_input)
-        return self.async_show_form(step_id="init", data_schema=self._schema())
+        return self.async_show_form(step_id="settings", data_schema=self._schema())
 
     def _schema(self):
         current = self.config_entry.options
